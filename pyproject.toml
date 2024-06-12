@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "CoMET"
+version = "0.0.1"
+dependencies = [
+    "requests",
+    'importlib-metadata; python_version=="3.11.9"',
+]
+authors = [
+  { name="Travis Hahn", email="travis.hahn@psu.edu" },
+]
+description = "Convective cloud Model Evaluation Toolkit (CoMET)"
+readme = "README.md"
+requires-python = "==3.11.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD-3 License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/travis-j-hahn/CoMET"
+Issues = "https://github.com/travis-j-hahn/CoMET/issues"
