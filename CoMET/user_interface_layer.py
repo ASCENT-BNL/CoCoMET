@@ -28,20 +28,24 @@ def CoMET_Load(path_to_config):
         
     # TODO: Do some checks here    
     
-    
-    # Convert grid_shape and grid_limits back into proper tuples and ensure correct data types--auto correct automatically
-    grid_shape = ast.literal_eval(CONFIG['grid_shape'])
-    # Ensure int grid shapes
-    grid_shape = tuple([int(grid_shape[ii]) for ii in range(len(grid_shape))])
-    
-    # Ensure float for grid_limits
-    grid_limits = ast.literal_eval(CONFIG['grid_limits'])
-    grid_limits = np.array(grid_limits).astype(float)
-    grid_limits = tuple([tuple(row) for row in grid_limits])
+    # If nexrad gridding is needed, change grid shapes and limits back to tuples
+    if ("nexrad_gridding" in CONFIG):
+        
+        # Convert grid_shape and grid_limits back into proper tuples and ensure correct data types--auto correct automatically
+        grid_shape = ast.literal_eval(CONFIG['nexrad_gridding']['grid_shape'])
+        # Ensure int grid shapes
+        grid_shape = tuple([int(grid_shape[ii]) for ii in range(len(grid_shape))])
+        
+        # Ensure float for grid_limits
+        grid_limits = ast.literal_eval(CONFIG['nexrad_gridding']['grid_limits'])
+        grid_limits = np.array(grid_limits).astype(float)
+        grid_limits = tuple([tuple(row) for row in grid_limits])
 
-    # Adjust CONFIG values
-    CONFIG['grid_shape'] = grid_shape
-    CONFIG['grid_limits'] = grid_limits
+        # Adjust CONFIG values
+        CONFIG['nexrad_gridding']['grid_shape'] = grid_shape
+        CONFIG['nexrad_gridding']['grid_limits'] = grid_limits
+    
+    
     
     return(CONFIG)
         

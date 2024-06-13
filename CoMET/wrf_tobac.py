@@ -5,7 +5,7 @@ Created on Wed Jun  5 17:26:17 2024
 
 @author: thahn
 """
-#TODO: Add CONFIG parsing for tobac inputs
+
 # =============================================================================
 # This defines the methods for running tobac on WRF data processed using wrf_load.py
 # =============================================================================
@@ -37,9 +37,9 @@ def wrf_tobac_feature_id(cube, tracking_type, CONFIG):
         dxy = tobac.get_spacings(cube)[0]
         
         # Perform tobac feature identification and then convert to a geodataframe before returning
-        wrf_radar_features = tobac.feature_detection.feature_detection_multithreshold(cube, dxy=dxy, **CONFIG)
+        wrf_radar_features = tobac.feature_detection.feature_detection_multithreshold(cube, dxy=dxy, **CONFIG['tobac']['feature_id'])
         
-        if (type(wrf_radar_features) == None):
+        if (wrf_radar_features is None):
             return None
         
         wrf_geopd = gpd.GeoDataFrame(
@@ -77,9 +77,9 @@ def wrf_tobac_linking(cube, tracking_type, radar_features, CONFIG):
         dxy,dt = tobac.get_spacings(cube)
         
         # Do tracking then convert output dataframe to a geodataframe
-        wrf_tracks = tobac.linking_trackpy(radar_features,cube,dt=dt,dxy=dxy,vertical_coord='altitude',**CONFIG)
+        wrf_tracks = tobac.linking_trackpy(radar_features,cube,dt=dt,dxy=dxy,vertical_coord='altitude',**CONFIG['tobac']['linking'])
         
-        if (type(wrf_tracks) == None):
+        if (wrf_tracks is None):
             return None
         
         wrf_geopd_tracks = gpd.GeoDataFrame(
@@ -128,7 +128,7 @@ def wrf_tobac_segmentation(cube, tracking_type, radar_features, segmentation_typ
             # If tracking var is tb, bypass height
             if (cube.name().lower() == 'tb'):
                 # Perform the 2d segmentation at the height_index and return the segmented cube and new geodataframe
-                segment_cube, segment_features = tobac.segmentation_2D(radar_features, cube, dxy=dxy,**CONFIG)
+                segment_cube, segment_features = tobac.segmentation_2D(radar_features, cube, dxy=dxy,**CONFIG['tobac']['segmentation'])
                 
                 # Convert iris cube to xarray and return
                 return ((xr.DataArray.from_iris(segment_cube), segment_features))
@@ -147,7 +147,7 @@ def wrf_tobac_segmentation(cube, tracking_type, radar_features, segmentation_typ
             height_index = find_nearest(cube.coord('altitude').points, segmentation_height)
             
             # Perform the 2d segmentation at the height_index and return the segmented cube and new geodataframe
-            segment_cube, segment_features = tobac.segmentation_2D(radar_features, cube[:,height_index], dxy=dxy,**CONFIG)
+            segment_cube, segment_features = tobac.segmentation_2D(radar_features, cube[:,height_index], dxy=dxy,**CONFIG['tobac']['segmentation'])
             
             # Convert iris cube to xarray and return
             return ((xr.DataArray.from_iris(segment_cube), segment_features))
@@ -155,7 +155,7 @@ def wrf_tobac_segmentation(cube, tracking_type, radar_features, segmentation_typ
         elif (segmentation_type.lower() == '3d'):
             
             # Similarly, perform 3d segmentation then return products
-            segment_cube, segment_features = tobac.segmentation_3D(radar_features, cube, dxy=dxy,**CONFIG)
+            segment_cube, segment_features = tobac.segmentation_3D(radar_features, cube, dxy=dxy,**CONFIG['tobac']['segmentation'])
                
             ## Convert iris cube to xarray and return
             return ((xr.DataArray.from_iris(segment_cube), segment_features))

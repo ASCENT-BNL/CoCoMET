@@ -5,7 +5,7 @@ Created on Mon Jun 10 16:28:49 2024
 
 @author: thahn
 """
-#TODO: Add CONFIG parsing for tobac inputs
+
 # =============================================================================
 # Loads in and grids the NEXRAD Arhcival Level 2 Data using ARM-Pyart then converts into iris cubes and xarray Datasets for use in trackers
 # =============================================================================
@@ -46,7 +46,7 @@ def gen_and_save_nexrad_grid(path_to_files, save_location, tracking_var, CONFIG,
             radar = pyart.io.read_nexrad_archive(ff,include_fields='reflectivity')
         
             # Create radar grid using user-defined params
-            radar_grid = pyart.map.grid_from_radars(radar, **CONFIG)
+            radar_grid = pyart.map.grid_from_radars(radar, **CONFIG['nexrad_gridding'])
             
             # Save radar grid to save_location as a netcdf file and delete radar and radar_grid objects to free memory
             pyart.io.write_grid(save_location + file_names[idx] + '_grid.nc', radar_grid, arm_alt_lat_lon_variables=True, write_point_x_y_z=True, write_point_lon_lat_alt=True)
@@ -77,7 +77,7 @@ def create_and_save_grid_single(file, save_location, tracking_var, CONFIG):
         radar = pyart.io.read_nexrad_archive(file,include_fields='reflectivity')
     
         # Create radar grid using user-defined params
-        radar_grid = pyart.map.grid_from_radars(radar, **CONFIG)
+        radar_grid = pyart.map.grid_from_radars(radar, **CONFIG['nexrad_gridding'])
 
         # Save radar grid to save_location as a netcdf file and delete radar and radar_grid objects to free memory
         file_name = os.path.basename(file).split('.')[0]
@@ -124,6 +124,7 @@ Inputs:
     CONFIG: User configuration file
     save_location: Where to save gridded NEXRAD data to if file_type=='ar2v'
 Outputs:
+    cube: iris cube continaing gridded reflectivity data ready for tobac tracking 
     nexrad_xarray: Xarray dataset containing gridded NEXRAD archival data
 """
 def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save_location=None):
@@ -161,6 +162,8 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             nexrad_xarray = xr.concat(radar_objects, dim='time').reflectivity
             del radar_objects
             
+            # TODO: Add subsetting of NEXRAD domain
+            
             # Replace time dimension with minutes since first time and add other x y z coords
             first_time = nexrad_xarray.time.values[0]
             nexrad_xarray = nexrad_xarray.assign_coords(time=cftime.date2num(nexrad_xarray.time.values, f"minutes since {first_time}"),
@@ -170,7 +173,7 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
                                                         model_level_number = ('z', np.arange(nexrad_xarray.shape[1])))
         
         
-            # Adjust dimension names to be standards accepted by wrfcube
+            # Adjust dimension names to be standards accepted by iris
             nexrad_xarray['time'] = nexrad_xarray.time.assign_attrs({'standard_name': 'time', 'long_name': f'minutes since {first_time}', 'units': f'minutes since {first_time}'})
             nexrad_xarray['z'] = nexrad_xarray.z.assign_attrs({'standard_name': 'altitude'})
             nexrad_xarray['lat'] = nexrad_xarray.lat.assign_attrs({'standard_name': 'latitude'})
@@ -204,6 +207,8 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             nexrad_xarray = xr.concat(radar_objects, dim='time').reflectivity
             del radar_objects
             
+            # TODO: Add subsetting of NEXRAD domain
+            
             # Replace time dimension with minutes since first time and add other x y z coords
             first_time = nexrad_xarray.time.values[0]
             nexrad_xarray = nexrad_xarray.assign_coords(time=cftime.date2num(nexrad_xarray.time.values, f"minutes since {first_time}"),
@@ -213,7 +218,7 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
                                                         model_level_number = ('z', np.arange(nexrad_xarray.shape[1])))
         
         
-            # Adjust dimension names to be standards accepted by wrfcube
+            # Adjust dimension names to be standards accepted by iris
             nexrad_xarray['time'] = nexrad_xarray.time.assign_attrs({'standard_name': 'time', 'long_name': f'minutes since {first_time}', 'units': f'minutes since {first_time}'})
             nexrad_xarray['z'] = nexrad_xarray.z.assign_attrs({'standard_name': 'altitude'})
             nexrad_xarray['lat'] = nexrad_xarray.lat.assign_attrs({'standard_name': 'latitude'})
@@ -278,6 +283,8 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
             nexrad_xarray = xr.concat(radar_objects, dim='time').reflectivity
             del radar_objects
             
+            # TODO: Add subsetting of NEXRAD domain
+            
             # Replace time dimension with minutes since first time and add other x y z coords
             first_time = nexrad_xarray.time.values[0]
             nexrad_xarray = nexrad_xarray.assign_coords(time=cftime.date2num(nexrad_xarray.time.values, f"minutes since {first_time}"),
@@ -287,7 +294,7 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
                                                         model_level_number = ('z', np.arange(nexrad_xarray.shape[1])))
         
         
-            # Adjust dimension names to be standards accepted by wrfcube
+            # Adjust dimension names to be standards accepted by iris
             nexrad_xarray['time'] = nexrad_xarray.time.assign_attrs({'standard_name': 'time', 'long_name': f'minutes since {first_time}', 'units': f'minutes since {first_time}'})
             nexrad_xarray['z'] = nexrad_xarray.z.assign_attrs({'standard_name': 'altitude'})
             nexrad_xarray['lat'] = nexrad_xarray.lat.assign_attrs({'standard_name': 'latitude'})
@@ -320,6 +327,8 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
             nexrad_xarray = xr.concat(radar_objects, dim='time').reflectivity
             del radar_objects
             
+            # TODO: Add subsetting of NEXRAD domain
+            
             # Replace time dimension with minutes since first time and add other x y z coords
             first_time = nexrad_xarray.time.values[0]
             nexrad_xarray = nexrad_xarray.assign_coords(time=cftime.date2num(nexrad_xarray.time.values, f"minutes since {first_time}"),
@@ -329,7 +338,7 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
                                                         model_level_number = ('z', np.arange(nexrad_xarray.shape[1])))
         
         
-            # Adjust dimension names to be standards accepted by wrfcube
+            # Adjust dimension names to be standards accepted by iris
             nexrad_xarray['time'] = nexrad_xarray.time.assign_attrs({'standard_name': 'time', 'long_name': f'minutes since {first_time}', 'units': f'minutes since {first_time}'})
             nexrad_xarray['z'] = nexrad_xarray.z.assign_attrs({'standard_name': 'altitude'})
             nexrad_xarray['lat'] = nexrad_xarray.lat.assign_attrs({'standard_name': 'latitude'})

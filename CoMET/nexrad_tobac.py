@@ -39,9 +39,9 @@ def nexrad_tobac_feature_id(cube, tracking_type, CONFIG):
         dxy = tobac.get_spacings(cube)[0]
         
         # Perform tobac feature identification and then convert to a geodataframe before returning
-        nexrad_radar_features = tobac.feature_detection.feature_detection_multithreshold(cube, dxy=dxy, **CONFIG)
+        nexrad_radar_features = tobac.feature_detection.feature_detection_multithreshold(cube, dxy=dxy, **CONFIG['tobac']['feature_id'])
         
-        if (type(nexrad_radar_features) == None):
+        if (nexrad_radar_features is None):
             return None
         
         nexrad_geopd = gpd.GeoDataFrame(
@@ -86,9 +86,9 @@ def nexrad_tobac_linking(cube, tracking_type, radar_features, CONFIG):
         dt = np.nanmean(diffs) * 60
         
         # Do tracking then convert output dataframe to a geodataframe
-        nexrad_tracks = tobac.linking_trackpy(radar_features,cube,dt=dt,dxy=dxy,vertical_coord='altitude',**CONFIG)
+        nexrad_tracks = tobac.linking_trackpy(radar_features,cube,dt=dt,dxy=dxy,vertical_coord='altitude',**CONFIG['tobac']['linking'])
         
-        if (type(nexrad_tracks) == None):
+        if (nexrad_tracks is None):
             return None
         
         nexrad_geopd_tracks = gpd.GeoDataFrame(
@@ -126,7 +126,7 @@ def nexrad_tobac_segmentation(cube, tracking_type, radar_features, segmentation_
         
         # Check tracking var
         if (cube.name().lower() != 'equivalent_reflectivity_factor'):
-            raise Exception(f'!=====Invalid Tracking Variable. Your Cube Has: {cube.name().lower()}. TB Tracking Restricted to 2D Segmentation=====!')
+            raise Exception(f'!=====Invalid Tracking Variable. Your Cube Has: {cube.name().lower()}=====!')
             return
         
         dxy = tobac.get_spacings(cube)[0]
@@ -147,7 +147,7 @@ def nexrad_tobac_segmentation(cube, tracking_type, radar_features, segmentation_
             height_index = find_nearest(cube.coord('altitude').points, segmentation_height)
             
             # Perform the 2d segmentation at the height_index and return the segmented cube and new geodataframe
-            segment_cube, segment_features = tobac.segmentation_2D(radar_features, cube[:,height_index], dxy=dxy, **CONFIG)
+            segment_cube, segment_features = tobac.segmentation_2D(radar_features, cube[:,height_index], dxy=dxy, **CONFIG['tobac']['segmentation'])
             
             # Convert iris cube to xarray and return
             return ((xr.DataArray.from_iris(segment_cube), segment_features))
@@ -155,7 +155,7 @@ def nexrad_tobac_segmentation(cube, tracking_type, radar_features, segmentation_
         elif (segmentation_type.lower() == '3d'):
             
             # Similarly, perform 3d segmentation then return products
-            segment_cube, segment_features = tobac.segmentation_3D(radar_features, cube, dxy=dxy, **CONFIG)
+            segment_cube, segment_features = tobac.segmentation_3D(radar_features, cube, dxy=dxy, **CONFIG['tobac']['segmentation'])
                
             ## Convert iris cube to xarray and return
             return ((xr.DataArray.from_iris(segment_cube), segment_features))

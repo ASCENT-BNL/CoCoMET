@@ -30,11 +30,10 @@ observation_tracking_suite: "" # Default set of parameters for various trackers.
 
 # SPECIFIC TRACKER PARAMETERS: Only fill out for your selected tracker
 # TOBAC PAAMETERS:
-# TODO: Change these to be tobac_model, and tobac_observation
 tobac:
     feature_id:
-        threshold: [250,225,200,175,150]
-        target: 'minimum'
+        threshold: [30, 40, 50, 60]
+        target: 'maximum'
         position_threshold: 'weighted_diff'
         sigma_threshold: 0.5
         n_min_threshold: 4
@@ -51,7 +50,7 @@ tobac:
     segmentation:
         target: 'minimum'
         method: 'watershed'
-        threshold: 250
+        threshold: 15
     
 
 # OBSERVATION PARAMETERS: Only fill out for your selected observation type

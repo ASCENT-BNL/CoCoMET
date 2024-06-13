@@ -30,7 +30,6 @@ observation_tracking_suite: "" # Default set of parameters for various trackers.
 
 # SPECIFIC TRACKER PARAMETERS: Only fill out for your selected tracker
 # TOBAC PAAMETERS:
-# TODO: Change these to be tobac_model, and tobac_observation
 tobac:
     feature_id:
         threshold: [250,225,200,175,150]
