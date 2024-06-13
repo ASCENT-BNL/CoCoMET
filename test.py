@@ -11,16 +11,16 @@ Created on Mon Jun 10 14:44:52 2024
 TODO: Write unit tests using small test dataset(s)? 
 """
 
+
+
 import CoMET
 
 CONFIG = CoMET.CoMET_Load('./Example_Configs/boilerplate.yml')
 
-print(CONFIG)
-
 
 # Example params for testing
 feature_detection_params_dbz = dict()
-feature_detection_params_dbz['threshold'] = [30, 40, 50, 60]
+feature_detection_params_dbz['threshold'] = [20, 30, 40, 50, 60]
 feature_detection_params_dbz['target'] = 'maximum'
 feature_detection_params_dbz['position_threshold'] = 'weighted_diff'
 feature_detection_params_dbz['sigma_threshold'] = 0.5
@@ -68,19 +68,53 @@ parameters_segmentation_tb['method']='watershed'
 parameters_segmentation_tb['threshold']=280  # dbZ threshold
 
 
+print('=====Starting WRF dbz Tracking=====')
 wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris("/D3/data/thahn/wrf/wrfout/wrfout_d02*", 'dbz')
+print("*////")
 wrf_features = CoMET.wrf_tobac_feature_id(wrf_cube, 'IC', feature_detection_params_dbz)
-wrf_tracks = CoMET.wrf_tobac_linking(wrf_cube, 'IC', 'dbz', wrf_features, parameters_linking_dbz)
-wrf_segment_array_3d, wrf_segment_pd_3d = CoMET.wrf_tobac_segmentation(wrf_cube, 'IC', 'dbz', wrf_features, parameters_segmentation_dbz, '3D')
-wrf_segment_array_2d, wrf_segment_pd_2d = CoMET.wrf_tobac_segmentation(wrf_cube, 'IC', 'dbz', wrf_features, parameters_segmentation_dbz, '2D', 2000)
+print("**///")
+wrf_tracks = CoMET.wrf_tobac_linking(wrf_cube, 'IC', wrf_features, parameters_linking_dbz)
+print("***//")
+wrf_segment_array_3d, wrf_segment_pd_3d = CoMET.wrf_tobac_segmentation(wrf_cube, 'IC', wrf_features, '3D', parameters_segmentation_dbz)
+print("****/")
+wrf_segment_array_2d, wrf_segment_pd_2d = CoMET.wrf_tobac_segmentation(wrf_cube, 'IC', wrf_features, '2D', parameters_segmentation_dbz, 2000)
+print('=====Finished WRF dbz Tracking=====')
 
+
+print('=====Starting WRF w Tracking=====')
 wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris("/D3/data/thahn/wrf/wrfout/wrfout_d02*", 'w')
+print("*////")
 wrf_features = CoMET.wrf_tobac_feature_id(wrf_cube, 'IC', feature_detection_params_w)
-wrf_tracks = CoMET.wrf_tobac_linking(wrf_cube, 'IC', 'w', wrf_features, parameters_linking_dbz)
-wrf_segment_array_3d, wrf_segment_pd_3d = CoMET.wrf_tobac_segmentation(wrf_cube, 'IC', 'w', wrf_features, parameters_segmentation_w, '3D')
-wrf_segment_array_2d, wrf_segment_pd_2d = CoMET.wrf_tobac_segmentation(wrf_cube, 'IC', 'w', wrf_features, parameters_segmentation_w, '2D', 2000)
+print("**///")
+wrf_tracks = CoMET.wrf_tobac_linking(wrf_cube, 'IC', wrf_features, parameters_linking_dbz)
+print("***//")
+wrf_segment_array_3d, wrf_segment_pd_3d = CoMET.wrf_tobac_segmentation(wrf_cube, 'IC', wrf_features, '3D', parameters_segmentation_w)
+print("****/")
+wrf_segment_array_2d, wrf_segment_pd_2d = CoMET.wrf_tobac_segmentation(wrf_cube, 'IC', wrf_features, '2D', parameters_segmentation_w, 2000)
+print('=====Finished WRF w Tracking=====')
 
+
+print('=====Starting WRF tb Tracking=====')
 wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris("/D3/data/thahn/wrf/wrfout/wrfout_d02*", 'tb')
+print("*///")
 wrf_features = CoMET.wrf_tobac_feature_id(wrf_cube, 'IC', feature_detection_params_tb)
-wrf_tracks = CoMET.wrf_tobac_linking(wrf_cube, 'IC', 'tb', wrf_features, parameters_linking_dbz)
-wrf_segment_array_2d, wrf_segment_pd_2d = CoMET.wrf_tobac_segmentation(wrf_cube, 'IC', 'tb', wrf_features, parameters_segmentation_tb, '2D', 2000)
+print("**//")
+wrf_tracks = CoMET.wrf_tobac_linking(wrf_cube, 'IC', wrf_features, parameters_linking_dbz)
+print("***/")
+wrf_segment_array_2d, wrf_segment_pd_2d = CoMET.wrf_tobac_segmentation(wrf_cube, 'IC', wrf_features, '2D', parameters_segmentation_tb, None)
+print('=====Finished WRF tb Tracking=====')
+
+
+print('=====Starting NEXRAD dbz Tracking=====')
+radar_cube,radar_xarray=CoMET.nexrad_load_netcdf_iris('/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v', 'ar2v', 'dbz', CONFIG, '/D3/data/thahn/NEXRAD/HAS012527906/grids/')
+print("*////")
+radar_features = CoMET.nexrad_tobac_feature_id(radar_cube, 'IC', feature_detection_params_dbz)
+print("**///")
+radar_tracks = CoMET.nexrad_tobac_linking(radar_cube, 'IC', radar_features, parameters_linking_dbz)
+print("***//")
+radar_segment_array_3d, radar_segment_pd_3d = CoMET.nexrad_tobac_segmentation(radar_cube, 'IC', radar_features, '3D', parameters_segmentation_dbz)
+print("****/")
+radar_segment_array_2d, radar_segment_pd_2d = CoMET.nexrad_tobac_segmentation(radar_cube, 'IC', radar_features, '2D', parameters_segmentation_dbz, 2000)
+print('=====Finished WRF dbz Tracking=====')
+
+print(radar_tracks)

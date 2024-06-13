@@ -6,8 +6,8 @@
 
 # SETUP VARIABLES: These determine input data types and locations
 verbose: True # Whether to use verbose output
-parallel_processing: True # Whether or not to use parallel processing for certain tasks
-max_cores: 8 # Number of cores to use if parallel_processing==True; Enter None for unlimited
+parallel_processing: True # [bool] Whether or not to use parallel processing for certain tasks
+max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None for unlimited
 
 model_type: "" # Current Options: ['WRF', 'RAMS']
 path_to_model: "" # Path to the model outputs (should use *, like "/home/wrfout/wrfout_d02_*")
@@ -35,9 +35,10 @@ observation_tracking_suite: "" # Default set of parameters for various trackers.
 # OBSERVATION PARAMETERS: Only fill out for your selected observation type
 
 # NEXRAD
-grid_shape: (11, 201, 201)
-grid_limits: ((0, 10000), (-100000., 100000.), (-100000., 100000.))
-h_factor: 0.
-nb: 0.6
-bsp: 1.
-min_radius: 200.
+# gridding_algo: 'map_gates_to_grid'
+grid_shape: (40, 401, 401)
+grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
+# h_factor: 0.
+# nb: 0.6
+# bsp: 1.
+# min_radius: 200.

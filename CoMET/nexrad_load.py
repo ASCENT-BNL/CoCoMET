@@ -5,10 +5,12 @@ Created on Mon Jun 10 16:28:49 2024
 
 @author: thahn
 """
-
+#TODO: Add CONFIG parsing for tobac inputs
 # =============================================================================
 # Loads in and grids the NEXRAD Arhcival Level 2 Data using ARM-Pyart then converts into iris cubes and xarray Datasets for use in trackers
 # =============================================================================
+
+
 
 """
 Inputs:
@@ -23,14 +25,15 @@ def gen_and_save_nexrad_grid(path_to_files, save_location, tracking_var, CONFIG,
     import os
     import glob
     import pyart
+    import numpy as np
     
     # If parallel processing is enabled, run that version and return
     if (parallel_processing):
-        gen_and_save_nexrad_grid_multi(glob.glob(path_to_files), save_location, tracking_var, CONFIG, max_cores)
+        gen_and_save_nexrad_grid_multi(np.sort(glob.glob(path_to_files)), save_location, tracking_var, CONFIG, max_cores)
         return
     
     # Get all archive files and iterate over them
-    files = glob.glob(path_to_files)
+    files = np.sort(glob.glob(path_to_files))
     # Extract just the filenames from the paths without the file extensions
     file_names = [os.path.basename(f).split('.')[0] for f in files]
     
@@ -43,9 +46,8 @@ def gen_and_save_nexrad_grid(path_to_files, save_location, tracking_var, CONFIG,
             radar = pyart.io.read_nexrad_archive(ff,include_fields='reflectivity')
         
             # Create radar grid using user-defined params
-            radar_grid = pyart.map.grid_from_radars(radar, grid_shape=CONFIG['grid_shape'], grid_limits=CONFIG['grid_limits'], gridding_algo='map_gates_to_grid',
-                h_factor=CONFIG['h_factor'], nb=CONFIG['nb'], bsp=CONFIG['bsp'], min_radius=CONFIG['min_radius'])
-
+            radar_grid = pyart.map.grid_from_radars(radar, **CONFIG)
+            
             # Save radar grid to save_location as a netcdf file and delete radar and radar_grid objects to free memory
             pyart.io.write_grid(save_location + file_names[idx] + '_grid.nc', radar_grid, arm_alt_lat_lon_variables=True, write_point_x_y_z=True, write_point_lon_lat_alt=True)
         
@@ -75,8 +77,7 @@ def create_and_save_grid_single(file, save_location, tracking_var, CONFIG):
         radar = pyart.io.read_nexrad_archive(file,include_fields='reflectivity')
     
         # Create radar grid using user-defined params
-        radar_grid = pyart.map.grid_from_radars(radar, grid_shape=CONFIG['grid_shape'], grid_limits=CONFIG['grid_limits'], gridding_algo='map_gates_to_grid',
-            h_factor=CONFIG['h_factor'], nb=CONFIG['nb'], bsp=CONFIG['bsp'], min_radius=CONFIG['min_radius'])
+        radar_grid = pyart.map.grid_from_radars(radar, **CONFIG)
 
         # Save radar grid to save_location as a netcdf file and delete radar and radar_grid objects to free memory
         file_name = os.path.basename(file).split('.')[0]
@@ -102,7 +103,7 @@ def gen_and_save_nexrad_grid_multi(files, save_location, tracking_var, CONFIG, m
     from functools import partial
     
     if (len(files) == 0):
-        raise Exception(f'!=====No Files Present to Grid=====!')
+        raise Exception('!=====No Files Present to Grid=====!')
         return
     
     # Start a pool with max_cores and run the grid function
@@ -126,24 +127,56 @@ Outputs:
     nexrad_xarray: Xarray dataset containing gridded NEXRAD archival data
 """
 def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save_location=None):
+    import glob
+    import pyart
+    import cftime
+    import warnings
+    import numpy as np
     import xarray as xr
-    
+
+
     # If data is archival, perform gridding
     if (file_type.lower() == 'ar2v'):
+        
+        # Make sure save_location ends with a '/'
+        if (save_location[-1] != '/'):
+            save_location = save_location + '//'
+        
         # Create grid
         gen_and_save_nexrad_grid(path_to_files, save_location, tracking_var, CONFIG, CONFIG['parallel_processing'], CONFIG['max_cores'])  
-        
-        # Convert to iris cube and return
+           
         if (tracking_var.lower() == 'dbz'):
-            # Open them as netcdf file and return
-            nexrad_xarray = xr.open_mfdataset(save_location + "*", coords='all', concat_dim='time', combine='nested')
             
-            # Add lat and lon coordinates to dataset
-            nexrad_xarray = nexrad_xarray.reflectivity.assign_coords(lat=nexrad_xarray.point_latitude,lon=nexrad_xarray.point_longitude)
+            # Read radar objects in and concat into one xarray datarray
+            # This is a stupid hacky fix because pyart is dumb
+            radar_objects = []
+            for file in np.sort(glob.glob(save_location + "*")):
+                
+                # Ignore import warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    radar_objects.append(pyart.io.read_grid(file).to_xarray())
             
+            
+            nexrad_xarray = xr.concat(radar_objects, dim='time').reflectivity
+            del radar_objects
+            
+            # Replace time dimension with minutes since first time and add other x y z coords
+            first_time = nexrad_xarray.time.values[0]
+            nexrad_xarray = nexrad_xarray.assign_coords(time=cftime.date2num(nexrad_xarray.time.values, f"minutes since {first_time}"),
+                                                        south_north = ('y', np.arange(nexrad_xarray.shape[2])), west_east = ('x', np.arange(nexrad_xarray.shape[2])),
+                                                        projection_x_coordinate = ('x', nexrad_xarray.x.values), projection_y_coordinate = ('y', nexrad_xarray.y.values),
+                                                        x = ('x',np.arange(nexrad_xarray.shape[2])), y = ('y', np.arange(nexrad_xarray.shape[2])),
+                                                        model_level_number = ('z', np.arange(nexrad_xarray.shape[1])))
+        
+        
+            # Adjust dimension names to be standards accepted by wrfcube
+            nexrad_xarray['time'] = nexrad_xarray.time.assign_attrs({'standard_name': 'time', 'long_name': f'minutes since {first_time}', 'units': f'minutes since {first_time}'})
             nexrad_xarray['z'] = nexrad_xarray.z.assign_attrs({'standard_name': 'altitude'})
             nexrad_xarray['lat'] = nexrad_xarray.lat.assign_attrs({'standard_name': 'latitude'})
             nexrad_xarray['lon'] = nexrad_xarray.lon.assign_attrs({'standard_name': 'longitude'})
+            nexrad_xarray['projection_x_coordinate'] = nexrad_xarray.projection_x_coordinate.assign_attrs({'units': 'm'})
+            nexrad_xarray['projection_y_coordinate'] = nexrad_xarray.projection_y_coordinate.assign_attrs({'units': 'm'})
             
             return ((nexrad_xarray.to_iris(), nexrad_xarray))
         
@@ -156,15 +189,37 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
         
         # Convert to iris cube and return
         if (tracking_var.lower() == 'dbz'):
-            # Open them as netcdf file and return
-            nexrad_xarray = xr.open_mfdataset(path_to_files, coords='all', concat_dim='time', combine='nested')
             
-            # Add lat and lon coordinates to dataset
-            nexrad_xarray = nexrad_xarray.reflectivity.assign_coords(lat=nexrad_xarray.point_latitude,lon=nexrad_xarray.point_longitude)
+            # Read radar objects in and concat into one xarray datarray
+            # This is a stupid hacky fix because pyart is dumb
+            radar_objects = []
+            for file in np.sort(glob.glob(path_to_files)):
+                
+                # Ignore import warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    radar_objects.append(pyart.io.read_grid(file).to_xarray())
             
+            
+            nexrad_xarray = xr.concat(radar_objects, dim='time').reflectivity
+            del radar_objects
+            
+            # Replace time dimension with minutes since first time and add other x y z coords
+            first_time = nexrad_xarray.time.values[0]
+            nexrad_xarray = nexrad_xarray.assign_coords(time=cftime.date2num(nexrad_xarray.time.values, f"minutes since {first_time}"),
+                                                        south_north = ('y', np.arange(nexrad_xarray.shape[2])), west_east = ('x', np.arange(nexrad_xarray.shape[2])),
+                                                        projection_x_coordinate = ('x', nexrad_xarray.x.values), projection_y_coordinate = ('y', nexrad_xarray.y.values),
+                                                        x = ('x',np.arange(nexrad_xarray.shape[2])), y = ('y', np.arange(nexrad_xarray.shape[2])),
+                                                        model_level_number = ('z', np.arange(nexrad_xarray.shape[1])))
+        
+        
+            # Adjust dimension names to be standards accepted by wrfcube
+            nexrad_xarray['time'] = nexrad_xarray.time.assign_attrs({'standard_name': 'time', 'long_name': f'minutes since {first_time}', 'units': f'minutes since {first_time}'})
             nexrad_xarray['z'] = nexrad_xarray.z.assign_attrs({'standard_name': 'altitude'})
             nexrad_xarray['lat'] = nexrad_xarray.lat.assign_attrs({'standard_name': 'latitude'})
             nexrad_xarray['lon'] = nexrad_xarray.lon.assign_attrs({'standard_name': 'longitude'})
+            nexrad_xarray['projection_x_coordinate'] = nexrad_xarray.projection_x_coordinate.assign_attrs({'units': 'm'})
+            nexrad_xarray['projection_y_coordinate'] = nexrad_xarray.projection_y_coordinate.assign_attrs({'units': 'm'})
             
             return ((nexrad_xarray.to_iris(), nexrad_xarray))
         
@@ -189,23 +244,56 @@ Outputs:
     nexrad_xarray: Xarray dataset containing gridded NEXRAD archival data
 """
 def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_location=None):
-    import xarray as xr
+    import glob
+    import pyart
+    import cftime
+    import warnings
+    import numpy as np
+    import xarray as xr  
     
     # If data is archival, perform gridding
     if (file_type.lower() == 'ar2v'):
+        
+        # Make sure save_location ends with a '/'
+        if (save_location[-1] != '/'):
+            save_location = save_location + '//'
+        
         # Create grid
         gen_and_save_nexrad_grid(path_to_files, save_location, tracking_var, CONFIG, CONFIG['parallel_processing'], CONFIG['max_cores'])
         
         # Open them as netcdf file and return
         if (tracking_var.lower() == 'dbz'):
-            nexrad_xarray = xr.open_mfdataset(save_location + "*", coords='all', concat_dim='time', combine='nested')
-        
-            # Add lat and lon coordinates to dataset
-            nexrad_xarray = nexrad_xarray.reflectivity.assign_coords(lat=nexrad_xarray.point_latitude,lon=nexrad_xarray.point_longitude)
             
+            # Read radar objects in and concat into one xarray datarray
+            # This is a stupid hacky fix because pyart is dumb
+            radar_objects = []
+            for file in np.sort(glob.glob(save_location + "*")):
+                
+                # Ignore import warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    radar_objects.append(pyart.io.read_grid(file).to_xarray())
+                
+            
+            nexrad_xarray = xr.concat(radar_objects, dim='time').reflectivity
+            del radar_objects
+            
+            # Replace time dimension with minutes since first time and add other x y z coords
+            first_time = nexrad_xarray.time.values[0]
+            nexrad_xarray = nexrad_xarray.assign_coords(time=cftime.date2num(nexrad_xarray.time.values, f"minutes since {first_time}"),
+                                                        south_north = ('y', np.arange(nexrad_xarray.shape[2])), west_east = ('x', np.arange(nexrad_xarray.shape[2])),
+                                                        projection_x_coordinate = ('x', nexrad_xarray.x.values), projection_y_coordinate = ('y', nexrad_xarray.y.values),
+                                                        x = ('x',np.arange(nexrad_xarray.shape[2])), y = ('y', np.arange(nexrad_xarray.shape[2])),
+                                                        model_level_number = ('z', np.arange(nexrad_xarray.shape[1])))
+        
+        
+            # Adjust dimension names to be standards accepted by wrfcube
+            nexrad_xarray['time'] = nexrad_xarray.time.assign_attrs({'standard_name': 'time', 'long_name': f'minutes since {first_time}', 'units': f'minutes since {first_time}'})
             nexrad_xarray['z'] = nexrad_xarray.z.assign_attrs({'standard_name': 'altitude'})
             nexrad_xarray['lat'] = nexrad_xarray.lat.assign_attrs({'standard_name': 'latitude'})
             nexrad_xarray['lon'] = nexrad_xarray.lon.assign_attrs({'standard_name': 'longitude'})
+            nexrad_xarray['projection_x_coordinate'] = nexrad_xarray.projection_x_coordinate.assign_attrs({'units': 'm'})
+            nexrad_xarray['projection_y_coordinate'] = nexrad_xarray.projection_y_coordinate.assign_attrs({'units': 'm'})
             
             return(nexrad_xarray)
         
@@ -217,15 +305,37 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
     elif (file_type.lower() == 'nc'):
         
         if (tracking_var.lower() == 'dbz'):
-            # Open the dataset
-            nexrad_xarray = xr.open_mfdataset(path_to_files, coords='all', concat_dim='time', combine='nested')
-        
-            # Add lat and lon coordinates to dataset
-            nexrad_xarray = nexrad_xarray.reflectivity.assign_coords(lat=nexrad_xarray.point_latitude,lon=nexrad_xarray.point_longitude)
             
+            # Read radar objects in and concat into one xarray datarray
+            # This is a stupid hacky fix because pyart is dumb
+            radar_objects = []
+            for file in np.sort(glob.glob(path_to_files)):
+                
+                # Ignore import warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    radar_objects.append(pyart.io.read_grid(file).to_xarray())
+            
+            
+            nexrad_xarray = xr.concat(radar_objects, dim='time').reflectivity
+            del radar_objects
+            
+            # Replace time dimension with minutes since first time and add other x y z coords
+            first_time = nexrad_xarray.time.values[0]
+            nexrad_xarray = nexrad_xarray.assign_coords(time=cftime.date2num(nexrad_xarray.time.values, f"minutes since {first_time}"),
+                                                        south_north = ('y', np.arange(nexrad_xarray.shape[2])), west_east = ('x', np.arange(nexrad_xarray.shape[2])),
+                                                        projection_x_coordinate = ('x', nexrad_xarray.x.values), projection_y_coordinate = ('y', nexrad_xarray.y.values),
+                                                        x = ('x',np.arange(nexrad_xarray.shape[2])), y = ('y', np.arange(nexrad_xarray.shape[2])),
+                                                        model_level_number = ('z', np.arange(nexrad_xarray.shape[1])))
+        
+        
+            # Adjust dimension names to be standards accepted by wrfcube
+            nexrad_xarray['time'] = nexrad_xarray.time.assign_attrs({'standard_name': 'time', 'long_name': f'minutes since {first_time}', 'units': f'minutes since {first_time}'})
             nexrad_xarray['z'] = nexrad_xarray.z.assign_attrs({'standard_name': 'altitude'})
             nexrad_xarray['lat'] = nexrad_xarray.lat.assign_attrs({'standard_name': 'latitude'})
             nexrad_xarray['lon'] = nexrad_xarray.lon.assign_attrs({'standard_name': 'longitude'})
+            nexrad_xarray['projection_x_coordinate'] = nexrad_xarray.projection_x_coordinate.assign_attrs({'units': 'm'})
+            nexrad_xarray['projection_y_coordinate'] = nexrad_xarray.projection_y_coordinate.assign_attrs({'units': 'm'})
             
             return(nexrad_xarray)
         
