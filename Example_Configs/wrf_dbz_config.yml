@@ -56,15 +56,25 @@ tobac:
 # OBSERVATION PARAMETERS: Only fill out for your selected observation type
 
 # NEXRAD
-nexrad_gridding:
-    # gridding_algo: 'map_gates_to_grid'
-    grid_shape: (40, 401, 401)
-    grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
-    # h_factor: 0.
-    # nb: 0.6
-    # bsp: 1.
-    # min_radius: 200.
+nexrad:
+    bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max]
+
+    gridding: # only if gridding is needed 
+        # gridding_algo: 'map_gates_to_grid'
+        grid_shape: (40, 401, 401)
+        grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
+        # h_factor: 0.
+        # nb: 0.6
+        # bsp: 1.
+        # min_radius: 200.
+    
     
 # GOES
 goes:
     bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max]
+    
+    
+# ANALYSIS PARAMETERS: Select which variables you would like to calculate or which suite of variables. 
+analysis_variables:
+    eth_15: True
+    eth_30: True

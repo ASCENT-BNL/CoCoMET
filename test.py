@@ -31,7 +31,7 @@ print('=====Finished WRF dbz Tracking=====')
 
 
 print('=====Starting NEXRAD dbz Tracking=====')
-#radar_cube,radar_xarray=CoMET.nexrad_load_netcdf_iris('/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v', 'ar2v', 'dbz', CONFIG, '/D3/data/thahn/NEXRAD/HAS012527906/grids/')
+# radar_cube,radar_xarray=CoMET.nexrad_load_netcdf_iris('/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v', 'ar2v', 'dbz', CONFIG, '/D3/data/thahn/NEXRAD/HAS012527906/grids/')
 radar_cube,radar_xarray=CoMET.nexrad_load_netcdf_iris('/D3/data/thahn/NEXRAD/HAS012527906/grids/*', 'nc', 'dbz', CONFIG)
 print("*////")
 radar_features = CoMET.nexrad_tobac_feature_id(radar_cube, 'IC', CONFIG)

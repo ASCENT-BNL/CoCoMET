@@ -46,7 +46,7 @@ def gen_and_save_nexrad_grid(path_to_files, save_location, tracking_var, CONFIG,
             radar = pyart.io.read_nexrad_archive(ff,include_fields='reflectivity')
         
             # Create radar grid using user-defined params
-            radar_grid = pyart.map.grid_from_radars(radar, **CONFIG['nexrad_gridding'])
+            radar_grid = pyart.map.grid_from_radars(radar, **CONFIG['nexrad']['gridding'])
             
             # Save radar grid to save_location as a netcdf file and delete radar and radar_grid objects to free memory
             pyart.io.write_grid(save_location + file_names[idx] + '_grid.nc', radar_grid, arm_alt_lat_lon_variables=True, write_point_x_y_z=True, write_point_lon_lat_alt=True)
@@ -77,7 +77,7 @@ def create_and_save_grid_single(file, save_location, tracking_var, CONFIG):
         radar = pyart.io.read_nexrad_archive(file,include_fields='reflectivity')
     
         # Create radar grid using user-defined params
-        radar_grid = pyart.map.grid_from_radars(radar, **CONFIG['nexrad_gridding'])
+        radar_grid = pyart.map.grid_from_radars(radar, **CONFIG['nexrad']['gridding'])
 
         # Save radar grid to save_location as a netcdf file and delete radar and radar_grid objects to free memory
         file_name = os.path.basename(file).split('.')[0]
@@ -162,7 +162,20 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             nexrad_xarray = xr.concat(radar_objects, dim='time').reflectivity
             del radar_objects
             
-            # TODO: Add subsetting of NEXRAD domain
+            
+            # Subset location of interest
+            if ('nexrad' in CONFIG):
+                
+                if ('bounds' in CONFIG['nexrad']):
+
+                    mask_lon = (nexrad_xarray.lon >= CONFIG['nexrad']['bounds'][0]) & (nexrad_xarray.lon <= CONFIG['nexrad']['bounds'][1])
+                    mask_lat = (nexrad_xarray.lat >= CONFIG['nexrad']['bounds'][2]) & (nexrad_xarray.lat <= CONFIG['nexrad']['bounds'][3])
+                    
+                    nexrad_xarray = nexrad_xarray.where(mask_lon & mask_lat, drop=True)
+            
+            else:
+                raise Exception('!=====CONFIG Missing "nexrad" Field=====!')
+                return
             
             # Replace time dimension with minutes since first time and add other x y z coords
             first_time = nexrad_xarray.time.values[0]
@@ -207,14 +220,29 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             nexrad_xarray = xr.concat(radar_objects, dim='time').reflectivity
             del radar_objects
             
-            # TODO: Add subsetting of NEXRAD domain
+
+            # Subset location of interest
+            if ('nexrad' in CONFIG):
+                
+                if ('bounds' in CONFIG['goes']):
+
+                    mask_lon = (nexrad_xarray.lon >= CONFIG['nexrad']['bounds'][0]) & (nexrad_xarray.lon <= CONFIG['nexrad']['bounds'][1])
+                    mask_lat = (nexrad_xarray.lat >= CONFIG['nexrad']['bounds'][2]) & (nexrad_xarray.lat <= CONFIG['nexrad']['bounds'][3])
+                    
+                    nexrad_xarray = nexrad_xarray.where(mask_lon & mask_lat, drop=True)
+            
+            else:
+                raise Exception('!=====CONFIG Missing "nexrad" Field=====!')
+                return
+            
+            # return (nexrad_xarray)
             
             # Replace time dimension with minutes since first time and add other x y z coords
             first_time = nexrad_xarray.time.values[0]
             nexrad_xarray = nexrad_xarray.assign_coords(time=cftime.date2num(nexrad_xarray.time.values, f"minutes since {first_time}"),
-                                                        south_north = ('y', np.arange(nexrad_xarray.shape[2])), west_east = ('x', np.arange(nexrad_xarray.shape[2])),
+                                                        south_north = ('y', np.arange(nexrad_xarray.shape[2])), west_east = ('x', np.arange(nexrad_xarray.shape[3])),
                                                         projection_x_coordinate = ('x', nexrad_xarray.x.values), projection_y_coordinate = ('y', nexrad_xarray.y.values),
-                                                        x = ('x',np.arange(nexrad_xarray.shape[2])), y = ('y', np.arange(nexrad_xarray.shape[2])),
+                                                        x = ('x',np.arange(nexrad_xarray.shape[3])), y = ('y', np.arange(nexrad_xarray.shape[2])),
                                                         model_level_number = ('z', np.arange(nexrad_xarray.shape[1])))
         
         
@@ -283,7 +311,21 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
             nexrad_xarray = xr.concat(radar_objects, dim='time').reflectivity
             del radar_objects
             
-            # TODO: Add subsetting of NEXRAD domain
+
+            # Subset location of interest
+            if ('nexrad' in CONFIG):
+                
+                if ('bounds' in CONFIG['goes']):
+
+                    mask_lon = (nexrad_xarray.lon >= CONFIG['nexrad']['bounds'][0]) & (nexrad_xarray.lon <= CONFIG['nexrad']['bounds'][1])
+                    mask_lat = (nexrad_xarray.lat >= CONFIG['nexrad']['bounds'][2]) & (nexrad_xarray.lat <= CONFIG['nexrad']['bounds'][3])
+                    
+                    nexrad_xarray = nexrad_xarray.where(mask_lon & mask_lat, drop=True)
+            
+            else:
+                raise Exception('!=====CONFIG Missing "nexrad" Field=====!')
+                return
+            
             
             # Replace time dimension with minutes since first time and add other x y z coords
             first_time = nexrad_xarray.time.values[0]
@@ -327,7 +369,21 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
             nexrad_xarray = xr.concat(radar_objects, dim='time').reflectivity
             del radar_objects
             
-            # TODO: Add subsetting of NEXRAD domain
+
+            # Subset location of interest
+            if ('nexrad' in CONFIG):
+                
+                if ('bounds' in CONFIG['goes']):
+
+                    mask_lon = (nexrad_xarray.lon >= CONFIG['nexrad']['bounds'][0]) & (nexrad_xarray.lon <= CONFIG['nexrad']['bounds'][1])
+                    mask_lat = (nexrad_xarray.lat >= CONFIG['nexrad']['bounds'][2]) & (nexrad_xarray.lat <= CONFIG['nexrad']['bounds'][3])
+                    
+                    nexrad_xarray = nexrad_xarray.where(mask_lon & mask_lat, drop=True)
+            
+            else:
+                raise Exception('!=====CONFIG Missing "nexrad" Field=====!')
+                return
+            
             
             # Replace time dimension with minutes since first time and add other x y z coords
             first_time = nexrad_xarray.time.values[0]
