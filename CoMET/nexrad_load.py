@@ -234,8 +234,7 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             else:
                 raise Exception('!=====CONFIG Missing "nexrad" Field=====!')
                 return
-            
-            # return (nexrad_xarray)
+
             
             # Replace time dimension with minutes since first time and add other x y z coords
             first_time = nexrad_xarray.time.values[0]

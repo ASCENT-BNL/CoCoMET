@@ -4,62 +4,76 @@
 # input types. 
 
 
-# SETUP VARIABLES: These determine input data types and locations
+# SETUP VARIABLES: These determine basic 
 verbose: True # Whether to use verbose output
 parallel_processing: True # [bool] Whether or not to use parallel processing for certain tasks
 max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None for unlimited
 
-model_type: "" # Current Options: ['WRF', 'RAMS']
-path_to_model: "" # Path to the model outputs (should use *, like "/home/wrfout/wrfout_d02_*")
+# Structered in this form:
+# Observation Type:
+#   path_to_data
+#   additional_observation_parameters
+# 
+#   tracker:
+#       tracker_params
+#
+#   analysis:
+#       analysis_variables
+wrf:
+    path_to_data: '/D3/data/thahn/wrf/wrfout/wrfout_d02*'
 
-observation_type: "" # Current Options: ['NEXRAD', 'GOES-Satellite']
-path_to_observation: "" # Path to the observation outputs (should use *, like "/home/wrfout/wrfout_d02_*")
+    tracking_type: 'IC'
 
+    feature_tracking_var: 'dbz'
+    segmentation_var: 'dbz'
 
-# TRACKING VARIABLES: These determine values for your tracker of choice
-model_tracker: "" # Current Options: ['tobac']
-model_tracking_type: "" # Current Options: ['IC', 'MCS', 'CP'] for Isolated convection, meso-scale convective systems, and cold pools, respectively
-model_tracking_variable: "" # Current Options: ['DBZ', 'TB', 'W'] for Radar reflectivity, brightness temperature, and updraft velocity, respectively
-model_tracking_suite: "" # Default set of parameters for various trackers. Current Options: ['none', 't_wrf', 't_rams']
-
-observation_tracker:  "" # Current Options: ['tobac']
-observation_tracking_type: "" # Current Options: ['IC', 'MCS', 'CP'] for Isolated convection, meso-scale convective systems, and cold pools, respectively
-observation_resolution: "" # Resolution of your input observations in meters
-observation_tracking_suite: "" # Default set of parameters for various trackers. Current Options: ['none', 't_nexrad', 't_goes']
-
-
-# SPECIFIC TRACKER PARAMETERS: Only fill out for your selected tracker
-# TOBAC PAAMETERS:
-# TODO: Change these to be tobac_model, and tobac_observation
-tobac:
-    feature_id:
-        threshold: [30, 40, 50, 60]
-        target: 'maximum'
-        position_threshold: 'weighted_diff'
-        sigma_threshold: 0.5
-        n_min_threshold: 4
+    tobac:
+        feature_id:
+            threshold: [30, 40, 50, 60]
+            target: 'maximum'
+            position_threshold: 'weighted_diff'
+            sigma_threshold: 0.5
+            n_min_threshold: 4
+        
+        linking: 
+            method_linking: 'predict'
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 1
+            v_max: 20
+        
+        segmentation_2d:
+            height: 2000 # m
+            method: 'watershed'
+            threshold: 15
+            
+        segmentation_3d:
+            method: 'watershed'
+            threshold: 15
     
-    linking: 
-        method_linking: 'predict'
-        adaptive_stop: 0.2
-        adaptive_step: 0.95
-        order: 1
-        subnetwork_size: 10
-        memory: 1
-        v_max: 20
-    
-    segmentation:
-        method: 'watershed'
-        threshold: 15
-    
+    analysis:
+        eth_15: True
+        eth_30: True
+        cell_area: True
+        cell_volume: True
 
 # OBSERVATION PARAMETERS: Only fill out for your selected observation type
 
 # NEXRAD
 nexrad:
+    path_to_data: '/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v'
+
+    feature_tracking_var: 'dbz'
+    segmentation_var: 'dbz'
+
     bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max]
 
+    tracking_type: 'IC'
+
     gridding: # only if gridding is needed 
+        gridding_save_path: '/D3/data/thahn/NEXRAD/HAS012527906/grids/'
         # gridding_algo: 'map_gates_to_grid'
         grid_shape: (40, 401, 401)
         grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
@@ -68,13 +82,58 @@ nexrad:
         # bsp: 1.
         # min_radius: 200.
         
+    feature_tracking_var: 'dbz'
+    segmentation_var: 'dbz'
+        
+    tobac:
+        feature_id:
+            threshold: [30, 40, 50, 60]
+            target: 'maximum'
+            position_threshold: 'weighted_diff'
+            sigma_threshold: 0.5
+            n_min_threshold: 4
+        
+        linking: 
+            method_linking: 'predict'
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 1
+            v_max: 20
+        
+        segmentation_2d:
+            height: 2000
+            method: 'watershed'
+            threshold: 15
+        
     
 # GOES
 goes:
+    path_to_data: '/D3/data/thahn/GOES/noaa-goes16/ABI-L2-CMIPC/2023/2023_07_11/*'
+
     bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max]
     
+    feature_tracking_var: 'tb'
+    segmentation_var: 'tb'
     
-# ANALYSIS PARAMETERS: Select which variables you would like to calculate or which suite of variables. 
-analysis_variables:
-    eth_15: True
-    eth_30: True
+    tobac:
+        feature_id:
+            threshold: [30, 40, 50, 60]
+            target: 'maximum'
+            position_threshold: 'weighted_diff'
+            sigma_threshold: 0.5
+            n_min_threshold: 4
+        
+        linking: 
+            method_linking: 'predict'
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 1
+            v_max: 20
+        
+        segmentation_2d:
+            method: 'watershed'
+            threshold: 15

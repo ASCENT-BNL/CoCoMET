@@ -32,7 +32,7 @@ def goes_tobac_feature_id(cube, tracking_type, CONFIG):
         dxy = tobac.get_spacings(cube, grid_spacing=res)[0]
         
         # Perform tobac feature identification and then convert to a geodataframe before returning
-        goes_radar_features = tobac.feature_detection.feature_detection_multithreshold(cube, dxy=dxy, **CONFIG['tobac']['feature_id'])
+        goes_radar_features = tobac.feature_detection.feature_detection_multithreshold(cube, dxy=dxy, **CONFIG['goes']['tobac']['feature_id'])
         
         if (type(goes_radar_features) == None):
             return None
@@ -82,7 +82,7 @@ def goes_tobac_linking(cube, tracking_type, radar_features, CONFIG):
         dt = np.nanmean(diffs) * 60
         
         # Do tracking then convert output dataframe to a geodataframe
-        goes_tracks = tobac.linking_trackpy(radar_features,cube,dt=dt,dxy=dxy,**CONFIG['tobac']['linking'])
+        goes_tracks = tobac.linking_trackpy(radar_features,cube,dt=dt,dxy=dxy,**CONFIG['goes']['tobac']['linking'])
         
         if (type(goes_tracks) == None):
             return None
@@ -129,7 +129,7 @@ def goes_tobac_segmentation(cube, tracking_type, radar_features, CONFIG):
         dxy = tobac.get_spacings(cube, grid_spacing=res)[0]
     
         # Perform the 2d segmentation at the height_index and return the segmented cube and new geodataframe
-        segment_cube, segment_features = tobac.segmentation_2D(radar_features, cube, dxy=dxy, **CONFIG['tobac']['segmentation'])
+        segment_cube, segment_features = tobac.segmentation_2D(radar_features, cube, dxy=dxy, **CONFIG['goes']['tobac']['segmentation_2d'])
             
         # Convert iris cube to xarray and return
         return ((xr.DataArray.from_iris(segment_cube), segment_features))

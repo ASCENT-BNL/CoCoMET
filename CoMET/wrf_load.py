@@ -46,7 +46,7 @@ Outputs:
     cube: iris cube containing either reflectivity or brightness temperature values
     wrf_netcdf: xarray dataset containing merged WRF data
 """
-def wrf_load_netcdf_iris(filepath, tracking_var):
+def wrf_load_netcdf_iris(filepath, tracking_var, CONFIG):
     import glob
     import numpy as np
     import xarray as xr
@@ -60,10 +60,10 @@ def wrf_load_netcdf_iris(filepath, tracking_var):
     wrf_netcdf = [Dataset(f) for f in file_names]
 
     wrf_xarray = xr.open_mfdataset(filepath, coords='all', concat_dim='Time', combine='nested')
-
+    
     if (tracking_var.lower() == 'dbz'):
         wrf_reflectivity = getvar(wrf_netcdf, 'dbz', timeidx=ALL_TIMES, method='cat', squeeze=False)
-        
+
         wrf_xarray['DBZ'] = wrf_reflectivity
         # Change projection to a string as some trackers do not work well with non-string objects
         wrf_xarray['DBZ'].attrs['projection']=str(wrf_xarray['DBZ'].attrs['projection'])
@@ -123,7 +123,7 @@ Inputs:
 Outputs:sudo snap install outlook-for-linux --edge
     wrf_netcdf: xarray dataset containing merged WRF data
 """
-def wrf_load_netcdf(filepath, tracking_var):
+def wrf_load_netcdf(filepath, tracking_var, CONFIG):
     import glob
     import numpy as np
     import xarray as xr
@@ -134,6 +134,7 @@ def wrf_load_netcdf(filepath, tracking_var):
     file_names = np.sort(glob.glob(filepath))
 
     wrf_xarray = xr.open_mfdataset(filepath, coords='all', concat_dim='Time', combine='nested')
+    
     
     # Does the same thing as the above function without forming the data into iris cubes. For use in future trackers and when tobac depreciates iris cubes.
     if (tracking_var.lower() == 'dbz'):
@@ -156,7 +157,8 @@ def wrf_load_netcdf(filepath, tracking_var):
         
         # Get updraft velocity at mass points
         wrf_wa = getvar(wrf_netcdf, 'wa', timeidx=ALL_TIMES, method='cat', squeeze=False)
-        
+
+
         wrf_xarray['WA'] = wrf_wa
         wrf_xarray['WA'].attrs['projection']=str(wrf_xarray['WA'].attrs['projection'])
         

@@ -8,7 +8,7 @@ Created on Mon Jun 10 14:44:52 2024
 
 
 """
-TODO: Write unit tests using small test dataset(s)? 
+TODO: Write proper unit tests
 """
 
 
@@ -16,9 +16,9 @@ TODO: Write unit tests using small test dataset(s)?
 import CoMET
 
 
-CONFIG = CoMET.CoMET_Load('./Example_Configs/wrf_dbz_config.yml')
+CONFIG = CoMET.CoMET_load('./Example_Configs/boilerplate.yml')
 print('=====Starting WRF dbz Tracking=====')
-wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris("/D3/data/thahn/wrf/wrfout/wrfout_d02*", 'dbz')
+wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris("/D3/data/thahn/wrf/wrfout/wrfout_d02*", 'dbz', CONFIG)
 print("*////")
 wrf_features = CoMET.wrf_tobac_feature_id(wrf_cube, 'IC', CONFIG)
 print("**///")
@@ -44,7 +44,7 @@ radar_segment_array_2d, radar_segment_pd_2d = CoMET.nexrad_tobac_segmentation(ra
 print('=====Finished NEXRAD dbz Tracking=====')
 
 
-CONFIG = CoMET.CoMET_Load('./Example_Configs/wrf_w_config.yml')
+CONFIG = CoMET.CoMET_load('./Example_Configs/wrf_w_config.yml')
 print('=====Starting WRF w Tracking=====')
 wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris("/D3/data/thahn/wrf/wrfout/wrfout_d02*", 'w')
 print("*////")
@@ -58,7 +58,7 @@ wrf_segment_array_2d, wrf_segment_pd_2d = CoMET.wrf_tobac_segmentation(wrf_cube,
 print('=====Finished WRF w Tracking=====')
 
 
-CONFIG = CoMET.CoMET_Load('./Example_Configs/wrf_tb_config.yml')
+CONFIG = CoMET.CoMET_load('./Example_Configs/wrf_tb_config.yml')
 print('=====Starting WRF tb Tracking=====')
 wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris("/D3/data/thahn/wrf/wrfout/wrfout_d02*", 'tb')
 print("*///")
