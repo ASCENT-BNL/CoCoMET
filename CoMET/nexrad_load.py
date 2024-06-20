@@ -162,7 +162,6 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             nexrad_xarray = xr.concat(radar_objects, dim='time').reflectivity
             del radar_objects
             
-            
             # Subset location of interest
             if ('nexrad' in CONFIG):
                 
@@ -177,12 +176,14 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
                 raise Exception('!=====CONFIG Missing "nexrad" Field=====!')
                 return
             
+            # return(nexrad_xarray)
+            
             # Replace time dimension with minutes since first time and add other x y z coords
             first_time = nexrad_xarray.time.values[0]
             nexrad_xarray = nexrad_xarray.assign_coords(time=cftime.date2num(nexrad_xarray.time.values, f"minutes since {first_time}"),
-                                                        south_north = ('y', np.arange(nexrad_xarray.shape[2])), west_east = ('x', np.arange(nexrad_xarray.shape[2])),
+                                                        south_north = ('y', np.arange(nexrad_xarray.shape[2])), west_east = ('x', np.arange(nexrad_xarray.shape[3])),
                                                         projection_x_coordinate = ('x', nexrad_xarray.x.values), projection_y_coordinate = ('y', nexrad_xarray.y.values),
-                                                        x = ('x',np.arange(nexrad_xarray.shape[2])), y = ('y', np.arange(nexrad_xarray.shape[2])),
+                                                        x = ('x',np.arange(nexrad_xarray.shape[3])), y = ('y', np.arange(nexrad_xarray.shape[2])),
                                                         model_level_number = ('z', np.arange(nexrad_xarray.shape[1])))
         
         

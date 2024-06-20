@@ -20,7 +20,7 @@ max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None 
 #   analysis:
 #       analysis_variables
 wrf:
-    path_to_data: '/D3/data/thahn/wrf/wrfout/wrfout_d02*'
+    path_to_data: '/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*'
 
     tracking_type: 'IC'
 
@@ -59,7 +59,6 @@ wrf:
         cell_area: True
         cell_volume: True
 
-# OBSERVATION PARAMETERS: Only fill out for your selected observation type
 
 # NEXRAD
 nexrad:
@@ -102,6 +101,10 @@ nexrad:
             memory: 1
             v_max: 20
         
+        segmentation_3d:
+            method: 'watershed'
+            threshold: 15
+        
         segmentation_2d:
             height: 2000
             method: 'watershed'
@@ -114,17 +117,19 @@ goes:
 
     bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max]
     
+    tracking_type: 'IC'
+    
     feature_tracking_var: 'tb'
     segmentation_var: 'tb'
     
     tobac:
         feature_id:
-            threshold: [30, 40, 50, 60]
-            target: 'maximum'
+            threshold: [250,225,200,175,150]
+            target: 'minimum'
             position_threshold: 'weighted_diff'
             sigma_threshold: 0.5
             n_min_threshold: 4
-        
+    
         linking: 
             method_linking: 'predict'
             adaptive_stop: 0.2
@@ -135,5 +140,6 @@ goes:
             v_max: 20
         
         segmentation_2d:
+            target: 'minimum'
             method: 'watershed'
-            threshold: 15
+            threshold: 250

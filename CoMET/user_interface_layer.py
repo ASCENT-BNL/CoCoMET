@@ -15,19 +15,28 @@ Created on Mon Jun 10 14:55:16 2024
 Inputs:
     path_to_config: Path to a config.yml file containing all details of the CoMET run. See boilerplate.yml for how the file should be setup
     manual_mode: [True, False] Whether CoMET should run all functions idenpendetly or should just return CONFIG for user to run functions independently 
+    CONFIG: Optional to just pass a config dict object instead of filepath
 """
-def CoMET_start(path_to_config, manual_mode=False):
-    # Load CONFIG
-    CONFIG = CoMET_load(path_to_config)
+def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
+    # Load CONFIG if not present
+    if (CONFIG is None):
+        CONFIG = CoMET_load(path_to_config)
     
     # if manual_mode = True, just return the loaded CONFIG
     if (manual_mode): return(CONFIG)
+    
+    # Create dictionary which holds all returnable info
+    user_return_dict = {}
     
     # Otherwise, go through defined setups and run them
     
     # if wrf is present in CONFIG, run the necessary wrf functions
     if ("wrf" in CONFIG):
         import wrf_load as wl
+        
+        # Add wrf section to return dict
+        if ("wrf" not in user_return_dict):
+            user_return_dict["wrf"] = {}
         
         wrf_tracking_cube, wrf_tracking_xarray = wl.wrf_load_netcdf_iris(CONFIG['wrf']['path_to_data'], CONFIG['wrf']['feature_tracking_var'], CONFIG)
         
@@ -80,8 +89,13 @@ def CoMET_start(path_to_config, manual_mode=False):
                 wrf_segmentation3d = wt.wrf_tobac_segmentation(wrf_segmentation_cube, CONFIG['wrf']['tracking_type'], wrf_features, '3d', CONFIG)
         
             # TODO: Figure out new way of returning data to user. Current way will return whichever option comes first and not run the others
-            # Return all products
-            return ( (wrf_features,wrf_tracks,wrf_segmentation2d,wrf_segmentation3d) )
+            # Add all products to return dict
+            user_return_dict["wrf"]["tobac"] = {
+                "feature_id": wrf_features,
+                "linking": wrf_tracks,
+                "segmentation_2d": wrf_segmentation2d,
+                "segmentation_3d": wrf_segmentation3d
+                }
         
         else:
             raise Exception("!=====No Tracker or Invalid Tracker Found in CONFIG=====!")
@@ -93,12 +107,16 @@ def CoMET_start(path_to_config, manual_mode=False):
     if ('nexrad' in CONFIG):
         import nexrad_load as nl
         
+        # Add nexrad section to return dict
+        if ("nexrad" not in user_return_dict):
+            user_return_dict["nexrad"] = {}
+        
         # determine if gridding is necessary or not
         if ("gridding" in CONFIG['nexrad']):
-            nexrad_tracking_cube, nexrad_tracking_xarray = nl.nexrad_load_netcdf_iris(CONFIG['wrf']['path_to_data'], 'ar2v', CONFIG['wrf']['feature_tracking_var'], CONFIG, CONFIG['nexrad']['gridding']['gridding_save_path'])
+            nexrad_tracking_cube, nexrad_tracking_xarray = nl.nexrad_load_netcdf_iris(CONFIG['nexrad']['path_to_data'], 'ar2v', CONFIG['nexrad']['feature_tracking_var'], CONFIG, CONFIG['nexrad']['gridding']['gridding_save_path'])
         
         else:
-            nexrad_tracking_cube, nexrad_tracking_xarray = nl.nexrad_load_netcdf_iris(CONFIG['wrf']['path_to_data'], 'nc', CONFIG['wrf']['feature_tracking_var'], CONFIG)
+            nexrad_tracking_cube, nexrad_tracking_xarray = nl.nexrad_load_netcdf_iris(CONFIG['nexrad']['path_to_data'], 'nc', CONFIG['nexrad']['feature_tracking_var'], CONFIG)
         
         
         # determine which tracker to use
@@ -141,8 +159,14 @@ def CoMET_start(path_to_config, manual_mode=False):
             if ("segmentation_3d" in CONFIG['nexrad']['tobac']):
                 nexrad_segmentation3d = nt.nexrad_tobac_segmentation(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], nexrad_features, '3d', CONFIG)
         
-            # Return all products
-            return ( (nexrad_features,nexrad_tracks,nexrad_segmentation2d,nexrad_segmentation3d) )
+
+            # Add all products to return dict
+            user_return_dict["nexrad"]["tobac"] = {
+                "feature_id": nexrad_features,
+                "linking": nexrad_tracks,
+                "segmentation_2d": nexrad_segmentation2d,
+                "segmentation_3d": nexrad_segmentation3d
+                }
         
         else:
             raise Exception("!=====No Tracker or Invalid Tracker Found in CONFIG=====!")
@@ -153,6 +177,10 @@ def CoMET_start(path_to_config, manual_mode=False):
     # Handle GOES data
     if ("goes" in CONFIG):
         import goes_load as gl
+        
+        # Add goes section to return dict
+        if ("goes" not in user_return_dict):
+            user_return_dict["goes"] = {}
         
         goes_tracking_cube, goes_tracking_xarray = gl.goes_load_netcdf_iris(CONFIG['goes']['path_to_data'], CONFIG['goes']['feature_tracking_var'], CONFIG)
         
@@ -176,13 +204,20 @@ def CoMET_start(path_to_config, manual_mode=False):
                 # TB is 2D from satellite so no height parameter necessary
                 goes_segmentation2d = gt.goes_tobac_segmentation(goes_tracking_cube, CONFIG['goes']['tracking_type'], goes_features, CONFIG)
         
-            # Return all products
-            return ( (goes_features,goes_tracks,goes_segmentation2d) )
+
+            # Add all products to return dict
+            user_return_dict["goes"]["tobac"] = {
+                "feature_id": goes_features,
+                "linking": goes_tracks,
+                "segmentation_2d": goes_segmentation2d
+                }
         
         else:
             raise Exception("!=====No Tracker or Invalid Tracker Found in CONFIG=====!")
             return
 
+    # return dict at end
+    return (user_return_dict)
 
 
 """
