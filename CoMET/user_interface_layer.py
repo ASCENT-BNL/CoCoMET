@@ -32,17 +32,17 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
     
     # if wrf is present in CONFIG, run the necessary wrf functions
     if ("wrf" in CONFIG):
-        import wrf_load as wl
+        from .wrf_load import wrf_load_netcdf_iris
         
         # Add wrf section to return dict
         if ("wrf" not in user_return_dict):
             user_return_dict["wrf"] = {}
         
-        wrf_tracking_cube, wrf_tracking_xarray = wl.wrf_load_netcdf_iris(CONFIG['wrf']['path_to_data'], CONFIG['wrf']['feature_tracking_var'], CONFIG)
+        wrf_tracking_cube, wrf_tracking_xarray = wrf_load_netcdf_iris(CONFIG['wrf']['path_to_data'], CONFIG['wrf']['feature_tracking_var'], CONFIG)
         
         # if tracking and segmentation variables are different, load seperately
         if (CONFIG['wrf']['feature_tracking_var'] != CONFIG['wrf']['segmentation_var']):
-            wrf_segmentation_cube, wrf_segmentation_xarray = wl.wrf_load_netcdf_iris(CONFIG['wrf']['path_to_data'], CONFIG['wrf']['segmentation_var'], CONFIG)
+            wrf_segmentation_cube, wrf_segmentation_xarray = wrf_load_netcdf_iris(CONFIG['wrf']['path_to_data'], CONFIG['wrf']['segmentation_var'], CONFIG)
         else:
             wrf_segmentation_cube = wrf_tracking_cube
             wrf_segmentation_xarray = wrf_tracking_xarray
@@ -50,7 +50,7 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
         
         # now determine which tracker to use
         if ("tobac" in CONFIG['wrf']):
-            import wrf_tobac as wt
+            from .wrf_tobac import find_nearest, wrf_tobac_feature_id, wrf_tobac_linking, wrf_tobac_segmentation
             
             wrf_features = None
             wrf_tracks = None
@@ -64,31 +64,30 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
                 if ("height" in CONFIG['wrf']['tobac']['feature_id']):
                     
                     # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
-                    height_index = wt.find_nearest(wrf_tracking_cube.coord('altitude').points, CONFIG['wrf']['tobac']['feature_id']['height'])
+                    height_index = find_nearest(wrf_tracking_cube.coord('altitude').points, CONFIG['wrf']['tobac']['feature_id']['height'])
                     
                     # Delete height before passing to tobac
                     del CONFIG['wrf']['tobac']['feature_id']['height']
                     
                     temp_cube = wrf_tracking_cube[:,height_index]
-                    wrf_features = wt.wrf_tobac_feature_id(temp_cube, CONFIG['wrf']['tracking_type'], CONFIG)
+                    wrf_features = wrf_tobac_feature_id(temp_cube, CONFIG['wrf']['tracking_type'], CONFIG)
                     
                 else:
-                    wrf_features = wt.wrf_tobac_feature_id(wrf_tracking_cube, CONFIG['wrf']['tracking_type'], CONFIG)
+                    wrf_features = wrf_tobac_feature_id(wrf_tracking_cube, CONFIG['wrf']['tracking_type'], CONFIG)
             
             if ("linking" in CONFIG['wrf']['tobac']):
-                wrf_tracks = wt.wrf_tobac_linking(wrf_tracking_cube, CONFIG['wrf']['tracking_type'], wrf_features, CONFIG)
+                wrf_tracks = wrf_tobac_linking(wrf_tracking_cube, CONFIG['wrf']['tracking_type'], wrf_features, CONFIG)
             
             if ("segmentation_2d" in CONFIG['wrf']['tobac']):
                 # remove height from CONFIG before passing to tobac
                 ht = CONFIG['wrf']['tobac']['segmentation_2d']['height']
                 del CONFIG['wrf']['tobac']['segmentation_2d']['height']
                 
-                wrf_segmentation2d = wt.wrf_tobac_segmentation(wrf_segmentation_cube, CONFIG['wrf']['tracking_type'], wrf_features, '2d', CONFIG, ht)
+                wrf_segmentation2d = wrf_tobac_segmentation(wrf_segmentation_cube, CONFIG['wrf']['tracking_type'], wrf_features, '2d', CONFIG, ht)
         
             if ("segmentation_3d" in CONFIG['wrf']['tobac']):
-                wrf_segmentation3d = wt.wrf_tobac_segmentation(wrf_segmentation_cube, CONFIG['wrf']['tracking_type'], wrf_features, '3d', CONFIG)
+                wrf_segmentation3d = wrf_tobac_segmentation(wrf_segmentation_cube, CONFIG['wrf']['tracking_type'], wrf_features, '3d', CONFIG)
         
-            # TODO: Figure out new way of returning data to user. Current way will return whichever option comes first and not run the others
             # Add all products to return dict
             user_return_dict["wrf"]["tobac"] = {
                 "feature_id": wrf_features,
@@ -105,7 +104,7 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
     
     # Handle NEXRAD data
     if ('nexrad' in CONFIG):
-        import nexrad_load as nl
+        from .nexrad_load import nexrad_load_netcdf_iris
         
         # Add nexrad section to return dict
         if ("nexrad" not in user_return_dict):
@@ -113,15 +112,15 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
         
         # determine if gridding is necessary or not
         if ("gridding" in CONFIG['nexrad']):
-            nexrad_tracking_cube, nexrad_tracking_xarray = nl.nexrad_load_netcdf_iris(CONFIG['nexrad']['path_to_data'], 'ar2v', CONFIG['nexrad']['feature_tracking_var'], CONFIG, CONFIG['nexrad']['gridding']['gridding_save_path'])
+            nexrad_tracking_cube, nexrad_tracking_xarray = nexrad_load_netcdf_iris(CONFIG['nexrad']['path_to_data'], 'ar2v', CONFIG['nexrad']['feature_tracking_var'], CONFIG, CONFIG['nexrad']['gridding']['gridding_save_path'])
         
         else:
-            nexrad_tracking_cube, nexrad_tracking_xarray = nl.nexrad_load_netcdf_iris(CONFIG['nexrad']['path_to_data'], 'nc', CONFIG['nexrad']['feature_tracking_var'], CONFIG)
+            nexrad_tracking_cube, nexrad_tracking_xarray = nexrad_load_netcdf_iris(CONFIG['nexrad']['path_to_data'], 'nc', CONFIG['nexrad']['feature_tracking_var'], CONFIG)
         
         
         # determine which tracker to use
         if ("tobac" in CONFIG['nexrad']):
-            import nexrad_tobac as nt
+            from .nexrad_tobac import find_nearest, nexrad_tobac_feature_id, nexrad_tobac_linking, nexrad_tobac_segmentation
             
             nexrad_features = None
             nexrad_tracks = None
@@ -135,29 +134,29 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
                 if ("height" in CONFIG['nexrad']['tobac']['feature_id']):
                     
                     # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
-                    height_index = nt.find_nearest(nexrad_tracking_cube.coord('altitude').points, CONFIG['nexrad']['tobac']['feature_id']['height'])
+                    height_index = find_nearest(nexrad_tracking_cube.coord('altitude').points, CONFIG['nexrad']['tobac']['feature_id']['height'])
                     
                     # Delete height before passing to tobac
                     del CONFIG['nexrad']['tobac']['feature_id']['height']
                     
                     temp_cube = nexrad_tracking_cube[:,height_index]
-                    nexrad_features = nt.nexrad_tobac_feature_id(temp_cube, CONFIG['nexrad']['tracking_type'], CONFIG)
+                    nexrad_features = nexrad_tobac_feature_id(temp_cube, CONFIG['nexrad']['tracking_type'], CONFIG)
                     
                 else:
-                    nexrad_features = nt.nexrad_tobac_feature_id(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], CONFIG)
+                    nexrad_features = nexrad_tobac_feature_id(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], CONFIG)
             
             if ("linking" in CONFIG['nexrad']['tobac']):
-                nexrad_tracks = nt.nexrad_tobac_linking(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], nexrad_features, CONFIG)
+                nexrad_tracks = nexrad_tobac_linking(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], nexrad_features, CONFIG)
             
             if ("segmentation_2d" in CONFIG['nexrad']['tobac']):
                 # remove height from CONFIG before passing to tobac
                 ht = CONFIG['nexrad']['tobac']['segmentation_2d']['height']
                 del CONFIG['nexrad']['tobac']['segmentation_2d']['height']
                 
-                nexrad_segmentation2d = nt.nexrad_tobac_segmentation(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], nexrad_features, '2d', CONFIG, ht)
+                nexrad_segmentation2d = nexrad_tobac_segmentation(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], nexrad_features, '2d', CONFIG, ht)
         
             if ("segmentation_3d" in CONFIG['nexrad']['tobac']):
-                nexrad_segmentation3d = nt.nexrad_tobac_segmentation(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], nexrad_features, '3d', CONFIG)
+                nexrad_segmentation3d = nexrad_tobac_segmentation(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], nexrad_features, '3d', CONFIG)
         
 
             # Add all products to return dict
@@ -176,17 +175,17 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
     
     # Handle GOES data
     if ("goes" in CONFIG):
-        import goes_load as gl
+        from .goes_load import goes_load_netcdf_iris
         
         # Add goes section to return dict
         if ("goes" not in user_return_dict):
             user_return_dict["goes"] = {}
         
-        goes_tracking_cube, goes_tracking_xarray = gl.goes_load_netcdf_iris(CONFIG['goes']['path_to_data'], CONFIG['goes']['feature_tracking_var'], CONFIG)
+        goes_tracking_cube, goes_tracking_xarray = goes_load_netcdf_iris(CONFIG['goes']['path_to_data'], CONFIG['goes']['feature_tracking_var'], CONFIG)
         
         # determine which tracker to use
         if ("tobac" in CONFIG['goes']):
-            import goes_tobac as gt
+            from .goes_tobac import goes_tobac_feature_id, goes_tobac_linking, goes_tobac_segmentation
         
             goes_features = None
             goes_tracks = None
@@ -195,14 +194,14 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
             
             # Perform all cell tracking, id, and segmentation steps. Then return results as tuple
             if ("feature_id" in CONFIG['goes']['tobac']):
-                goes_features = gt.goes_tobac_feature_id(goes_tracking_cube, CONFIG['goes']['tracking_type'], CONFIG)
+                goes_features = goes_tobac_feature_id(goes_tracking_cube, CONFIG['goes']['tracking_type'], CONFIG)
             
             if ("linking" in CONFIG['goes']['tobac']):
-                goes_tracks = gt.goes_tobac_linking(goes_tracking_cube, CONFIG['goes']['tracking_type'], goes_features, CONFIG)
+                goes_tracks = goes_tobac_linking(goes_tracking_cube, CONFIG['goes']['tracking_type'], goes_features, CONFIG)
             
             if ("segmentation_2d" in CONFIG['goes']['tobac']):
                 # TB is 2D from satellite so no height parameter necessary
-                goes_segmentation2d = gt.goes_tobac_segmentation(goes_tracking_cube, CONFIG['goes']['tracking_type'], goes_features, CONFIG)
+                goes_segmentation2d = goes_tobac_segmentation(goes_tracking_cube, CONFIG['goes']['tracking_type'], goes_features, CONFIG)
         
 
             # Add all products to return dict
