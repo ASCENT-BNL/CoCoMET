@@ -34,3 +34,12 @@ wrf:
             position_threshold: 'weighted_diff'
             sigma_threshold: 0.5
             n_min_threshold: 4
+            
+        linking: 
+            method_linking: 'predict'
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 1
+            v_max: 20

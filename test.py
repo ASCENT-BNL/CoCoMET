@@ -32,6 +32,16 @@ wrf_CONFIG_dbz = {
                 'position_threshold': 'weighted_diff',
                 'sigma_threshold': 0.5,
                 'n_min_threshold': 4
+            },
+            
+            'linking': { 
+                'method_linking': 'predict',
+                'adaptive_stop': 0.2,
+                'adaptive_step': 0.95,
+                'order': 1,
+                'subnetwork_size': 10,
+                'memory': 1,
+                'v_max': 20
             }
         }
         
@@ -56,20 +66,20 @@ class Test_User_Interface_Layer(unittest.TestCase):
         self.assertEqual(type(CONFIG), dict, "Should return dictionary object")
         
     
-
+# Test for WRF input combined with tobac tracking
 class Test_WRF_tobac(unittest.TestCase):
     
     CONFIG_dbz = None
-    # CONFIG_w = None
-    # CONFIG_tb = None
+    CONFIG_w = None
+    CONFIG_tb = None
     
     wrf_cube_dbz = None
-    # wrf_cube_w = None
-    # wrf_cube_tb = None
+    wrf_cube_w = None
+    wrf_cube_tb = None
     
     wrf_features_dbz = None
-    # wrf_features_w = None
-    # wrf_features_tb = None
+    wrf_features_w = None
+    wrf_features_tb = None
     
     # Test the loading of the netcdf and iris for reflectivity
     def test_wrf_load_netcdf_iris_dbz(self):
@@ -258,8 +268,53 @@ class Test_WRF_tobac(unittest.TestCase):
         self.assertTrue(np.all(wrf_features.longitude!=0))
         self.assertTrue(np.all(wrf_features.latitude!=0))
 
+
+    # Test tobac linking for reflectivity
+    def test_wrf_tobac_linking_dbz(self):
+        import geopandas
+        import numpy as np
+        
+        wrf_tracks = CoMET.wrf_tobac_linking(self.__class__.wrf_cube_dbz, 'IC', self.__class__.wrf_features_dbz, self.__class__.CONFIG_dbz)
+        
+        self.assertTupleEqual(wrf_tracks.shape, (1516, 23))
+        self.assertEqual(type(wrf_tracks), geopandas.geodataframe.GeoDataFrame)
+        self.assertTrue(np.all(wrf_tracks.longitude!=0))
+        self.assertTrue(np.all(wrf_tracks.latitude!=0))
+        
+    
+    # Test tobac linking for updrafts
+    def test_wrf_tobac_linking_w(self):
+        import geopandas
+        import numpy as np
+        
+        wrf_tracks = CoMET.wrf_tobac_linking(self.__class__.wrf_cube_w, 'IC', self.__class__.wrf_features_w, self.__class__.CONFIG_w)
+        
+        self.assertTupleEqual(wrf_tracks.shape, (437, 23))
+        self.assertEqual(type(wrf_tracks), geopandas.geodataframe.GeoDataFrame)
+        self.assertTrue(np.all(wrf_tracks.longitude!=0))
+        self.assertTrue(np.all(wrf_tracks.latitude!=0))
+        
+    
+    # Test tobac linking for brightness temperature
+    def test_wrf_tobac_linking_tb(self):
+        import geopandas
+        import numpy as np
+        
+        wrf_tracks = CoMET.wrf_tobac_linking(self.__class__.wrf_cube_tb, 'IC', self.__class__.wrf_features_tb, self.__class__.CONFIG_tb)
+        
+        self.assertTupleEqual(wrf_tracks.shape, (475, 20))
+        self.assertEqual(type(wrf_tracks), geopandas.geodataframe.GeoDataFrame)
+        self.assertTrue(np.all(wrf_tracks.longitude!=0))
+        self.assertTrue(np.all(wrf_tracks.latitude!=0))
+        
+        
 if __name__ == '__main__':
     unittest.main()
+    
+    
+    
+    
+
 # CONFIG = CoMET.CoMET_load('./Example_Configs/boilerplate.yml')
 # print('=====Starting WRF dbz Tracking=====')
 # wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris("/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*", 'dbz', CONFIG)

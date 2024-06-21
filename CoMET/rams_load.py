@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun 20 15:34:29 2024
+Created on Fri Jun 21 18:01:16 2024
 
 @author: thahn
 """
 
 # =============================================================================
-# TODO: Build This Up
+# TODO Implement iris cube and xarray reading for RAMS model data
 # =============================================================================
