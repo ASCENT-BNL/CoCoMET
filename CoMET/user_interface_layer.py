@@ -47,6 +47,13 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
             wrf_segmentation_cube = wrf_tracking_cube
             wrf_segmentation_xarray = wrf_tracking_xarray
         
+        # Add xarrays and cubes to return dict
+        user_return_dict["wrf"] = {
+            "tracking_xarray": wrf_tracking_xarray,
+            "tracking_cube": wrf_tracking_cube,
+            "segmentation_xarray": wrf_segmentation_xarray,
+            "segmentation_cube": wrf_segmentation_cube
+        }
         
         # now determine which tracker to use
         if ("tobac" in CONFIG['wrf']):
@@ -57,7 +64,7 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
             wrf_segmentation2d = None
             wrf_segmentation3d = None
             
-            # Perform all cell tracking, id, and segmentation steps. Then return results as tuple
+            # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
             if ("feature_id" in CONFIG['wrf']['tobac']):
                 
                 # If height present, do 2D tracking
@@ -101,6 +108,13 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
             return
     
     
+        # Convert tracking outputs to proper outputs
+        # First create analysis field in output dictionary
+        user_return_dict["wrf"]["analysis"] = {}
+        
+        # Determine which tracker(s) are used and convert their output to the unified data analysis format (CoMET-UDAF)
+        
+    
     
     # Handle NEXRAD data
     if ('nexrad' in CONFIG):
@@ -117,6 +131,14 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
         else:
             nexrad_tracking_cube, nexrad_tracking_xarray = nexrad_load_netcdf_iris(CONFIG['nexrad']['path_to_data'], 'nc', CONFIG['nexrad']['feature_tracking_var'], CONFIG)
         
+        # Add xarrays and cubes to return dict
+        user_return_dict["nexrad"] = {
+            "tracking_xarray": nexrad_tracking_xarray,
+            "tracking_cube": nexrad_tracking_cube,
+            "segmentation_xarray": nexrad_tracking_xarray,
+            "segmentation_cube": nexrad_tracking_cube
+        }
+        
         
         # determine which tracker to use
         if ("tobac" in CONFIG['nexrad']):
@@ -127,7 +149,7 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
             nexrad_segmentation2d = None
             nexrad_segmentation3d = None
             
-            # Perform all cell tracking, id, and segmentation steps. Then return results as tuple
+            # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
             if ("feature_id" in CONFIG['nexrad']['tobac']):
                 
                 # If height present, do 2D tracking
@@ -151,7 +173,7 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
             if ("segmentation_2d" in CONFIG['nexrad']['tobac']):
                 # remove height from CONFIG before passing to tobac
                 ht = CONFIG['nexrad']['tobac']['segmentation_2d']['height']
-                del CONFIG['nexrad']['tobac']['segmentation_2d']['height']
+                del CONFIG['nexrad']['tobac']['segmentatio. If yes, return object with all valuesn_2d']['height']
                 
                 nexrad_segmentation2d = nexrad_tobac_segmentation(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], nexrad_features, '2d', CONFIG, ht)
         
@@ -172,6 +194,9 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
             return
     
     
+        # Convert tracking outputs to proper outputs
+        
+    
     
     # Handle GOES data
     if ("goes" in CONFIG):
@@ -183,6 +208,14 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
         
         goes_tracking_cube, goes_tracking_xarray = goes_load_netcdf_iris(CONFIG['goes']['path_to_data'], CONFIG['goes']['feature_tracking_var'], CONFIG)
         
+        # Add xarrays and cubes to return dict
+        user_return_dict["goes"] = {
+            "tracking_xarray": goes_tracking_xarray,
+            "tracking_cube": goes_tracking_cube,
+            "segmentation_xarray": goes_tracking_xarray,
+            "segmentation_cube": goes_tracking_cube
+        }
+        
         # determine which tracker to use
         if ("tobac" in CONFIG['goes']):
             from .goes_tobac import goes_tobac_feature_id, goes_tobac_linking, goes_tobac_segmentation
@@ -192,7 +225,7 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
             goes_segmentation2d = None
             
             
-            # Perform all cell tracking, id, and segmentation steps. Then return results as tuple
+            # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
             if ("feature_id" in CONFIG['goes']['tobac']):
                 goes_features = goes_tobac_feature_id(goes_tracking_cube, CONFIG['goes']['tracking_type'], CONFIG)
             
@@ -215,7 +248,8 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
             raise Exception("!=====No Tracker or Invalid Tracker Found in CONFIG=====!")
             return
 
-    # return dict at end
+
+    # Return dict at end
     return (user_return_dict)
 
 
