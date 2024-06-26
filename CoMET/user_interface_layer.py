@@ -10,6 +10,7 @@ Created on Mon Jun 10 14:55:16 2024
 # This is the interface layer between all of CoMET's backend functionality and the user. A sort of parser for a configuration input file. 
 # =============================================================================
 # TODO: Create CoMET-UDAF Specification for return object and hence for the analysis object
+# TODO: Update CoMET_start to work parallelized, spawning different processes to start different ascpects
 
 """
 Inputs:
@@ -128,11 +129,7 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
         else:
             raise Exception("!=====No Tracker or Invalid Tracker Found in CONFIG=====!")
             return
-    
-    
-        # Convert tracking outputs to proper outputs
-        # First create analysis field in output dictionary
-        user_return_dict["wrf"]["analysis"] = {}
+        
     
     
     # Handle NEXRAD data
@@ -349,3 +346,10 @@ def CoMET_load(path_to_config):
     
     return(CONFIG)
         
+
+
+
+"""
+Inputs:
+    CONFIG
+"""

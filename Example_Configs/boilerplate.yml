@@ -3,6 +3,8 @@
 # variables OR you can use a default suite of paramateres setup for different model and observation
 # input types. 
 
+# TODO: Add CONFIG setup to CoMET-UDAF specification.
+
 
 # SETUP VARIABLES: These determine basic CoMET functionality
 verbose: True # Whether to use verbose output

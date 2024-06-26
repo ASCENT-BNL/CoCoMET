@@ -156,7 +156,7 @@ def segmentation_to_UDAF(segmentation, UDAF_tracks, tracker):
         from copy import deepcopy
         
         feature_segmentation = (segmentation - 1).rename("Feature_Segmentation")    
-        cell_segmentation = (deepcopy(feature_segmentation) - 1).rename("Cell_Segmentation")
+        cell_segmentation = deepcopy(feature_segmentation).rename("Cell_Segmentation")
         
         # Loop over tracks, replacing feature_id values with cell_id values in the cell_segmenation DataArray
         for frame in UDAF_tracks.groupby("frame"):
@@ -192,9 +192,17 @@ def segmentation_to_UDAF(segmentation, UDAF_tracks, tracker):
             
             # Concat into one dataset and remove superflous coordinates
             return_ds = xr.combine_by_coords([feature_segmentation,cell_segmentation])
+
+            # Check for GOES and rename accordingly
+            if ("sensor_band_bit_depth" in segmentation.attrs):
+                
+                # Rename t to time and rename x and y values to south_north and west_east, respectively. Rename lat and lon to latitude and longitude
+                return_ds = return_ds.assign_coords(time = ("t", return_ds.t.values)).swap_dims({"t": "time"}).drop_vars(["t"])
+                return_ds = return_ds.swap_dims({"y": "south_north", "x": "west_east"}).rename({"lat": "latitude", "lon": "longitude"})
+             
             return_ds = return_ds.drop_vars(["x","y"])
             
-            return(return_ds)
+            return(return_ds[["time","south_north","west_east","Feature_Segmentation","Cell_Segmentation"]])
             
     
     else:
