@@ -90,6 +90,9 @@ def goes_load_netcdf_iris(path_to_files, tracking_var, CONFIG):
         # Get GOES spatial resolution
         spacial_res = goes_xarray.spatial_resolution
         
+        # Convert x and y projections to x and y projection in meters according to http://meteothink.org/examples/meteoinfolab/satellite/geos-16.html
+        sat_height = goes_xarray.goes_imager_projection.attrs["perspective_point_height"]
+        
         # Subset location of interest
         if ('goes' in CONFIG):
             
@@ -106,11 +109,12 @@ def goes_load_netcdf_iris(path_to_files, tracking_var, CONFIG):
         else:
             raise Exception('!=====CONFIG Missing "goes" Field=====!')
             return
-        
+                
         
         # Replace time dimension with minutes since first time and add other x y z coords
         first_time = goes_xarray.t.values[0]
         goes_xarray = goes_xarray.assign_coords(t=(goes_xarray.t.values-first_time)/np.timedelta64(1, 'm'),
+                                                    projection_x_coordinate = ('x', goes_xarray.x.values * sat_height), projection_y_coordinate = ('y', goes_xarray.y.values * sat_height),
                                                     south_north = ('y', np.arange(goes_xarray.shape[1])), west_east = ('x', np.arange(goes_xarray.shape[2])),
                                                     x = ('x',np.arange(goes_xarray.shape[2])), y = ('y', np.arange(goes_xarray.shape[1])),
                                                     )
@@ -126,6 +130,8 @@ def goes_load_netcdf_iris(path_to_files, tracking_var, CONFIG):
         goes_xarray['t'] = goes_xarray.t.assign_attrs({'standard_name': 'time', 'long_name': f'minutes since {first_time}', 'units': f'minutes since {first_time}'})
         goes_xarray['lat'] = goes_xarray.lat.assign_attrs({'standard_name': 'latitude'})
         goes_xarray['lon'] = goes_xarray.lon.assign_attrs({'standard_name': 'longitude'})
+        goes_xarray['projection_x_coordinate'] = goes_xarray.projection_x_coordinate.assign_attrs({'units': 'm'})
+        goes_xarray['projection_y_coordinate'] = goes_xarray.projection_y_coordinate.assign_attrs({'units': 'm'})
         
         return ((goes_xarray.to_iris(), goes_xarray))
     
@@ -163,6 +169,9 @@ def goes_load_netcdf(path_to_files, tracking_var, CONFIG):
         # Get GOES spatial resolution
         spacial_res = goes_xarray.spatial_resolution
         
+        # Convert x and y projections to x and y projection in meters according to http://meteothink.org/examples/meteoinfolab/satellite/geos-16.html
+        sat_height = goes_xarray.goes_imager_projection.attrs["perspective_point_height"]
+        
         # Subset location of interest
         if ('goes' in CONFIG):
             
@@ -184,6 +193,7 @@ def goes_load_netcdf(path_to_files, tracking_var, CONFIG):
         # Replace time dimension with minutes since first time and add other x y z coords
         first_time = goes_xarray.t.values[0]
         goes_xarray = goes_xarray.assign_coords(t=(goes_xarray.t.values-first_time)/np.timedelta64(1, 'm'),
+                                                    projection_x_coordinate = ('x', goes_xarray.x.values * sat_height), projection_y_coordinate = ('y', goes_xarray.y.values * sat_height),
                                                     south_north = ('y', np.arange(goes_xarray.shape[1])), west_east = ('x', np.arange(goes_xarray.shape[2])),
                                                     x = ('x',np.arange(goes_xarray.shape[2])), y = ('y', np.arange(goes_xarray.shape[1])))
     
@@ -197,6 +207,8 @@ def goes_load_netcdf(path_to_files, tracking_var, CONFIG):
         goes_xarray['t'] = goes_xarray.t.assign_attrs({'standard_name': 'time', 'long_name': f'minutes since {first_time}', 'units': f'minutes since {first_time}'})
         goes_xarray['lat'] = goes_xarray.lat.assign_attrs({'standard_name': 'latitude'})
         goes_xarray['lon'] = goes_xarray.lon.assign_attrs({'standard_name': 'longitude'})
+        goes_xarray['projection_x_coordinate'] = goes_xarray.projection_x_coordinate.assign_attrs({'units': 'm'})
+        goes_xarray['projection_y_coordinate'] = goes_xarray.projection_y_coordinate.assign_attrs({'units': 'm'})
         
         return (goes_xarray)
     

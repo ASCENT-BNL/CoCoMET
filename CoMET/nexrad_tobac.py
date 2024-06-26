@@ -35,6 +35,9 @@ def nexrad_tobac_feature_id(cube, tracking_type, CONFIG):
     import geopandas as gpd
     
     if (tracking_type.lower() == 'ic' or tracking_type.lower() == 'mcs'):
+        
+        if ("height" in CONFIG['nexrad']['tobac']['feature_id']): del CONFIG['nexrad']['tobac']['feature_id']['height']
+        
         # Get horozontal spacings
         dxy = tobac.get_spacings(cube)[0]
         
@@ -133,6 +136,8 @@ def nexrad_tobac_segmentation(cube, tracking_type, radar_features, segmentation_
     
         # 2D and 3D segmentation have different requirements so they are split up here
         if (segmentation_type.lower() == '2d'):
+            
+            if ("height" in CONFIG['nexrad']['tobac']['segmentation_2d']): del CONFIG['nexrad']['tobac']['segmentation_2d']['height']
             
             # Ensure segmentation_height is a proper number before running
             if (segmentation_height == None or type(segmentation_height) == str or type(segmentation_height) == bool):

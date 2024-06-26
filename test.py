@@ -42,7 +42,13 @@ wrf_CONFIG_dbz = {
                 'subnetwork_size': 10,
                 'memory': 1,
                 'v_max': 20
+            },
+            
+            "segmentation_3d": {
+                "method": 'watershed',
+                "threshold": 15
             }
+            
         }
         
     }

@@ -33,6 +33,9 @@ def wrf_tobac_feature_id(cube, tracking_type, CONFIG):
     import geopandas as gpd
     
     if (tracking_type.lower() == 'ic' or tracking_type.lower() == 'mcs'):
+        
+        if ("height" in CONFIG['wrf']['tobac']['feature_id']): del CONFIG['wrf']['tobac']['feature_id']['height']
+        
         # Get horozontal spacings
         dxy = tobac.get_spacings(cube)[0]
         
@@ -124,6 +127,8 @@ def wrf_tobac_segmentation(cube, tracking_type, radar_features, segmentation_typ
     
         # 2D and 3D segmentation have different requirements so they are split up here
         if (segmentation_type.lower() == '2d'):
+            
+            if ("height" in CONFIG['wrf']['tobac']['segmentation_2d']): del CONFIG['wrf']['tobac']['segmentation_2d']['height']
             
             # If tracking var is tb, bypass height
             if (cube.name().lower() == 'tb'):

@@ -9,7 +9,7 @@ Created on Mon Jun 10 14:55:16 2024
 # =============================================================================
 # This is the interface layer between all of CoMET's backend functionality and the user. A sort of parser for a configuration input file. 
 # =============================================================================
-
+# TODO: Create CoMET-UDAF Specification for return object and hence for the analysis object
 
 """
 Inputs:
@@ -18,6 +18,8 @@ Inputs:
     CONFIG: Optional to just pass a config dict object instead of filepath
 """
 def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
+    from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
+    
     # Load CONFIG if not present
     if (CONFIG is None):
         CONFIG = CoMET_load(path_to_config)
@@ -34,16 +36,17 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
     if ("wrf" in CONFIG):
         from .wrf_load import wrf_load_netcdf_iris
         
-        # Add wrf section to return dict
-        if ("wrf" not in user_return_dict):
-            user_return_dict["wrf"] = {}
+        if (CONFIG['verbose']): print("=====Loading WRF Data=====")
         
         wrf_tracking_cube, wrf_tracking_xarray = wrf_load_netcdf_iris(CONFIG['wrf']['path_to_data'], CONFIG['wrf']['feature_tracking_var'], CONFIG)
         
         # if tracking and segmentation variables are different, load seperately
         if (CONFIG['wrf']['feature_tracking_var'] != CONFIG['wrf']['segmentation_var']):
+            
             wrf_segmentation_cube, wrf_segmentation_xarray = wrf_load_netcdf_iris(CONFIG['wrf']['path_to_data'], CONFIG['wrf']['segmentation_var'], CONFIG)
+        
         else:
+        
             wrf_segmentation_cube = wrf_tracking_cube
             wrf_segmentation_xarray = wrf_tracking_xarray
         
@@ -67,6 +70,8 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
             # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
             if ("feature_id" in CONFIG['wrf']['tobac']):
                 
+                if (CONFIG['verbose']): print("=====Starting WRF tobac Feature ID=====")
+                
                 # If height present, do 2D tracking
                 if ("height" in CONFIG['wrf']['tobac']['feature_id']):
                     
@@ -80,12 +85,19 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
                     wrf_features = wrf_tobac_feature_id(temp_cube, CONFIG['wrf']['tracking_type'], CONFIG)
                     
                 else:
+                    
                     wrf_features = wrf_tobac_feature_id(wrf_tracking_cube, CONFIG['wrf']['tracking_type'], CONFIG)
             
             if ("linking" in CONFIG['wrf']['tobac']):
+                
+                if (CONFIG['verbose']): print("=====Starting WRF tobac Feature Linking=====")
+                
                 wrf_tracks = wrf_tobac_linking(wrf_tracking_cube, CONFIG['wrf']['tracking_type'], wrf_features, CONFIG)
             
             if ("segmentation_2d" in CONFIG['wrf']['tobac']):
+                
+                if (CONFIG['verbose']): print("=====Starting WRF tobac 2D Segmentation=====")
+                
                 # remove height from CONFIG before passing to tobac
                 ht = CONFIG['wrf']['tobac']['segmentation_2d']['height']
                 del CONFIG['wrf']['tobac']['segmentation_2d']['height']
@@ -93,14 +105,24 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
                 wrf_segmentation2d = wrf_tobac_segmentation(wrf_segmentation_cube, CONFIG['wrf']['tracking_type'], wrf_features, '2d', CONFIG, ht)
         
             if ("segmentation_3d" in CONFIG['wrf']['tobac']):
+                
+                if (CONFIG['verbose']): print("=====Starting WRF tobac 3D Segmentation=====")
+                
                 wrf_segmentation3d = wrf_tobac_segmentation(wrf_segmentation_cube, CONFIG['wrf']['tracking_type'], wrf_features, '3d', CONFIG)
+        
+        
+            if (CONFIG['verbose']): print("=====Converting WRF tobac Output to CoMET-UDAF=====")
         
             # Add all products to return dict
             user_return_dict["wrf"]["tobac"] = {
                 "feature_id": wrf_features,
+                "UDAF_features": feature_id_to_UDAF(wrf_features, "tobac"),
                 "linking": wrf_tracks,
+                "UDAF_linking": linking_to_UDAF(wrf_tracks, "tobac"),
                 "segmentation_2d": wrf_segmentation2d,
-                "segmentation_3d": wrf_segmentation3d
+                "UDAF_segmentation_2d": segmentation_to_UDAF(wrf_segmentation2d[0], linking_to_UDAF(wrf_tracks, "tobac"), "tobac"),
+                "segmentation_3d": wrf_segmentation3d,
+                "UDAF_segmentation_3d": segmentation_to_UDAF(wrf_segmentation3d[0], linking_to_UDAF(wrf_tracks, "tobac"), "tobac")
                 }
         
         else:
@@ -111,21 +133,18 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
         # Convert tracking outputs to proper outputs
         # First create analysis field in output dictionary
         user_return_dict["wrf"]["analysis"] = {}
-        
-        # Determine which tracker(s) are used and convert their output to the unified data analysis format (CoMET-UDAF)
-        
     
     
     # Handle NEXRAD data
     if ('nexrad' in CONFIG):
         from .nexrad_load import nexrad_load_netcdf_iris
         
-        # Add nexrad section to return dict
-        if ("nexrad" not in user_return_dict):
-            user_return_dict["nexrad"] = {}
+        if (CONFIG['verbose']): print("=====Loading NEXRAD Data=====")
         
         # determine if gridding is necessary or not
         if ("gridding" in CONFIG['nexrad']):
+            
+            if (CONFIG['verbose']): print("=====Gridding NEXRAD Data=====")
             nexrad_tracking_cube, nexrad_tracking_xarray = nexrad_load_netcdf_iris(CONFIG['nexrad']['path_to_data'], 'ar2v', CONFIG['nexrad']['feature_tracking_var'], CONFIG, CONFIG['nexrad']['gridding']['gridding_save_path'])
         
         else:
@@ -152,6 +171,8 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
             # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
             if ("feature_id" in CONFIG['nexrad']['tobac']):
                 
+                if (CONFIG['verbose']): print("=====Starting NEXRAD tobac Feature ID=====")
+                
                 # If height present, do 2D tracking
                 if ("height" in CONFIG['nexrad']['tobac']['feature_id']):
                     
@@ -168,25 +189,40 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
                     nexrad_features = nexrad_tobac_feature_id(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], CONFIG)
             
             if ("linking" in CONFIG['nexrad']['tobac']):
+                
+                if (CONFIG['verbose']): print("=====Starting NEXRAD tobac Feature Linking=====")
+                
                 nexrad_tracks = nexrad_tobac_linking(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], nexrad_features, CONFIG)
             
             if ("segmentation_2d" in CONFIG['nexrad']['tobac']):
+                
+                if (CONFIG['verbose']): print("=====Starting NEXRAD tobac 2D Segmentation=====")
+                
                 # remove height from CONFIG before passing to tobac
                 ht = CONFIG['nexrad']['tobac']['segmentation_2d']['height']
-                del CONFIG['nexrad']['tobac']['segmentatio. If yes, return object with all valuesn_2d']['height']
+                del CONFIG['nexrad']['tobac']['segmentation_2d']['height']
                 
                 nexrad_segmentation2d = nexrad_tobac_segmentation(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], nexrad_features, '2d', CONFIG, ht)
         
             if ("segmentation_3d" in CONFIG['nexrad']['tobac']):
+                
+                if (CONFIG['verbose']): print("=====Starting NEXRAD tobac 3D Segmentation=====")
+                
                 nexrad_segmentation3d = nexrad_tobac_segmentation(nexrad_tracking_cube, CONFIG['nexrad']['tracking_type'], nexrad_features, '3d', CONFIG)
+
         
+            if (CONFIG['verbose']): print("=====Converting NEXRAD tobac Output to CoMET-UDAF=====")
 
             # Add all products to return dict
             user_return_dict["nexrad"]["tobac"] = {
                 "feature_id": nexrad_features,
+                "UDAF_features": feature_id_to_UDAF(nexrad_features, "tobac"),
                 "linking": nexrad_tracks,
+                "UDAF_linking": linking_to_UDAF(nexrad_tracks, "tobac"),
                 "segmentation_2d": nexrad_segmentation2d,
-                "segmentation_3d": nexrad_segmentation3d
+                "UDAF_segmentation_2d": segmentation_to_UDAF(nexrad_segmentation2d[0], linking_to_UDAF(nexrad_tracks, "tobac"), "tobac"),
+                "segmentation_3d": nexrad_segmentation3d,
+                "UDAF_segmentation_3d": segmentation_to_UDAF(nexrad_segmentation3d[0], linking_to_UDAF(nexrad_tracks, "tobac"), "tobac"),
                 }
         
         else:
@@ -201,10 +237,8 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
     # Handle GOES data
     if ("goes" in CONFIG):
         from .goes_load import goes_load_netcdf_iris
-        
-        # Add goes section to return dict
-        if ("goes" not in user_return_dict):
-            user_return_dict["goes"] = {}
+    
+        if (CONFIG['verbose']): print("=====Loading GOES Data=====")
         
         goes_tracking_cube, goes_tracking_xarray = goes_load_netcdf_iris(CONFIG['goes']['path_to_data'], CONFIG['goes']['feature_tracking_var'], CONFIG)
         
@@ -227,21 +261,35 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
             
             # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
             if ("feature_id" in CONFIG['goes']['tobac']):
+                
+                if (CONFIG['verbose']): print("=====Starting GOES tobac Feature ID=====")
+                
                 goes_features = goes_tobac_feature_id(goes_tracking_cube, CONFIG['goes']['tracking_type'], CONFIG)
             
             if ("linking" in CONFIG['goes']['tobac']):
+                
+                if (CONFIG['verbose']): print("=====Starting GOES tobac Feature Linking=====")
+                
                 goes_tracks = goes_tobac_linking(goes_tracking_cube, CONFIG['goes']['tracking_type'], goes_features, CONFIG)
             
             if ("segmentation_2d" in CONFIG['goes']['tobac']):
+                
+                if (CONFIG['verbose']): print("=====Starting GOES tobac 2D Segmentation=====")
+                
                 # TB is 2D from satellite so no height parameter necessary
                 goes_segmentation2d = goes_tobac_segmentation(goes_tracking_cube, CONFIG['goes']['tracking_type'], goes_features, CONFIG)
         
 
+            if (CONFIG['verbose']): print("=====Converting GOES tobac Output to CoMET-UDAF=====")
+            
             # Add all products to return dict
             user_return_dict["goes"]["tobac"] = {
                 "feature_id": goes_features,
+                "UDAF_features": feature_id_to_UDAF(goes_features, "tobac"),
                 "linking": goes_tracks,
-                "segmentation_2d": goes_segmentation2d
+                "UDAF_linking": linking_to_UDAF(goes_tracks, "tobac"),
+                "segmentation_2d": goes_segmentation2d,
+                "UDAF_segmentation_2d": segmentation_to_UDAF(goes_segmentation2d[0], linking_to_UDAF(goes_tracks, "tobac"), "tobac")
                 }
         
         else:

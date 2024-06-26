@@ -21,6 +21,8 @@ Outputs:
 """
 def feature_id_to_UDAF(features, tracker):
     
+    if (features is None): return None
+    
     if (tracker.lower() == "tobac"):
         import numpy as np
         import geopandas as gpd
@@ -53,8 +55,8 @@ def feature_id_to_UDAF(features, tracker):
             "frame": frames,
             "time": times,
             "feature_id": feature_ids,
-            "north_south": north_souths,
-            "east_west": east_wests,
+            "south_north": north_souths,
+            "west_east": east_wests,
             "up_down": up_downs,
             "latitude": latitudes,
             "longitude": longitudes,
@@ -79,6 +81,8 @@ Outputs:
     UDAF_tracks: A geodataframe matching the format of the CoMET-UDAF linking specification
 """
 def linking_to_UDAF(tracks, tracker):
+    
+    if (tracks is None): return None
     
     if (tracker.lower() == "tobac"):
         import numpy as np
@@ -116,8 +120,8 @@ def linking_to_UDAF(tracks, tracker):
             "time": times,
             "feature_id": feature_ids,
             "cell_id": cell_ids,
-            "north_south": north_souths,
-            "east_west": east_wests,
+            "south_north": north_souths,
+            "west_east": east_wests,
             "up_down": up_downs,
             "latitude": latitudes,
             "longitude": longitudes,
@@ -137,9 +141,61 @@ def linking_to_UDAF(tracks, tracker):
 """
 Inputs:
     segmentation: The output from the segmentation step of a given tracker
+    UDAF_tracks: UDAF standard tracking output
     tracker: ["tobac"] The tracker used to generate the features
 Outputs:
     UDAF_segmentation: An xarray DataArray matching the format of the CoMET-UDAF segmentation specification
 """
-def segmentation_to_UDAF(segmentation, tracker):
-    print("=====In Progress=====")
+def segmentation_to_UDAF(segmentation, UDAF_tracks, tracker):
+    
+    if (segmentation is None or UDAF_tracks is None): return None
+    
+    if (tracker.lower() == "tobac"):
+        import numpy as np
+        import xarray as xr
+        from copy import deepcopy
+        
+        feature_segmentation = (segmentation - 1).rename("Feature_Segmentation")    
+        cell_segmentation = (deepcopy(feature_segmentation) - 1).rename("Cell_Segmentation")
+        
+        # Loop over tracks, replacing feature_id values with cell_id values in the cell_segmenation DataArray
+        for frame in UDAF_tracks.groupby("frame"):
+            
+            # Loop over each feature in that frame
+            for feature in frame[1].iterrows():
+                
+                # Replace the feature_id with the cell_id
+                cell_segmentation[frame[0]].values[cell_segmentation[frame[0]].values == feature[1].feature_id] = feature[1].cell_id
+        
+        # Combine into one xarray Dataset and return
+        
+        # To check for both prescense of altitude and shape of altitude without throwing DNE error
+        altitude_check_bool = False
+        if ("altitude" in feature_segmentation.coords):
+            
+            if (feature_segmentation.altitude.shape != ()): altitude_check_bool = True
+        
+        # Check if altitude is present
+        if (altitude_check_bool):    
+
+            # Change altitude values to indices
+            # return_ds = xr.combine_by_coords([feature_segmentation,cell_segmentation]).assign_coords({"up_down":np.arange(0,feature_segmentation.altitude.shape[0])})
+            return_ds = xr.combine_by_coords([feature_segmentation,cell_segmentation]).assign_coords(altitude = ("altitude", np.arange(0,feature_segmentation.altitude.shape[0])))
+            
+            
+            # Remove extra coordinates and rename altitude
+            return_ds = return_ds.rename_dims({"altitude": "up_down"}).drop_vars(["model_level_number","x","y","altitude"])
+            
+            return(return_ds[["time","up_down","south_north","west_east","Feature_Segmentation","Cell_Segmentation"]])
+        
+        else:
+            
+            # Concat into one dataset and remove superflous coordinates
+            return_ds = xr.combine_by_coords([feature_segmentation,cell_segmentation])
+            return_ds = return_ds.drop_vars(["x","y"])
+            
+            return(return_ds)
+            
+    
+    else:
+        raise Exception(f"!=====Invalid Tracker, You Entered: {tracker.lower()}=====!")

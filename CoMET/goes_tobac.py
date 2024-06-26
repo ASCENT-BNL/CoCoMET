@@ -27,7 +27,7 @@ def goes_tobac_feature_id(cube, tracking_type, CONFIG):
     if (tracking_type.lower() == 'ic' or tracking_type.lower() == 'mcs'):
         
         # Get horozontal spacings in km then convert to m
-        res = float(cube.attributes['spatial_resolution'][0])*1000
+        res = float(cube.attributes['spatial_resolution'].split("km")[0])*1000
         
         dxy = tobac.get_spacings(cube, grid_spacing=res)[0]
         
@@ -71,7 +71,7 @@ def goes_tobac_linking(cube, tracking_type, radar_features, CONFIG):
     if (tracking_type.lower() == 'ic' or tracking_type.lower() == 'mcs'):
         
         # Get horozontal spacings in km then convert to m
-        res = float(cube.attributes['spatial_resolution'][0])*1000
+        res = float(cube.attributes['spatial_resolution'].split("km")[0])*1000
         
         dxy = tobac.get_spacings(cube, grid_spacing=res)[0]
         
@@ -124,7 +124,7 @@ def goes_tobac_segmentation(cube, tracking_type, radar_features, CONFIG):
             return
         
         # Get horozontal spacings in km then convert to m
-        res = float(cube.attributes['spatial_resolution'][0])*1000
+        res = float(cube.attributes['spatial_resolution'].split("km")[0])*1000
         
         dxy = tobac.get_spacings(cube, grid_spacing=res)[0]
     

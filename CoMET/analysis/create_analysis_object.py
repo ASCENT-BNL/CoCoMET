@@ -9,7 +9,6 @@ Created on Thu Jun 20 15:34:29 2024
 # =============================================================================
 # Creates a dictionary which the CoMET analysis module can understand
 # =============================================================================
-# TODO: Update this to convert values first to CoMET-UDAF before returning analysis object
 
 
 """
@@ -46,6 +45,8 @@ def create_analysis_object(
         goes_tobac_segmentation_2d = None, # Optional
         ):
     
+    from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
+    
     # Create return dictionary
     analysis_object_dict = {}
     
@@ -66,10 +67,10 @@ def create_analysis_object(
             wrf_tobac_segmentation_3d is not None):
             
             analysis_object_dict["wrf"]["tobac"] = {
-                "feature_id": wrf_tobac_features,
-                "linking": wrf_tobac_tracks,
-                "segmentation_2d": wrf_tobac_segmentation_2d,
-                "segmentation_3d": wrf_tobac_segmentation_3d
+                "feature_id": feature_id_to_UDAF(wrf_tobac_features,"tobac"),
+                "linking": linking_to_UDAF(wrf_tobac_tracks,"tobac"),
+                "segmentation_2d": segmentation_to_UDAF(wrf_tobac_segmentation_2d, linking_to_UDAF(wrf_tobac_tracks,"tobac"), "tobac"),
+                "segmentation_3d": segmentation_to_UDAF(wrf_tobac_segmentation_3d, linking_to_UDAF(wrf_tobac_tracks,"tobac"), "tobac")
             }
     
     
@@ -90,10 +91,10 @@ def create_analysis_object(
             nexrad_tobac_segmentation_3d is not None):
             
             analysis_object_dict["nexrad"]["tobac"] = {
-                "feature_id": nexrad_tobac_features,
-                "linking": nexrad_tobac_tracks,
-                "segmentation_2d": nexrad_tobac_segmentation_2d,
-                "segmentation_3d": nexrad_tobac_segmentation_3d
+                "feature_id": feature_id_to_UDAF(nexrad_tobac_features,"tobac"),
+                "linking": linking_to_UDAF(nexrad_tobac_tracks,"tobac"),
+                "segmentation_2d": segmentation_to_UDAF(nexrad_tobac_segmentation_2d, linking_to_UDAF(nexrad_tobac_tracks,"tobac"), "tobac"),
+                "segmentation_3d": segmentation_to_UDAF(nexrad_tobac_segmentation_3d, linking_to_UDAF(nexrad_tobac_tracks,"tobac"), "tobac")
             }
     
     
@@ -113,9 +114,9 @@ def create_analysis_object(
             goes_tobac_segmentation_2d is not None):
             
             analysis_object_dict["goes"]["tobac"] = {
-                "feature_id": goes_tobac_features,
-                "linking": goes_tobac_tracks,
-                "segmentation_2d": goes_tobac_segmentation_2d,
+                "feature_id": feature_id_to_UDAF(goes_tobac_features,"tobac"),
+                "linking": linking_to_UDAF(goes_tobac_tracks,"tobac"),
+                "segmentation_2d": segmentation_to_UDAF(goes_tobac_segmentation_2d, linking_to_UDAF(goes_tobac_tracks,"tobac"), "tobac")
             }
             
     
