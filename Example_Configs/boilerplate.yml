@@ -26,8 +26,6 @@ max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None 
 wrf:
     path_to_data: '/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*'
 
-    tracking_type: 'IC'
-
     feature_tracking_var: 'dbz'
     segmentation_var: 'dbz'
 
@@ -73,8 +71,6 @@ nexrad:
 
     bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max]
 
-    tracking_type: 'IC'
-
     gridding: # only if gridding is needed 
         gridding_save_path: '/D3/data/thahn/NEXRAD/HAS012527906/grids/'
         grid_shape: (40, 401, 401)
@@ -115,8 +111,6 @@ goes:
     path_to_data: '/D3/data/thahn/GOES/noaa-goes16/ABI-L2-CMIPC/2023/2023_07_11/*'
 
     bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max]
-    
-    tracking_type: 'IC'
     
     feature_tracking_var: 'tb'
     segmentation_var: 'tb'
