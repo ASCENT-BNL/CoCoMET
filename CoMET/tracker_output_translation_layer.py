@@ -171,27 +171,45 @@ def segmentation_to_UDAF(segmentation, UDAF_tracks, tracker):
         
         # To check for both prescense of altitude and shape of altitude without throwing DNE error
         altitude_check_bool = False
-        if ("altitude" in feature_segmentation.coords):
+        if ("altitude" in segmentation.coords):
             
-            if (feature_segmentation.altitude.shape != ()): altitude_check_bool = True
+            if (segmentation.altitude.shape != ()): altitude_check_bool = True
+        
+        if ("model_level_number" in segmentation.coords):
+        
+            if (segmentation.model_level_number.shape != ()): altitude_check_bool = True
         
         # Check if altitude is present
         if (altitude_check_bool):    
+            
+            return_ds = xr.combine_by_coords([feature_segmentation,cell_segmentation])
 
-            # Change altitude values to indices
-            # return_ds = xr.combine_by_coords([feature_segmentation,cell_segmentation]).assign_coords({"up_down":np.arange(0,feature_segmentation.altitude.shape[0])})
-            return_ds = xr.combine_by_coords([feature_segmentation,cell_segmentation]).assign_coords(altitude = ("altitude", np.arange(0,feature_segmentation.altitude.shape[0])))
+            # Check for NEXRAD, and rename accordingly
+            if ('y' in segmentation.dims and 'x' in segmentation.dims and "z" in segmentation.dims and 'lat' in segmentation.coords and 'lon' in segmentation.coords):
+                
+                return_ds = return_ds.assign_coords(altitude = ("z", feature_segmentation.z.values), up_down = ("z", np.arange(0,feature_segmentation.z.shape[0])))
+                return_ds = return_ds.swap_dims({"z": "up_down", "y": "south_north", "x": "west_east"}).rename({"lat": "latitude", "lon": "longitude"})
+                return_ds = return_ds.drop_vars(["z","x","y","model_level_number"])
+                
+                return(return_ds[["time","up_down","south_north","west_east","Feature_Segmentation","Cell_Segmentation"]])
             
-            
-            # Remove extra coordinates and rename altitude
-            return_ds = return_ds.rename_dims({"altitude": "up_down"}).drop_vars(["model_level_number","x","y","altitude"])
-            
-            return(return_ds[["time","up_down","south_north","west_east","Feature_Segmentation","Cell_Segmentation"]])
+            # For WRF case
+            else:
+                
+                # Change altitude values to indices
+                # return_ds = xr.combine_by_coords([feature_segmentation,cell_segmentation]).assign_coords({"up_down":np.arange(0,feature_segmentation.altitude.shape[0])})
+                return_ds = return_ds.assign_coords(up_down = ("altitude", np.arange(0,feature_segmentation.altitude.shape[0])))
+                
+                
+                # Remove extra coordinates and rename altitude
+                return_ds = return_ds.swap_dims({"altitude": "up_down"}).drop_vars(["model_level_number","x","y"])
+                return(return_ds[["time","up_down","south_north","west_east","Feature_Segmentation","Cell_Segmentation"]])
         
         else:
             
             # Concat into one dataset and remove superflous coordinates
             return_ds = xr.combine_by_coords([feature_segmentation,cell_segmentation])
+
 
             # Check for GOES and rename accordingly
             if ("sensor_band_bit_depth" in segmentation.attrs):
@@ -199,10 +217,24 @@ def segmentation_to_UDAF(segmentation, UDAF_tracks, tracker):
                 # Rename t to time and rename x and y values to south_north and west_east, respectively. Rename lat and lon to latitude and longitude
                 return_ds = return_ds.assign_coords(time = ("t", return_ds.t.values)).swap_dims({"t": "time"}).drop_vars(["t"])
                 return_ds = return_ds.swap_dims({"y": "south_north", "x": "west_east"}).rename({"lat": "latitude", "lon": "longitude"})
+                
+                return_ds = return_ds.drop_vars(["x","y"])
+                return(return_ds[["time","south_north","west_east","Feature_Segmentation","Cell_Segmentation"]])
              
-            return_ds = return_ds.drop_vars(["x","y"])
+                
+            # Check for NEXRAD, and rename accordingly
+            elif ('y' in segmentation.dims and 'x' in segmentation.dims and 'lat' in segmentation.coords and 'lon' in segmentation.coords):
+                
+                return_ds = return_ds.swap_dims({"y": "south_north", "x": "west_east"}).rename({"lat": "latitude", "lon": "longitude"})
+                 
+                return_ds = return_ds.drop_vars(["x","y"])
+                return(return_ds[["time","south_north","west_east","Feature_Segmentation","Cell_Segmentation"]])
             
-            return(return_ds[["time","south_north","west_east","Feature_Segmentation","Cell_Segmentation"]])
+            # For WRF case
+            else:
+                
+                return_ds = return_ds.drop_vars(["x","y"])
+                return(return_ds[["time","south_north","west_east","Feature_Segmentation","Cell_Segmentation"]])
             
     
     else:

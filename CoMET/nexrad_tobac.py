@@ -32,14 +32,37 @@ Outputs:
 def nexrad_tobac_feature_id(cube, CONFIG):
     import tobac
     import geopandas as gpd
+    from copy import deepcopy
     
-    if ("height" in CONFIG['nexrad']['tobac']['feature_id']): del CONFIG['nexrad']['tobac']['feature_id']['height']
+    feat_cube = deepcopy(cube)
+    inCONFIG = deepcopy(CONFIG)
+    
+    if ("height" in inCONFIG['nexrad']['tobac']['feature_id']):
+        
+        # Ensure segmentation_height is a proper number before running
+        if (inCONFIG['nexrad']['tobac']['feature_id']['height'] == None or type(inCONFIG['nexrad']['tobac']['feature_id']['height'] ) == str or type(CONFIG['wrf']['tobac']['feature_id']['height'] ) == bool):
+            raise Exception(f"!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG['nexrad']['tobac']['feature_id']['height'] .lower()}=====!")
+            return
+        if (inCONFIG['nexrad']['tobac']['feature_id']['height']  > cube.coord('altitude').points.max() or inCONFIG['nexrad']['tobac']['feature_id']['height']  < cube.coord('altitude').points.min()):
+            raise Exception(f"!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG['nexrad']['tobac']['feature_id']['height'] .lower()}=====!")
+            return
+            
+        
+        # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
+        height_index = find_nearest(cube.coord('altitude').points, inCONFIG['nexrad']['tobac']['feature_id']['height'])
+        
+        feat_cube = feat_cube[:,height_index]
+        feat_cube.remove_coord("altitude")
+        feat_cube.remove_coord("model_level_number")
+        
+        
+        del inCONFIG['nexrad']['tobac']['feature_id']['height']
     
     # Get horozontal spacings
     dxy = tobac.get_spacings(cube)[0]
     
     # Perform tobac feature identification and then convert to a geodataframe before returning
-    nexrad_radar_features = tobac.feature_detection.feature_detection_multithreshold(cube, dxy=dxy, **CONFIG['nexrad']['tobac']['feature_id'])
+    nexrad_radar_features = tobac.feature_detection.feature_detection_multithreshold(cube, dxy=dxy, **inCONFIG['nexrad']['tobac']['feature_id'])
     
     if (nexrad_radar_features is None):
         return None
@@ -100,18 +123,21 @@ Outputs:
 def nexrad_tobac_segmentation(cube, radar_features, segmentation_type, CONFIG, segmentation_height = None):
     import tobac
     import xarray as xr
+    from copy import deepcopy
     
     # Check tracking var
     if (cube.name().lower() != 'equivalent_reflectivity_factor'):
         raise Exception(f'!=====Invalid Tracking Variable. Your Cube Has: {cube.name().lower()}=====!')
         return
     
+    inCONFIG = deepcopy(CONFIG)
+    
     dxy = tobac.get_spacings(cube)[0]
 
     # 2D and 3D segmentation have different requirements so they are split up here
     if (segmentation_type.lower() == '2d'):
         
-        if ("height" in CONFIG['nexrad']['tobac']['segmentation_2d']): del CONFIG['nexrad']['tobac']['segmentation_2d']['height']
+        if ("height" in inCONFIG['nexrad']['tobac']['segmentation_2d']): del inCONFIG['nexrad']['tobac']['segmentation_2d']['height']
         
         # Ensure segmentation_height is a proper number before running
         if (segmentation_height == None or type(segmentation_height) == str or type(segmentation_height) == bool):
@@ -125,19 +151,34 @@ def nexrad_tobac_segmentation(cube, radar_features, segmentation_type, CONFIG, s
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
         height_index = find_nearest(cube.coord('altitude').points, segmentation_height)
         
+        # Remove 1 dimensional coordinates cause by taking only one altitude
+        seg_cube = deepcopy(cube[:,height_index])
+        seg_cube.remove_coord("altitude")
+        seg_cube.remove_coord("model_level_number")
+        
         # Perform the 2d segmentation at the height_index and return the segmented cube and new geodataframe
-        segment_cube, segment_features = tobac.segmentation_2D(radar_features, cube[:,height_index], dxy=dxy, **CONFIG['nexrad']['tobac']['segmentation_2d'])
+        segment_cube, segment_features = tobac.segmentation_2D(radar_features, seg_cube, dxy=dxy, **inCONFIG['nexrad']['tobac']['segmentation_2d'])
         
         # Convert iris cube to xarray and return
-        return ((xr.DataArray.from_iris(segment_cube), segment_features))
+        # Add projection x and y back to xarray DataArray
+        outXarray = xr.DataArray.from_iris(segment_cube).assign_coords(projection_x_coordinate = ("x",segment_cube.coord("projection_x_coordinate").points),
+                                                                       projection_y_coordinate = ("y",segment_cube.coord("projection_y_coordinate").points))
+        
+        
+        return ((outXarray, segment_features))
     
     elif (segmentation_type.lower() == '3d'):
         
         # Similarly, perform 3d segmentation then return products
-        segment_cube, segment_features = tobac.segmentation_3D(radar_features, cube, dxy=dxy, **CONFIG['nexrad']['tobac']['segmentation_3d'])
+        segment_cube, segment_features = tobac.segmentation_3D(radar_features, cube, dxy=dxy, **inCONFIG['nexrad']['tobac']['segmentation_3d'])
            
-        ## Convert iris cube to xarray and return
-        return ((xr.DataArray.from_iris(segment_cube), segment_features))
+        # Convert iris cube to xarray and return
+        # Add projection x and y back to xarray DataArray
+        outXarray = xr.DataArray.from_iris(segment_cube).assign_coords(projection_x_coordinate = ("x",segment_cube.coord("projection_x_coordinate").points),
+                                                                       projection_y_coordinate = ("y",segment_cube.coord("projection_y_coordinate").points))
+        
+        
+        return ((outXarray, segment_features))
 
     else:
         raise Exception(f'!=====Invalid Segmentation Type. You Entered: {segmentation_type.lower()}=====!')

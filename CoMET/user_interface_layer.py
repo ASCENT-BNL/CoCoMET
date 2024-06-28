@@ -251,7 +251,7 @@ def run_wrf(CONFIG, queue = None):
     
     # now determine which tracker to use
     if ("tobac" in CONFIG['wrf']):
-        from .wrf_tobac import find_nearest, wrf_tobac_feature_id, wrf_tobac_linking, wrf_tobac_segmentation
+        from .wrf_tobac import wrf_tobac_feature_id, wrf_tobac_linking, wrf_tobac_segmentation
         
         wrf_features = None
         wrf_tracks = None
@@ -263,21 +263,7 @@ def run_wrf(CONFIG, queue = None):
             
             if (CONFIG['verbose']): print("=====Starting WRF tobac Feature ID=====")
             
-            # If height present, do 2D tracking
-            if ("height" in CONFIG['wrf']['tobac']['feature_id']):
-                
-                # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
-                height_index = find_nearest(wrf_tracking_cube.coord('altitude').points, CONFIG['wrf']['tobac']['feature_id']['height'])
-                
-                # Delete height before passing to tobac
-                del CONFIG['wrf']['tobac']['feature_id']['height']
-                
-                temp_cube = wrf_tracking_cube[:,height_index]
-                wrf_features = wrf_tobac_feature_id(temp_cube, CONFIG)
-                
-            else:
-                
-                wrf_features = wrf_tobac_feature_id(wrf_tracking_cube, CONFIG)
+            wrf_features = wrf_tobac_feature_id(wrf_tracking_cube, CONFIG)
         
         if ("linking" in CONFIG['wrf']['tobac']):
             
@@ -289,11 +275,7 @@ def run_wrf(CONFIG, queue = None):
             
             if (CONFIG['verbose']): print("=====Starting WRF tobac 2D Segmentation=====")
             
-            # remove height from CONFIG before passing to tobac
-            ht = CONFIG['wrf']['tobac']['segmentation_2d']['height']
-            del CONFIG['wrf']['tobac']['segmentation_2d']['height']
-            
-            wrf_segmentation2d = wrf_tobac_segmentation(wrf_segmentation_cube, wrf_features, '2d', CONFIG, ht)
+            wrf_segmentation2d = wrf_tobac_segmentation(wrf_segmentation_cube, wrf_features, '2d', CONFIG, CONFIG['wrf']['tobac']['segmentation_2d']['height'])
     
         if ("segmentation_3d" in CONFIG['wrf']['tobac']):
             
@@ -365,7 +347,7 @@ def run_nexrad(CONFIG, queue = None):
     
     # determine which tracker to use
     if ("tobac" in CONFIG['nexrad']):
-        from .nexrad_tobac import find_nearest, nexrad_tobac_feature_id, nexrad_tobac_linking, nexrad_tobac_segmentation
+        from .nexrad_tobac import nexrad_tobac_feature_id, nexrad_tobac_linking, nexrad_tobac_segmentation
         
         nexrad_features = None
         nexrad_tracks = None
@@ -377,20 +359,7 @@ def run_nexrad(CONFIG, queue = None):
             
             if (CONFIG['verbose']): print("=====Starting NEXRAD tobac Feature ID=====")
             
-            # If height present, do 2D tracking
-            if ("height" in CONFIG['nexrad']['tobac']['feature_id']):
-                
-                # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
-                height_index = find_nearest(nexrad_tracking_cube.coord('altitude').points, CONFIG['nexrad']['tobac']['feature_id']['height'])
-                
-                # Delete height before passing to tobac
-                del CONFIG['nexrad']['tobac']['feature_id']['height']
-                
-                temp_cube = nexrad_tracking_cube[:,height_index]
-                nexrad_features = nexrad_tobac_feature_id(temp_cube, CONFIG)
-                
-            else:
-                nexrad_features = nexrad_tobac_feature_id(nexrad_tracking_cube, CONFIG)
+            nexrad_features = nexrad_tobac_feature_id(nexrad_tracking_cube, CONFIG)
         
         if ("linking" in CONFIG['nexrad']['tobac']):
             
@@ -402,11 +371,7 @@ def run_nexrad(CONFIG, queue = None):
             
             if (CONFIG['verbose']): print("=====Starting NEXRAD tobac 2D Segmentation=====")
             
-            # remove height from CONFIG before passing to tobac
-            ht = CONFIG['nexrad']['tobac']['segmentation_2d']['height']
-            del CONFIG['nexrad']['tobac']['segmentation_2d']['height']
-            
-            nexrad_segmentation2d = nexrad_tobac_segmentation(nexrad_tracking_cube, nexrad_features, '2d', CONFIG, ht)
+            nexrad_segmentation2d = nexrad_tobac_segmentation(nexrad_tracking_cube, nexrad_features, '2d', CONFIG, CONFIG['nexrad']['tobac']['segmentation_2d']['height'])
     
         if ("segmentation_3d" in CONFIG['nexrad']['tobac']):
             
