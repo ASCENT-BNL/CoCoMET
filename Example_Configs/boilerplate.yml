@@ -15,12 +15,12 @@ max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None 
 # Observation Type:
 #   path_to_data
 #   additional_observation_parameters
-# 
+#
 #   tracker:
 #       tracker_params
 #
-#   analysis:
-#       analysis_variables
+#       analysis:
+#           analysis_variables
 
 # WRF
 wrf:
@@ -56,26 +56,24 @@ wrf:
             method: 'watershed'
             threshold: 15
     
-    analysis:
-        eth_15: True
-        eth_30: True
-        cell_area: True
-        cell_volume: True
+        analysis:
+            eth: ('dbz', 15)
 
 
 # NEXRAD
 nexrad:
-    path_to_data: '/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v'
+    # path_to_data: '/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v'
+    path_to_data: '/D3/data/thahn/NEXRAD/HAS012527906/grids/*'
 
     feature_tracking_var: 'dbz'
     segmentation_var: 'dbz'
 
     bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max]
 
-    gridding: # only if gridding is needed 
-        gridding_save_path: '/D3/data/thahn/NEXRAD/HAS012527906/grids/'
-        grid_shape: (40, 401, 401)
-        grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
+    # gridding: # only if gridding is needed 
+    #     gridding_save_path: '/D3/data/thahn/NEXRAD/HAS012527906/grids/'
+    #     grid_shape: (40, 401, 401)
+    #     grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
         
     feature_tracking_var: 'dbz'
     segmentation_var: 'dbz'
@@ -106,6 +104,9 @@ nexrad:
             height: 2000
             method: 'watershed'
             threshold: 15
+            
+        analysis:
+            eth: ('dbz', 15)
         
     
 # GOES

@@ -62,7 +62,7 @@ def nexrad_tobac_feature_id(cube, CONFIG):
     dxy = tobac.get_spacings(cube)[0]
     
     # Perform tobac feature identification and then convert to a geodataframe before returning
-    nexrad_radar_features = tobac.feature_detection.feature_detection_multithreshold(cube, dxy=dxy, **inCONFIG['nexrad']['tobac']['feature_id'])
+    nexrad_radar_features = tobac.feature_detection.feature_detection_multithreshold(feat_cube, dxy=dxy, **inCONFIG['nexrad']['tobac']['feature_id'])
     
     if (nexrad_radar_features is None):
         return None

@@ -1,7 +1,7 @@
 from .user_interface_layer import *
 from .tracker_output_translation_layer import *
 
-from CoMET.analysis.get_vars import *
+from CoMET.analysis.get_vars import get_var
 from CoMET.analysis.create_analysis_object import *
 
 from .wrf_load import *
