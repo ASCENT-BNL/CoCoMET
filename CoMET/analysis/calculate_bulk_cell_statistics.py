@@ -12,12 +12,220 @@ Created on Fri Jun 28 15:00:59 2024
 
 
 
+# Calculate nearest item in list to given pivot
+def find_nearest(array, pivot):
+    import numpy as np
+    
+    array = np.asarray(array)
+    idx = (np.abs(array - pivot)).argmin()
+    return idx
+
+
+
 """
 Inputs:
-    analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_features and UDAF_xxxx
+    analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d
 Outputs:
     TBD
 """
-def calculate_ETH(analysis_object):
+def calculate_ETH(analysis_object, threshold, verbose=False, variable=None, cell_footprint_height=2000, quantile=0.95):
+    import numpy as np
+    import xarray as xr
+    import pandas as pd
+    
+    # If input variable field is 2D return None. Also, if DataArray, use those values for calculations. If Dataset, use tracking_var to get variable
+    if (type(analysis_object['tracking_xarray']) == xr.core.dataarray.DataArray):
+        
+        if (len(analysis_object['tracking_xarray'].shape) != 4):
+           return None 
+       
+        else:
+           variable_field = analysis_object['tracking_xarray']
+    
+    else:
+        
+        if (len(analysis_object['tracking_xarray'][variable].shape) != 4):
+            return None
+        
+        else:
+           variable_field = analysis_object['tracking_xarray'][variable]
+    
+    
+    # If 3D segmentation is available, use that to calculate cell footprint, otherwise use 2D segmentation
+    if (analysis_object['UDAF_segmentation_3d'] is not None):
+        
+        height_index = find_nearest(analysis_object['UDAF_segmentation_3d'].altitude.values, cell_footprint_height)
+        
+        footprint_data = analysis_object['UDAF_segmentation_3d'].Feature_Segmentation[:,height_index]
+    
+    elif (analysis_object['UDAF_segmentation_2d'] is not None):
+        
+        footprint_data = analysis_object['UDAF_segmentation_2d'].Feature_Segmentation
+    
+    else:
+        raise Exception("!=====Missing Segmentation Input=====!")
+        return
+    
+    ETH_info = {
+        "frame": [],
+        "feature_id": [],
+        "cell_id": [],
+        "eth": [] # in km
+    }
+    
+    # Loop over each frame
+    for ii, frame in enumerate(analysis_object['UDAF_linking'].groupby("frame")):
+        
+        if (verbose): print(f"=====Calculating Echo Top Heights. {'%.2f' % ((ii+1)/len(np.unique(analysis_object['UDAF_linking'].frame))*100)}% Complete=====")
+        
+        # Loop over each feature
+        for feature in frame[1].groupby("feature_id"):
+            
+            # Get the indices of the cell footprint
+            proper_indices = np.argwhere(footprint_data[frame[0]].values == feature[0])
+            ETH_set = []
+            
+            # Calculate ETH for each location
+            for iy,ix in proper_indices:
+            
+                max_alt_index = np.argwhere(variable_field[frame[0],:,iy,ix].values > threshold).max()
+                max_alt = variable_field.altitude.values[max_alt_index]
+                ETH_set.append(max_alt)
+            
+            ETH_info["frame"].append(frame[0])
+            ETH_info["feature_id"].append(feature[0])
+            ETH_info["cell_id"].append(feature[1]["cell_id"].min())
+            ETH_info["eth"].append(np.nanquantile(ETH_set, quantile)/1000)
+    
+    return(pd.DataFrame(ETH_info))
+
+
+
+"""
+Inputs:
+    hi :3
+"""
+def calculate_area(analysis_object, verbose=False, height = 2000):
+    import numpy as np
+    import pandas as pd
+    
+    # If 3D segmentation is available, use that at given height, otherwise use 2D segmentation
+    if (analysis_object['UDAF_segmentation_3d'] is not None):
+        
+        height_index = find_nearest(analysis_object['UDAF_segmentation_3d'].altitude.values, height)
+        
+        mask = analysis_object['UDAF_segmentation_3d'].Feature_Segmentation[:,height_index]
+        
+    elif (analysis_object['UDAF_segmentation_2d'] is not None):
+        
+        mask = analysis_object['UDAF_segmentation_2d'].Feature_Segmentation
+    
+    else:
+        raise Exception("!=====Missing Segmentation Input=====!")
+        return
+        
+    
+    area_info = {
+        "frame": [],
+        "feature_id": [],
+        "cell_id": [],
+        "area": [] # in km^2
+    }
+    
+    # We first calculate the area of each individual cell
+    # First get the size of each dimension
+    x_dim_sizes = np.diff(mask.projection_x_coordinate)
+    y_dim_sizes = np.diff(mask.projection_y_coordinate)
+    
+    # These are one cell too small due to how diff works, so infer last cell size using the same cell size as the previous cell
+    # x_dim_sizes.append(x_dim_sizes[-1])
+    x_dim_sizes = np.append(x_dim_sizes, x_dim_sizes[-1])
+    y_dim_sizes = np.append(y_dim_sizes, y_dim_sizes[-1])
+    
+    # Multiply each cell by the other to get an area for one individual cell
+    cell_areas = np.outer(y_dim_sizes,x_dim_sizes)
+    
+    
+    # Loop over each frame
+    for ii, frame in enumerate(analysis_object['UDAF_linking'].groupby("frame")):
+        
+        if (verbose): print(f"=====Calculating Area. {'%.2f' % ((ii+1)/len(np.unique(analysis_object['UDAF_linking'].frame))*100)}% Complete=====")
+        
+        # Loop over each feature
+        for feature in frame[1].groupby("feature_id"):
+            
+            # Get valid indices of a given features
+            proper_indices = np.argwhere(mask[frame[0]].values == feature[0])
+            
+            # Sum up all the areas that comprise it
+            total = np.sum([cell_areas[iy,ix] for iy,ix in proper_indices])
+
+            # Push info to dictionary
+            area_info["frame"].append(frame[0])
+            area_info["feature_id"].append(feature[0])
+            area_info["cell_id"].append(feature[1]["cell_id"].min())
+            area_info["area"].append(total/1e6)
+    
+    return(pd.DataFrame(area_info))
+  
+  
+  
+"""
+Inputs:
+    TBD
+"""
+def calculate_volume(analysis_object, verbose=False):
+    import numpy as np
+    import pandas as pd
     
     print("=====In Progress=====")
+    
+    if (analysis_object['UDAF_segmentation_3d'] is None):
+        raise Exception("!=====3D Segmentation Data is Required for Volume Calculation=====!")
+        return
+    
+    mask = analysis_object["UDAF_segmentation_3d"].Feature_Segmentation
+
+    volume_info = {
+        "frame": [],
+        "feature_id": [],
+        "cell_id": [],
+        "volume": [] # in km^3
+    }
+    
+    # We first calculate the area of each individual cell
+    # First get the size of each dimension
+    x_dim_sizes = np.diff(mask.projection_x_coordinate)
+    y_dim_sizes = np.diff(mask.projection_y_coordinate)
+    z_dim_sizes = np.diff(mask.altitude)
+    
+    # These are one cell too small due to how diff works, so infer last cell size using the same cell size as the previous cell
+    # x_dim_sizes.append(x_dim_sizes[-1])
+    x_dim_sizes = np.append(x_dim_sizes, x_dim_sizes[-1])
+    y_dim_sizes = np.append(y_dim_sizes, y_dim_sizes[-1])
+    z_dim_sizes = np.append(z_dim_sizes, z_dim_sizes[-1])
+    
+    # use einstein sum notation to get volume of cells
+    cell_volumes = np.einsum('i,j,k->ijk',z_dim_sizes,y_dim_sizes,x_dim_sizes)
+    
+    # Loop over each frame
+    for ii, frame in enumerate(analysis_object['UDAF_linking'].groupby("frame")):
+        
+        if (verbose): print(f"=====Calculating Volume. {'%.2f' % ((ii+1)/len(np.unique(analysis_object['UDAF_linking'].frame))*100)}% Complete=====")
+        
+        # Loop over each feature
+        for feature in frame[1].groupby("feature_id"):
+            
+            # Get valid indices of a given features
+            proper_indices = np.argwhere(mask[frame[0]].values == feature[0])
+            
+            # Sum up all the volumes that comprise it
+            total = np.sum([cell_volumes[iz,iy,ix] for iz,iy,ix in proper_indices])
+
+            # Push info to dictionary
+            volume_info["frame"].append(frame[0])
+            volume_info["feature_id"].append(feature[0])
+            volume_info["cell_id"].append(feature[1]["cell_id"].min())
+            volume_info["volume"].append(total/1e9)
+    
+    return(pd.DataFrame(volume_info))

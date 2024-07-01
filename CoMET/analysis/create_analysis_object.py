@@ -15,28 +15,28 @@ Created on Thu Jun 20 15:34:29 2024
 Inputs:
     Various outputs from different CoMET functions
 Outpus:
-    analysis_object_dict: A dictionary setup for intake into the CoMET analysis module if you wanted to run the CoMET functions independently of CoMET_start. Follows CoMET-UDAF Section 3.1.
+    analysis_object_dict: A dictionary setup for intake into the CoMET analysis module if you wanted to run the CoMET functions independently of CoMET_start. Follows CoMET-UDAF Section 3.1. although the analysis object itself must be accessed via analysis_object_dict['obs-type']['tracker']
 """
 def create_analysis_object(
         wrf_tracking_xarray = None, # Mandatory for WRF
         wrf_segmentation_xarray = None, #Optional
         wrf_tobac_features = None, # Optional
         wrf_tobac_tracks = None, # Optional
-        wrf_tobac_segmentation_2d = None, # Optional
-        wrf_tobac_segmentation_3d = None, # Optional
+        wrf_tobac_segmentation_2d = None, # Optional, should be xarray NOT tuple
+        wrf_tobac_segmentation_3d = None, # Optional, should be xarray NOT tuple
         
         nexrad_tracking_xarray = None, # Mandatory for NEXRAD
         nexrad_segmentation_xarray = None, # Optional
         nexrad_tobac_features = None, # Optional
         nexrad_tobac_tracks = None, # Optional
-        nexrad_tobac_segmentation_2d = None, # Optional
-        nexrad_tobac_segmentation_3d = None, # Optional
+        nexrad_tobac_segmentation_2d = None, # Optional, should be xarray NOT tuple
+        nexrad_tobac_segmentation_3d = None, # Optional, should be xarray NOT tuple
         
         goes_tracking_xarray = None, # Mandatory for GOES
         goes_segmentation_xarray = None, # Optional
         goes_tobac_features = None, # Optional
         goes_tobac_tracks = None, # Optional
-        goes_tobac_segmentation_2d = None, # Optional
+        goes_tobac_segmentation_2d = None, # Optional, should be xarray NOT tuple
         ):
     
     from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
@@ -60,8 +60,8 @@ def create_analysis_object(
                 "segmentation_xarray": wrf_segmentation_xarray,
                 "UDAF_features": feature_id_to_UDAF(wrf_tobac_features, "tobac"),
                 "UDAF_linking": linking_to_UDAF(wrf_tobac_tracks, "tobac"),
-                "UDAF_segmentation_2d": segmentation_to_UDAF(wrf_tobac_segmentation_2d[0], linking_to_UDAF(wrf_tobac_tracks, "tobac"), "tobac"),
-                "UDAF_segmentation_3d": segmentation_to_UDAF(wrf_tobac_segmentation_3d[0], linking_to_UDAF(wrf_tobac_tracks, "tobac"), "tobac")
+                "UDAF_segmentation_2d": segmentation_to_UDAF(wrf_tobac_segmentation_2d, linking_to_UDAF(wrf_tobac_tracks, "tobac"), "tobac"),
+                "UDAF_segmentation_3d": segmentation_to_UDAF(wrf_tobac_segmentation_3d, linking_to_UDAF(wrf_tobac_tracks, "tobac"), "tobac")
             }
             
     
@@ -82,8 +82,8 @@ def create_analysis_object(
                 "segmentation_xarray": nexrad_tracking_xarray,
                 "UDAF_features": feature_id_to_UDAF(nexrad_tobac_features, "tobac"),
                 "UDAF_linking": linking_to_UDAF(nexrad_tobac_tracks, "tobac"),
-                "UDAF_segmentation_2d": segmentation_to_UDAF(nexrad_tobac_segmentation_2d[0], linking_to_UDAF(nexrad_tobac_tracks, "tobac"), "tobac"),
-                "UDAF_segmentation_3d": segmentation_to_UDAF(nexrad_tobac_segmentation_3d[0], linking_to_UDAF(nexrad_tobac_tracks, "tobac"), "tobac")
+                "UDAF_segmentation_2d": segmentation_to_UDAF(nexrad_tobac_segmentation_2d, linking_to_UDAF(nexrad_tobac_tracks, "tobac"), "tobac"),
+                "UDAF_segmentation_3d": segmentation_to_UDAF(nexrad_tobac_segmentation_3d, linking_to_UDAF(nexrad_tobac_tracks, "tobac"), "tobac")
             }
     
     
@@ -102,7 +102,7 @@ def create_analysis_object(
                 "segmentation_xarray": goes_tracking_xarray,
                 "UDAF_features": feature_id_to_UDAF(goes_tobac_features, "tobac"),
                 "UDAF_linking": linking_to_UDAF(goes_tobac_tracks, "tobac"),
-                "UDAF_segmentation_2d": segmentation_to_UDAF(goes_tobac_segmentation_2d[0], linking_to_UDAF(goes_tobac_tracks, "tobac"), "tobac"),
+                "UDAF_segmentation_2d": segmentation_to_UDAF(goes_tobac_segmentation_2d, linking_to_UDAF(goes_tobac_tracks, "tobac"), "tobac"),
                 "UDAF_segmentation_3d": None
             }
             

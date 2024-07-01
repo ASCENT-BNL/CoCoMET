@@ -351,7 +351,7 @@ if __name__ == '__main__':
 
 # CONFIG = CoMET.CoMET_load('./Example_Configs/wrf_w_config.yml')
 # print('=====Starting WRF w Tracking=====')
-# wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris("/D3/data/thahn/wrf/wrfout/wrfout_d02*", 'w')
+# wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris("/D3/data/thahn/wrf/wrfout/wrfout_d02*", 'wa')
 # print("*////")
 # wrf_features = CoMET.wrf_tobac_feature_id(wrf_cube, 'IC', CONFIG)
 # print("**///")

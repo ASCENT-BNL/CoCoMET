@@ -195,7 +195,11 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             nexrad_xarray['projection_x_coordinate'] = nexrad_xarray.projection_x_coordinate.assign_attrs({'units': 'm'})
             nexrad_xarray['projection_y_coordinate'] = nexrad_xarray.projection_y_coordinate.assign_attrs({'units': 'm'})
             
-            return ((nexrad_xarray.to_iris(), nexrad_xarray))
+            # Add altitude dimension to xarray but not to cube
+            nexrad_cube = nexrad_xarray.to_iris()
+            nexrad_xarray = nexrad_xarray.assign_coords(altitude = ('z', nexrad_xarray.z.values))
+            
+            return ((nexrad_cube, nexrad_xarray))
         
         else:
             raise Exception(f'!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!')
@@ -254,7 +258,11 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             nexrad_xarray['projection_x_coordinate'] = nexrad_xarray.projection_x_coordinate.assign_attrs({'units': 'm'})
             nexrad_xarray['projection_y_coordinate'] = nexrad_xarray.projection_y_coordinate.assign_attrs({'units': 'm'})
             
-            return ((nexrad_xarray.to_iris(), nexrad_xarray))
+            # Add altitude dimension to xarray but not to cube
+            nexrad_cube = nexrad_xarray.to_iris()
+            nexrad_xarray = nexrad_xarray.assign_coords(altitude = ('z', nexrad_xarray.z.values))
+            
+            return ((nexrad_cube, nexrad_xarray))
         
         else:
             raise Exception(f'!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!')
@@ -333,7 +341,7 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
                                                         south_north = ('y', np.arange(nexrad_xarray.shape[2])), west_east = ('x', np.arange(nexrad_xarray.shape[2])),
                                                         projection_x_coordinate = ('x', nexrad_xarray.x.values), projection_y_coordinate = ('y', nexrad_xarray.y.values),
                                                         x = ('x',np.arange(nexrad_xarray.shape[2])), y = ('y', np.arange(nexrad_xarray.shape[2])),
-                                                        model_level_number = ('z', np.arange(nexrad_xarray.shape[1])))
+                                                        model_level_number = ('z', np.arange(nexrad_xarray.shape[1])), altitude = ('z', nexrad_xarray.z.values))
         
         
             # Adjust dimension names to be standards accepted by iris
@@ -391,7 +399,7 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
                                                         south_north = ('y', np.arange(nexrad_xarray.shape[2])), west_east = ('x', np.arange(nexrad_xarray.shape[2])),
                                                         projection_x_coordinate = ('x', nexrad_xarray.x.values), projection_y_coordinate = ('y', nexrad_xarray.y.values),
                                                         x = ('x',np.arange(nexrad_xarray.shape[2])), y = ('y', np.arange(nexrad_xarray.shape[2])),
-                                                        model_level_number = ('z', np.arange(nexrad_xarray.shape[1])))
+                                                        model_level_number = ('z', np.arange(nexrad_xarray.shape[1])), altitude = ('z', nexrad_xarray.z.values))
         
         
             # Adjust dimension names to be standards accepted by iris

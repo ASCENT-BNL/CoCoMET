@@ -40,7 +40,7 @@ def cal_TB(fid):
 """
 Inputs: 
     filepath: path to wrfout files (i.e. ./data/wrfout/wrfout_d03_*), works with * delimintator
-    trackingVar: ['dbz','tb','w'], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
+    trackingVar: ['dbz','tb','wa'], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
 
 Outputs:
     cube: iris cube containing either reflectivity or brightness temperature values
@@ -79,13 +79,16 @@ def wrf_load_netcdf_iris(filepath, tracking_var, CONFIG):
         correct_alts = [np.mean(h.values) for h in ht]
         cube.coord('altitude').points = correct_alts
         
+        # Add altitude field for easier processing later
+        wrf_xarray['DBZ'] = wrf_xarray['DBZ'].assign_coords(altitude = ("bottom_top", correct_alts))
+        
     elif (tracking_var.lower() == 'tb'):
         # Brightness temperature is only 2d so no heights needed
         wrf_xarray['TB'] = (['Time','south_north','west_east'],cal_TB(wrf_xarray))
         wrf_xarray['TB'].attrs['units'] = 'K'
         cube = load(wrf_xarray,'TB')
         
-    elif (tracking_var.lower() == 'w'):
+    elif (tracking_var.lower() == 'wa'):
         # Get updraft velocity at mass points
         wrf_wa = getvar(wrf_netcdf, 'wa', timeidx=ALL_TIMES, method='cat', squeeze=False)
         
@@ -98,11 +101,14 @@ def wrf_load_netcdf_iris(filepath, tracking_var, CONFIG):
         cube.remove_coord('Time')
         cube.remove_coord('datetime')
         
-        # Add correct altitude based off of average height at each height index staggered for winds***
+        # Add correct altitude based off of average height at each height index
         ht = getvar(wrf_netcdf, "z", units="m")
         
         correct_alts = [np.mean(h.values) for h in ht]
         cube.coord('altitude').points = correct_alts
+        
+        # Add altitude field for easier processing later
+        wrf_xarray['WA'] = wrf_xarray['WA'].assign_coords(altitude = ("bottom_top", correct_alts))
     
     else:
         raise Exception(f'!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!')
@@ -118,7 +124,7 @@ def wrf_load_netcdf_iris(filepath, tracking_var, CONFIG):
 """
 Inputs:
     filepath: path to wrfout files (i.e. ./data/wrfout/wrfout_d03_*), works with * delimintator
-    trackingVar: ['dbz','tb','w'], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
+    trackingVar: ['dbz','tb','wa'], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
 
 Outputs:sudo snap install outlook-for-linux --edge
     wrf_netcdf: xarray dataset containing merged WRF data
@@ -145,6 +151,14 @@ def wrf_load_netcdf(filepath, tracking_var, CONFIG):
         wrf_xarray['DBZ'] = wrf_reflectivity
         wrf_xarray['DBZ'].attrs['projection']=str(wrf_xarray['DBZ'].attrs['projection'])
         
+        # Add correct altitude based off of average height at each height index staggered for winds***
+        ht = getvar(wrf_netcdf, "z", units="m")
+        
+        correct_alts = [np.mean(h.values) for h in ht]
+        
+        # Add altitude field for easier processing later
+        wrf_xarray['DBZ'] = wrf_xarray['DBZ'].assign_coords(altitude = ("bottom_top", correct_alts))
+        
         # Free memory
         del wrf_netcdf
         
@@ -152,7 +166,7 @@ def wrf_load_netcdf(filepath, tracking_var, CONFIG):
         wrf_xarray['TB'] = (['Time','south_north','west_east'],cal_TB(wrf_xarray))
         wrf_xarray['TB'].attrs['units'] = 'K'
         
-    elif (tracking_var.lower() == 'w'):
+    elif (tracking_var.lower() == 'wa'):
         wrf_netcdf = [Dataset(f) for f in file_names]
         
         # Get updraft velocity at mass points
@@ -161,6 +175,14 @@ def wrf_load_netcdf(filepath, tracking_var, CONFIG):
 
         wrf_xarray['WA'] = wrf_wa
         wrf_xarray['WA'].attrs['projection']=str(wrf_xarray['WA'].attrs['projection'])
+        
+        # Add correct altitude based off of average height at each height index staggered for winds***
+        ht = getvar(wrf_netcdf, "z", units="m")
+        
+        correct_alts = [np.mean(h.values) for h in ht]
+        
+        # Add altitude field for easier processing later
+        wrf_xarray['WA'] = wrf_xarray['WA'].assign_coords(altitude = ("bottom_top", correct_alts))
         
         # Free memory
         del wrf_netcdf

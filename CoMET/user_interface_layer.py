@@ -303,7 +303,10 @@ def run_wrf(CONFIG, queue = None):
             # Calcaulte each variable of interest and append to analysis data array
             for var in CONFIG['wrf']['tobac']['analysis'].keys():
                 
-                wrf_analysis_data.append(get_var(analysis_object, var))
+                # Add default tracking featured_id variable in place of variable if not present
+                if ("variable" not in CONFIG['wrf']['tobac']['analysis'][var.lower()]): CONFIG['wrf']['tobac']['analysis'][var.lower()]["tracking_var"] = CONFIG["wrf"]["feature_tracking_var"].upper()
+                
+                wrf_analysis_data.append(get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['wrf']['tobac']['analysis'][var.lower()]))
                 
     
         if (CONFIG['verbose']): print("=====Converting WRF tobac Output to CoMET-UDAF=====")
