@@ -39,7 +39,7 @@ def create_analysis_object(
         goes_tobac_segmentation_2d = None, # Optional, should be xarray NOT tuple
         ):
     
-    from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
+    from CoMET.tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
     
     # Create return dictionary
     analysis_object_dict = {}

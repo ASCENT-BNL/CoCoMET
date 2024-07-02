@@ -1,0 +1,13 @@
+# Python dependencies
+numpy
+xarray
+netCDF4
+wrf-python
+arm-pyart
+tobac
+pandas
+geopandas
+cftime
+yaml
+vincenty
+iris

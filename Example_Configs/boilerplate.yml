@@ -58,7 +58,7 @@ wrf:
     
         analysis:
             eth: { variable: "DBZ", cell_footprint_height: 2000, threshold: 15 }
-            area: { height: 2000 },
+            area: { height: 2000 }
             volume: {}
 
 
@@ -106,8 +106,9 @@ nexrad:
             
         analysis:
             eth: { variable: "DBZ", cell_footprint_height: 2000, threshold: 15 }
-            area: { height: 2000 },
+            area: { height: 2000 }
             volume: {}
+            vdisquants: { path_to_files: '/D3/data/thahn/ARM/VDISQUANTS/*' }
         
     
 # GOES
@@ -142,4 +143,4 @@ goes:
             threshold: 250
             
         analysis:
-            area: {},
+            area: {}

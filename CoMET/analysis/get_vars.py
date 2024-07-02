@@ -25,15 +25,15 @@ Valid Variables:
     "volume"
 """
 def get_var(analysis_object, var, verbose=False, **args):
+    from .calculate_arm_products import calculate_arm_vdisquants
     from .calculate_bulk_cell_statistics import calculate_ETH, calculate_area, calculate_volume
-    
-    print("=====In Progress=====")
     
     # Map the correct functions to the proper variables. This is a list of all the calculatable variables as well.
     variable_call_mechanism = {
         "eth": calculate_ETH,
         "area": calculate_area,
-        "volume": calculate_volume
+        "volume": calculate_volume,
+        "vdisquants": calculate_arm_vdisquants
     }
     
     # Check for valid variables
@@ -42,4 +42,4 @@ def get_var(analysis_object, var, verbose=False, **args):
         return
     
     # Call the proper function and return its output
-    return (variable_call_mechanism[var.lower()](analysis_object, verbose, **args))
+    return (variable_call_mechanism[var.lower()](analysis_object=analysis_object, verbose=verbose, **args))

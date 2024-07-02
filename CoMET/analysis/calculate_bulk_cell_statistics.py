@@ -24,36 +24,36 @@ def find_nearest(array, pivot):
 
 """
 Inputs:
-    analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d
+    analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d, and segmentation_xarray
     threshold: The value which needs to be exceeded to count towards the echo top height. I.e. 15 for reflectivity.
     verbose: Determins if output should be printed during processing or not
-    variable: The variable from the input tracking_xarray which should be used for calculating ETH
+    variable: The variable from the input segmentation_xarray which should be used for calculating ETH
     cell_footprint_height: The height used to calculate the cell area to determine where to calculate ETHs
     quantile: The percentile of calculated ETHs to return
 Outputs:
-    eth_info: A pandas data frame with the following rows: frame, feature_id, cell_id, eth where eth is in km
+    eth_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, eth where eth is in km
 """
-def calculate_ETH(analysis_object, threshold, verbose=False, variable=None, cell_footprint_height=2000, quantile=0.95):
+def calculate_ETH(analysis_object, threshold, verbose=False, variable=None, cell_footprint_height=2000, quantile=0.95, **args):
     import numpy as np
     import xarray as xr
     import pandas as pd
     
     # If input variable field is 2D return None. Also, if DataArray, use those values for calculations. If Dataset, use tracking_var to get variable
-    if (type(analysis_object['tracking_xarray']) == xr.core.dataarray.DataArray):
+    if (type(analysis_object['segmentation_xarray']) == xr.core.dataarray.DataArray):
         
-        if (len(analysis_object['tracking_xarray'].shape) != 4):
+        if (len(analysis_object['segmentation_xarray'].shape) != 4):
            return None 
        
         else:
-           variable_field = analysis_object['tracking_xarray']
+           variable_field = analysis_object['segmentation_xarray']
     
     else:
         
-        if (len(analysis_object['tracking_xarray'][variable].shape) != 4):
+        if (len(analysis_object['segmentation_xarray'][variable].shape) != 4):
             return None
         
         else:
-           variable_field = analysis_object['tracking_xarray'][variable]
+           variable_field = analysis_object['segmentation_xarray'][variable]
     
     
     # If 3D segmentation is available, use that to calculate cell footprint, otherwise use 2D segmentation
@@ -112,9 +112,9 @@ Inputs:
     verbose: Determins if output should be printed during processing or not
     height: The height which is used to calculate the area of cells
 Outputs:
-    area_info: A pandas data frame with the following rows: frame, feature_id, cell_id, area where area is in km^2
+    area_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, area where area is in km^2
 """
-def calculate_area(analysis_object, verbose=False, height = 2000):
+def calculate_area(analysis_object, verbose=False, height = 2000, **args):
     import numpy as np
     import pandas as pd
     
@@ -184,9 +184,9 @@ Inputs:
     analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_3d
     verbose: Determins if output should be printed during processing or not
 Outputs:
-    volume_info: A pandas data frame with the following rows: frame, feature_id, cell_id, volume where area is in km^3
+    volume_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, volume where area is in km^3
 """
-def calculate_volume(analysis_object, verbose=False):
+def calculate_volume(analysis_object, verbose=False, **args):
     import numpy as np
     import pandas as pd
     

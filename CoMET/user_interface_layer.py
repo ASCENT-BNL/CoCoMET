@@ -324,6 +324,7 @@ def run_wrf(CONFIG, queue = None):
             "analysis": wrf_analysis_data
             }
         
+        if (CONFIG['verbose']): print("=====GOES tobac Tracking Complete=====")
         
         # Send return dict to queue if there is a queue object passed
         if (queue is not None):
@@ -445,6 +446,8 @@ def run_nexrad(CONFIG, queue = None):
             "UDAF_segmentation_3d": segmentation_to_UDAF(nexrad_segmentation3d[0], linking_to_UDAF(nexrad_tracks, "tobac"), "tobac"),
             "analysis": nexrad_analysis_data
             }
+        
+        if (CONFIG['verbose']): print("=====NEXRAD tobac Tracking Complete=====")
     
         # Send return dict to queue if there is a queue object passed
         if (queue is not None):
@@ -551,6 +554,8 @@ def run_goes(CONFIG, queue = None):
             "UDAF_segmentation_2d": segmentation_to_UDAF(goes_segmentation2d[0], linking_to_UDAF(goes_tracks, "tobac"), "tobac"),
             "analysis": goes_analysis_data
             }
+        
+        if (CONFIG['verbose']): print("=====GOES tobac Tracking Complete=====")
         
         # Send return dict to queue if there is a queue object passed
         if (queue is not None):

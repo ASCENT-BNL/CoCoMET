@@ -47,60 +47,8 @@ def loadwrfcubelist(filenames,variable_list,**kwargs):
         cubelist_out.append(loadwrfcube(filenames,variable,**kwargs))
     return(cubelist_out)
 
-def loadwrfcube(filenames,variable,**kwargs):
-    if type(filenames) is list:
-        variable_cube=loadwrfcube_mult(sorted(filenames),variable,**kwargs)
-    elif type(filenames) is str:
-        variable_cube=loadwrfcube_mult([filenames],variable,**kwargs)
-    else:
-        raise ValueError('Type of input unknown: Must be str of list')
-    
-    
-    # if 'add_coordinates' in kwargs:
-    #     add_coordinates=kwargs['add_coordinates']
-    # else:
-    #     add_coordinates=None
-    # if add_coordinates != None:
-    #     add_aux_coordinates_multidim(filenames,variable_cube,**kwargs) 
-    return variable_cube
-    
-#def loadwrfcube_single(filenames,variable,constraint=None,add_coordinates=None):
-#    from iris import load_cube 
-#    variable_cube=load_cube(filenames,variable)
-##    variable_cube=addcoordinates(filenames, variable,variable_cube,add_coordinates=add_coordinates)
-#    variable_cube=add_time_coordinate(filenames, variable,variable_cube)
-##    variable_cube=variable_cube.extract(constraint)
-#    return variable_cube
-        
-    
-#def loadwrfcube_mult(filenames,variable,constraint=None,add_coordinates=None):
-#    from iris.cube import CubeList
-#    cube_list=[]
-#    for i in range(len(filenames)):
-#        cube_list.append(loadwrfcube_single(filenames[i],varidatasetable,add_coordinates=add_coordinates) )
-#    for member in cube_list:
-#        member.attributes={}
-#    variable_cubes=CubeList(cube_list)
-#    variable_cube=variable_cubes.concatenate_cube()
-#    variable_cube=addcoordinates(filenames[0], variable,variable_cube,add_coordinates=add_coordinates)        
-#    if add_coordinates != None:
-#        variable_cube=add_aux_coordinates_multidim(filenames,variable_cube,constraint=None,add_coordinates=add_coordinates) 
-#    variable_cube=variable_cube.extract(constraint)
-#
-#    return variable_cube
-#
-    
-#    cube_list=[]hall not contain dashes or dots, but underscores are valid. for me that seems like the same restrictions as for other symbol names, but i have not yet digged it down to doc
-#    for i in range(len(filenames)):
-#        cube_list.append(loadwrfcube_single(filenames[i],variable,add_coordinates=add_coordinates) )
-#    for member in cube_list:
-#        member.attributes={}
-#    variable_cubes=CubeList(cube_list)
-#    variable_cube=variable_cubes.concatenate_cube()
-#    variable_cube=addcoordinates(filenames[0], variable,variable_cube,add_coordinates=add_coordinates)        
-#    if add_coordinates != None:
-#        variable_cube=add_aux_coordinates_multidim(filenames,variable_cube,constraint=None,add_coordinates=add_coordinates) 
-#    variable_cube=variable_cube.extract(constraint)
+def loadwrfcube(dataset,variable,**kwargs):
+    variable_cube = loadwrfcube_mult(dataset, variable)
 
     return variable_cube
 
@@ -110,9 +58,6 @@ def loadwrfcube_mult(dataset,variable,constraint=None,add_coordinates=None):
     from iris.util import promote_aux_coord_to_dim_coord
     from iris.coords import AuxCoord
     from iris import Constraint
-    from xarray import open_mfdataset
-    from datetime import datetime
-    from cf_units import Unit
     array=dataset[variable]
     variable_dimensions=array.dims
     attributes=dataset.attrs
@@ -120,9 +65,6 @@ def loadwrfcube_mult(dataset,variable,constraint=None,add_coordinates=None):
     coord_system=make_coord_system(attributes)
 
     for dim,dimension in enumerate(variable_dimensions):
-#        if (variable_dimensions[dim]=='Time'):
-#           time=make_time_coord(filenames)
-#           cube.add_dim_coord(time,dim)
         if (variable_dimensions[dim]=='west_east'):
             west_east=make_westeast_coord(attributes['DX'],attributes['WEST-EAST_PATCH_END_UNSTAG'])
             cube.add_dim_coord(west_east,dim)

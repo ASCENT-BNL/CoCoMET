@@ -6,8 +6,19 @@ build-backend = "setuptools.build_meta"
 name = "CoMET"
 version = "0.0.1"
 dependencies = [
-    "requests",
     'importlib-metadata; python_version=="3.11.9"',
+    'numpy',
+    'xarray',
+    'netCDF4',
+    'wrf-python',
+    'arm-pyart',
+    'tobac',
+    'pandas',
+    'geopandas',
+    'cftime',
+    'yaml',
+    'vincenty',
+    'iris'
 ]
 authors = [
   { name="Travis Hahn", email="travis.hahn@psu.edu" },
