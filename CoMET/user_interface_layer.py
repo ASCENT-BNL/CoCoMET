@@ -257,7 +257,7 @@ def run_wrf(CONFIG, queue = None):
         wrf_tracks = None
         wrf_segmentation2d = None
         wrf_segmentation3d = None
-        wrf_analysis_data = []
+        wrf_analysis_data = {}
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
         if ("feature_id" in CONFIG['wrf']['tobac']):
@@ -304,9 +304,9 @@ def run_wrf(CONFIG, queue = None):
             for var in CONFIG['wrf']['tobac']['analysis'].keys():
                 
                 # Add default tracking featured_id variable in place of variable if not present
-                if ("variable" not in CONFIG['wrf']['tobac']['analysis'][var.lower()]): CONFIG['wrf']['tobac']['analysis'][var.lower()]["tracking_var"] = CONFIG["wrf"]["feature_tracking_var"].upper()
+                if ("variable" not in CONFIG['wrf']['tobac']['analysis'][var.lower()]): CONFIG['wrf']['tobac']['analysis'][var.lower()]["variable"] = CONFIG["wrf"]["feature_tracking_var"].upper()
                 
-                wrf_analysis_data.append(get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['wrf']['tobac']['analysis'][var.lower()]))
+                wrf_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['wrf']['tobac']['analysis'][var.lower()]))
                 
     
         if (CONFIG['verbose']): print("=====Converting WRF tobac Output to CoMET-UDAF=====")
@@ -379,7 +379,7 @@ def run_nexrad(CONFIG, queue = None):
         nexrad_tracks = None
         nexrad_segmentation2d = None
         nexrad_segmentation3d = None
-        nexrad_analysis_data = []
+        nexrad_analysis_data = {}
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
         if ("feature_id" in CONFIG['nexrad']['tobac']):
@@ -421,11 +421,14 @@ def run_nexrad(CONFIG, queue = None):
                 "UDAF_segmentation_2d": segmentation_to_UDAF(nexrad_segmentation2d[0], linking_to_UDAF(nexrad_tracks, "tobac"), "tobac"),
                 "UDAF_segmentation_3d": segmentation_to_UDAF(nexrad_segmentation3d[0], linking_to_UDAF(nexrad_tracks, "tobac"), "tobac")
             }
-            
+                
             # Calcaulte each variable of interest and append to analysis data array
             for var in CONFIG['nexrad']['tobac']['analysis'].keys():
                 
-                nexrad_analysis_data.append(get_var(analysis_object, var))
+                # Add default tracking featured_id variable in place of variable if not present
+                if ("variable" not in CONFIG['nexrad']['tobac']['analysis'][var.lower()]): CONFIG['nexrad']['tobac']['analysis'][var.lower()]["variable"] = CONFIG["nexrad"]["feature_tracking_var"].upper()
+                
+                nexrad_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['nexrad']['tobac']['analysis'][var.lower()]))
 
     
         if (CONFIG['verbose']): print("=====Converting NEXRAD tobac Output to CoMET-UDAF=====")
@@ -488,7 +491,7 @@ def run_goes(CONFIG, queue = None):
         goes_features = None
         goes_tracks = None
         goes_segmentation2d = None
-        goes_analysis_data = []
+        goes_analysis_data = {}
         
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
@@ -530,7 +533,10 @@ def run_goes(CONFIG, queue = None):
             # Calcaulte each variable of interest and append to analysis data array
             for var in CONFIG['goes']['tobac']['analysis'].keys():
                 
-                goes_analysis_data.append(get_var(analysis_object, var))
+                # Add default tracking featured_id variable in place of variable if not present
+                if ("variable" not in CONFIG['goes']['tobac']['analysis'][var.lower()]): CONFIG['goes']['tobac']['analysis'][var.lower()]["variable"] = CONFIG["goes"]["feature_tracking_var"].upper()
+                
+                goes_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['goes']['tobac']['analysis'][var.lower()]))
 
 
         if (CONFIG['verbose']): print("=====Converting GOES tobac Output to CoMET-UDAF=====")

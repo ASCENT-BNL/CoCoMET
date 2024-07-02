@@ -25,8 +25,13 @@ def find_nearest(array, pivot):
 """
 Inputs:
     analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d
+    threshold: The value which needs to be exceeded to count towards the echo top height. I.e. 15 for reflectivity.
+    verbose: Determins if output should be printed during processing or not
+    variable: The variable from the input tracking_xarray which should be used for calculating ETH
+    cell_footprint_height: The height used to calculate the cell area to determine where to calculate ETHs
+    quantile: The percentile of calculated ETHs to return
 Outputs:
-    TBD
+    eth_info: A pandas data frame with the following rows: frame, feature_id, cell_id, eth where eth is in km
 """
 def calculate_ETH(analysis_object, threshold, verbose=False, variable=None, cell_footprint_height=2000, quantile=0.95):
     import numpy as np
@@ -66,7 +71,7 @@ def calculate_ETH(analysis_object, threshold, verbose=False, variable=None, cell
         raise Exception("!=====Missing Segmentation Input=====!")
         return
     
-    ETH_info = {
+    eth_info = {
         "frame": [],
         "feature_id": [],
         "cell_id": [],
@@ -83,27 +88,31 @@ def calculate_ETH(analysis_object, threshold, verbose=False, variable=None, cell
             
             # Get the indices of the cell footprint
             proper_indices = np.argwhere(footprint_data[frame[0]].values == feature[0])
-            ETH_set = []
+            eth_set = []
             
             # Calculate ETH for each location
             for iy,ix in proper_indices:
             
                 max_alt_index = np.argwhere(variable_field[frame[0],:,iy,ix].values > threshold).max()
                 max_alt = variable_field.altitude.values[max_alt_index]
-                ETH_set.append(max_alt)
+                eth_set.append(max_alt)
             
-            ETH_info["frame"].append(frame[0])
-            ETH_info["feature_id"].append(feature[0])
-            ETH_info["cell_id"].append(feature[1]["cell_id"].min())
-            ETH_info["eth"].append(np.nanquantile(ETH_set, quantile)/1000)
+            eth_info["frame"].append(frame[0])
+            eth_info["feature_id"].append(feature[0])
+            eth_info["cell_id"].append(feature[1]["cell_id"].min())
+            eth_info["eth"].append(np.nanquantile(eth_set, quantile)/1000)
     
-    return(pd.DataFrame(ETH_info))
+    return(pd.DataFrame(eth_info))
 
 
 
 """
 Inputs:
-    hi :3
+    analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d
+    verbose: Determins if output should be printed during processing or not
+    height: The height which is used to calculate the area of cells
+Outputs:
+    area_info: A pandas data frame with the following rows: frame, feature_id, cell_id, area where area is in km^2
 """
 def calculate_area(analysis_object, verbose=False, height = 2000):
     import numpy as np
@@ -172,13 +181,14 @@ def calculate_area(analysis_object, verbose=False, height = 2000):
   
 """
 Inputs:
-    TBD
+    analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_3d
+    verbose: Determins if output should be printed during processing or not
+Outputs:
+    volume_info: A pandas data frame with the following rows: frame, feature_id, cell_id, volume where area is in km^3
 """
 def calculate_volume(analysis_object, verbose=False):
     import numpy as np
     import pandas as pd
-    
-    print("=====In Progress=====")
     
     if (analysis_object['UDAF_segmentation_3d'] is None):
         raise Exception("!=====3D Segmentation Data is Required for Volume Calculation=====!")
@@ -205,7 +215,7 @@ def calculate_volume(analysis_object, verbose=False):
     y_dim_sizes = np.append(y_dim_sizes, y_dim_sizes[-1])
     z_dim_sizes = np.append(z_dim_sizes, z_dim_sizes[-1])
     
-    # use einstein sum notation to get volume of cells
+    # use Einstein sum notation to get volume of cells
     cell_volumes = np.einsum('i,j,k->ijk',z_dim_sizes,y_dim_sizes,x_dim_sizes)
     
     # Loop over each frame

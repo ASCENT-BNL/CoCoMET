@@ -58,6 +58,8 @@ wrf:
     
         analysis:
             eth: { variable: "DBZ", cell_footprint_height: 2000, threshold: 15 }
+            area: { height: 2000 },
+            volume: {}
 
 
 # NEXRAD
@@ -103,7 +105,9 @@ nexrad:
             threshold: 15
             
         analysis:
-            eth: ('dbz', 15)
+            eth: { variable: "DBZ", cell_footprint_height: 2000, threshold: 15 }
+            area: { height: 2000 },
+            volume: {}
         
     
 # GOES
@@ -136,3 +140,6 @@ goes:
             target: 'minimum'
             method: 'watershed'
             threshold: 250
+            
+        analysis:
+            area: {},
