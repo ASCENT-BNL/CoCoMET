@@ -64,11 +64,11 @@ class Test_User_Interface_Layer(unittest.TestCase):
     # Test to make sure CoMET can handle CONFIG inputs well
     def test_CoMET_start(self):
         self.assertEqual(CoMET.CoMET_start(None, True, CONFIG=wrf_CONFIG_dbz), wrf_CONFIG_dbz)
-        self.assertEqual(CoMET.CoMET_start('./Example_Configs/wrf_test_config_dbz.yml', True), wrf_CONFIG_dbz)
+        self.assertEqual(CoMET.CoMET_start('./examples/example_configs/wrf_test_config_dbz.yml', True), wrf_CONFIG_dbz)
     
     # Make sure the CONFIG loading is working
     def test_config_load(self):
-        CONFIG = CoMET.CoMET_load('./Example_Configs/boilerplate.yml')
+        CONFIG = CoMET.CoMET_load('./examples/example_configs/boilerplate.yml')
         self.assertEqual(type(CONFIG), dict, "Should return dictionary object")
         
     
@@ -89,7 +89,7 @@ class Test_WRF_tobac(unittest.TestCase):
     
     # Test the loading of the netcdf and iris for reflectivity
     def test_wrf_load_netcdf_iris_dbz(self):
-        CONFIG = CoMET.CoMET_start('./Example_Configs/wrf_test_config_dbz.yml', True)
+        CONFIG = CoMET.CoMET_start('./examples/example_configs//wrf_test_config_dbz.yml', True)
         self.__class__.CONFIG_dbz = CONFIG
         
         wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris('/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*', 'dbz', CONFIG)
@@ -123,7 +123,7 @@ class Test_WRF_tobac(unittest.TestCase):
         
     # Test the loading of the netcdf and iris for updraft
     def test_wrf_load_netcdf_iris_w(self):
-        CONFIG = CoMET.CoMET_start('./Example_Configs/wrf_test_config_w.yml', True)
+        CONFIG = CoMET.CoMET_start('./examples/example_configs/wrf_test_config_w.yml', True)
         self.__class__.CONFIG_w = CONFIG
         
         wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris('/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*', 'W', CONFIG)
@@ -157,7 +157,7 @@ class Test_WRF_tobac(unittest.TestCase):
     
     # Test the loading of the netcdf and iris for brightness temperature
     def test_wrf_load_netcdf_iris_tb(self):
-        CONFIG = CoMET.CoMET_start('./Example_Configs/wrf_test_config_tb.yml', True)
+        CONFIG = CoMET.CoMET_start('./examples/example_configs/wrf_test_config_tb.yml', True)
         self.__class__.CONFIG_tb = CONFIG
         
         wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris('/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*', 'tb', CONFIG)

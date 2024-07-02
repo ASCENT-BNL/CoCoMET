@@ -1,0 +1,15 @@
+numpy
+xarray
+netCDF4
+wrf-python
+arm-pyart
+tobac
+pandas
+geopandas
+cftime
+yaml
+vincenty
+iris
+
+[:python_version == "3.11.9"]
+importlib-metadata
