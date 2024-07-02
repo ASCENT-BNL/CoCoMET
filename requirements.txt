@@ -1,13 +1,13 @@
 # Python dependencies
-numpy
+numpy>=1.25.0,<=1.25.2
 xarray
 netCDF4
 wrf-python
 arm-pyart
-tobac
+tobac @ git+https://github.com/tobac-project/tobac.git@37ddd51
 pandas
 geopandas
 cftime
-yaml
+pyyaml
 vincenty
 iris
