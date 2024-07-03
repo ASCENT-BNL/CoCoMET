@@ -4,12 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "CoMET"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
-    'numpy>=1.25.0,<=1.25.2',
+    'numpy>=1.25.0',
     'xarray',
     'netCDF4',
-    'wrf-python',
     'arm-pyart',
     'pandas',
     'geopandas',
@@ -24,7 +23,7 @@ authors = [
 ]
 description = "Convective cloud Model Evaluation Toolkit (CoMET)"
 readme = "README.md"
-requires-python = "<=3.11.9,>=3.11.0"
+requires-python = ">=3.11.0"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: BSD-3 License",

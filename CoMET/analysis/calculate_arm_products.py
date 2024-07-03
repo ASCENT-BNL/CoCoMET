@@ -62,7 +62,7 @@ def calculate_arm_vdisquants(analysis_object, path_to_files, verbose=False, **ar
     # Loop over frames
     for ii, frame in enumerate(analysis_object['UDAF_linking'].groupby("frame")):
         
-        if (verbose): print(f"=====Calculating VIDSQUANT Products. {'%.2f' % ((ii+1)/len(np.unique(analysis_object['UDAF_linking'].frame))*100)}% Complete=====")
+        if (verbose): print(f"=====Calculating VIDSQUANT Data. {'%.2f' % ((ii+1)/len(np.unique(analysis_object['UDAF_linking'].frame))*100)}% Complete=====")
         
         # Get VAP at current time step
         time_idx = find_nearest(vap.time.values, frame[1].time.values[0])
@@ -98,27 +98,5 @@ def calculate_arm_vdisquants(analysis_object, path_to_files, verbose=False, **ar
         
         
     return(pd.DataFrame(vap_info))
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
         
