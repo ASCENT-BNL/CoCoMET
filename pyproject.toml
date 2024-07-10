@@ -6,18 +6,20 @@ build-backend = "setuptools.build_meta"
 name = "CoMET"
 version = "0.0.2"
 dependencies = [
-    'numpy<=1.26.4',
-    'numba'
-    'xarray',
-    'netCDF4',
-    'arm-pyart',
-    'pandas',
-    'geopandas',
-    'cftime',
-    'pyyaml',
-    'vincenty',
-    'iris',
-    'tobac @ git+https://github.com/tobac-project/tobac.git@37ddd51'
+    "numpy<=1.26.4",
+    "numba"
+    "xarray",
+    "netCDF4",
+    "arm-pyart",
+    "pandas",
+    "geopandas",
+    "cftime",
+    "pyyaml",
+    "vincenty",
+    "iris",
+    "tobac @ git+https://github.com/tobac-project/tobac.git@37ddd51",
+    "tqdm",
+    "metpy"
 ]
 authors = [
   { name="Travis Hahn", email="travis.hahn@psu.edu" },

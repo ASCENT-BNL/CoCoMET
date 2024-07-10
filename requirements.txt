@@ -11,3 +11,5 @@ cftime
 pyyaml
 vincenty
 iris
+tqdm
+metpy

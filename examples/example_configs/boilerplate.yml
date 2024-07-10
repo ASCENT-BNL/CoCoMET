@@ -24,22 +24,22 @@ max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None 
 
 # WRF
 wrf:
-    path_to_data: '/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*'
+    path_to_data: "/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*"
 
-    feature_tracking_var: 'dbz' #DBZ, TB, WA
-    segmentation_var: 'dbz'
+    feature_tracking_var: "dbz" #DBZ, TB, WA
+    segmentation_var: "dbz"
 
     tobac:
         feature_id:
             height: 2000 # In meters
             threshold: [30, 40, 50, 60]
-            target: 'maximum'
-            position_threshold: 'weighted_diff'
+            target: "maximum"
+            position_threshold: "weighted_diff"
             sigma_threshold: 0.5
             n_min_threshold: 4
         
         linking: 
-            method_linking: 'predict'
+            method_linking: "predict"
             adaptive_stop: 0.2
             adaptive_step: 0.95
             order: 1
@@ -49,36 +49,44 @@ wrf:
         
         segmentation_2d:
             height: 2000 # m
-            method: 'watershed'
+            method: "watershed"
             threshold: 15
             
         segmentation_3d:
-            method: 'watershed'
+            method: "watershed"
             threshold: 15
     
         analysis:
-            eth: { variable: "DBZ", cell_footprint_height: 2000, threshold: 15 }
+            # eth: { variable: "DBZ", cell_footprint_height: 2000, threshold: 15 }
             area: { height: 2000 }
-            volume: {}
+            # volume: {}
+            
+    moaap:
+        tracking_save_path: "/D3/data/thahn/wrf/wrfout_2023_07_09/moaap_test/"
+        MinTimePR: 0.5
+        MinAreaPR: 10
+        
+        analysis:
+            # None yet
 
 
 #MesoNH
 mesonh:
-    path_to_data: '/D3/data/thahn/MesoNH/CLN/0_5km/*'
+    path_to_data: "/D3/data/thahn/MesoNH/CLN/0_5km/*"
 
-    feature_tracking_var: 'dbz' #DBZ, TB, WA
-    segmentation_var: 'dbz'
+    feature_tracking_var: "dbz" #DBZ, TB, WA
+    segmentation_var: "dbz"
 
     tobac:
         feature_id:
             threshold: [10, 20, 30]
-            target: 'maximum'
-            position_threshold: 'weighted_diff'
+            target: "maximum"
+            position_threshold: "weighted_diff"
             sigma_threshold: 0.5
             n_min_threshold: 4
         
         linking: 
-            method_linking: 'predict'
+            method_linking: "predict"
             adaptive_stop: 0.2
             adaptive_step: 0.95
             order: 1
@@ -88,11 +96,11 @@ mesonh:
         
         segmentation_2d:
             height: 2000 # m
-            method: 'watershed'
+            method: "watershed"
             threshold: 5
             
         segmentation_3d:
-            method: 'watershed'
+            method: "watershed"
             threshold: 5
     
         analysis:
@@ -101,32 +109,32 @@ mesonh:
             volume: {}
 
 
-# NEXRAD
+# # NEXRAD
 nexrad:
-    # path_to_data: '/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v'
-    path_to_data: '/D3/data/thahn/NEXRAD/HAS012527906/grids/*'
+    # path_to_data: "/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v"
+    path_to_data: "/D3/data/thahn/NEXRAD/HAS012527906/grids/*"
 
     bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max]
 
     # gridding: # only if gridding is needed 
-    #     gridding_save_path: '/D3/data/thahn/NEXRAD/HAS012527906/grids/'
+    #     gridding_save_path: "/D3/data/thahn/NEXRAD/HAS012527906/grids/"
     #     grid_shape: (40, 401, 401)
     #     grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
         
-    feature_tracking_var: 'dbz'
-    segmentation_var: 'dbz'
+    feature_tracking_var: "dbz"
+    segmentation_var: "dbz"
         
     tobac:
         feature_id:
             # height: 2000 # meters
             threshold: [30, 40, 50, 60]
-            target: 'maximum'
-            position_threshold: 'weighted_diff'
+            target: "maximum"
+            position_threshold: "weighted_diff"
             sigma_threshold: 0.5
             n_min_threshold: 4
         
         linking: 
-            method_linking: 'predict'
+            method_linking: "predict"
             adaptive_stop: 0.2
             adaptive_step: 0.95
             order: 1
@@ -135,40 +143,41 @@ nexrad:
             v_max: 20
         
         segmentation_3d:
-            method: 'watershed'
+            method: "watershed"
             threshold: 15
         
         segmentation_2d:
             height: 2000
-            method: 'watershed'
+            method: "watershed"
             threshold: 15
             
         analysis:
-            eth: { variable: "DBZ", cell_footprint_height: 2000, threshold: 15 }
-            area: { height: 2000 }
-            volume: {}
-            vdisquants: { path_to_files: '/D3/data/thahn/ARM/VDISQUANTS/*' }
+            # eth: { variable: "DBZ", cell_footprint_height: 2000, threshold: 15 }
+            # area: { height: 2000 }
+            # volume: {}
+            interpsonde: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*" }
+            vdisquants: { path_to_files: "/D3/data/thahn/ARM/VDISQUANTS/*" }
         
     
 # # GOES
 goes:
-    path_to_data: '/D3/data/thahn/GOES/noaa-goes16/ABI-L2-CMIPC/2023/2023_07_11/*'
+    path_to_data: "/D3/data/thahn/GOES/noaa-goes16/ABI-L2-CMIPC/2023/2023_07_11/*"
 
     bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max]
     
-    feature_tracking_var: 'tb'
-    segmentation_var: 'tb'
+    feature_tracking_var: "tb"
+    segmentation_var: "tb"
     
     tobac:
         feature_id:
             threshold: [250,225,200,175,150]
-            target: 'minimum'
-            position_threshold: 'weighted_diff'
+            target: "minimum"
+            position_threshold: "weighted_diff"
             sigma_threshold: 0.5
             n_min_threshold: 4
     
         linking: 
-            method_linking: 'predict'
+            method_linking: "predict"
             adaptive_stop: 0.2
             adaptive_step: 0.95
             order: 1
@@ -177,9 +186,11 @@ goes:
             v_max: 20
         
         segmentation_2d:
-            target: 'minimum'
-            method: 'watershed'
+            target: "minimum"
+            method: "watershed"
             threshold: 250
             
         analysis:
             area: {}
+            interpsonde: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*" }
+            vdisquants: { path_to_files: "/D3/data/thahn/ARM/VDISQUANTS/*" }
