@@ -1,5 +1,6 @@
 # Python dependencies
-numpy>=1.25.0
+numpy<=1.26.4
+numba
 xarray
 netCDF4
 arm-pyart
