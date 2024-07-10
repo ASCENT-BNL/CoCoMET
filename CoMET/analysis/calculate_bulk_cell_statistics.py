@@ -81,6 +81,7 @@ def calculate_ETH(analysis_object, threshold, verbose=False, variable=None, cell
     # Loop over each frame
     for ii, frame in enumerate(analysis_object['UDAF_linking'].groupby("frame")):
         
+        # TODO: Replace with tqdm progress bar
         if (verbose): print(f"=====Calculating Echo Top Heights. {'%.2f' % ((ii+1)/len(np.unique(analysis_object['UDAF_linking'].frame))*100)}% Complete=====")
         
         # Loop over each feature

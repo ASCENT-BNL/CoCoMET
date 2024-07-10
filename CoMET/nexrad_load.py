@@ -229,7 +229,7 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             # Subset location of interest
             if ('nexrad' in CONFIG):
                 
-                if ('bounds' in CONFIG['goes']):
+                if ('bounds' in CONFIG['nexrad']):
 
                     mask_lon = (nexrad_xarray.lon >= CONFIG['nexrad']['bounds'][0]) & (nexrad_xarray.lon <= CONFIG['nexrad']['bounds'][1])
                     mask_lat = (nexrad_xarray.lat >= CONFIG['nexrad']['bounds'][2]) & (nexrad_xarray.lat <= CONFIG['nexrad']['bounds'][3])
@@ -323,7 +323,7 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
             # Subset location of interest
             if ('nexrad' in CONFIG):
                 
-                if ('bounds' in CONFIG['goes']):
+                if ('bounds' in CONFIG['nexrad']):
 
                     mask_lon = (nexrad_xarray.lon >= CONFIG['nexrad']['bounds'][0]) & (nexrad_xarray.lon <= CONFIG['nexrad']['bounds'][1])
                     mask_lat = (nexrad_xarray.lat >= CONFIG['nexrad']['bounds'][2]) & (nexrad_xarray.lat <= CONFIG['nexrad']['bounds'][3])
@@ -381,7 +381,7 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
             # Subset location of interest
             if ('nexrad' in CONFIG):
                 
-                if ('bounds' in CONFIG['goes']):
+                if ('bounds' in CONFIG['nexrad']):
 
                     mask_lon = (nexrad_xarray.lon >= CONFIG['nexrad']['bounds'][0]) & (nexrad_xarray.lon <= CONFIG['nexrad']['bounds'][1])
                     mask_lat = (nexrad_xarray.lat >= CONFIG['nexrad']['bounds'][2]) & (nexrad_xarray.lat <= CONFIG['nexrad']['bounds'][3])

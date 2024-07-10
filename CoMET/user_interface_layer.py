@@ -275,7 +275,7 @@ def run_wrf(CONFIG, queue = None):
         "segmentation_cube": wrf_segmentation_cube
     }
     
-    # now determine which tracker to use
+    # now determine which tracker(s) to use
     if ("tobac" in CONFIG['wrf']):
         from .wrf_tobac import wrf_tobac_feature_id, wrf_tobac_linking, wrf_tobac_segmentation
         
@@ -283,7 +283,7 @@ def run_wrf(CONFIG, queue = None):
         wrf_tracks = None
         wrf_segmentation2d = None
         wrf_segmentation3d = None
-        wrf_analysis_data = {}
+        wrf_tobac_analysis_data = {}
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
         if ("feature_id" in CONFIG['wrf']['tobac']):
@@ -332,7 +332,7 @@ def run_wrf(CONFIG, queue = None):
                 # Add default tracking featured_id variable in place of variable if not present
                 if ("variable" not in CONFIG['wrf']['tobac']['analysis'][var.lower()]): CONFIG['wrf']['tobac']['analysis'][var.lower()]["variable"] = CONFIG["wrf"]["feature_tracking_var"].upper()
                 
-                wrf_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['wrf']['tobac']['analysis'][var.lower()]))
+                wrf_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['wrf']['tobac']['analysis'][var.lower()]))
                 
     
         if (CONFIG['verbose']): print("=====Converting WRF tobac Output to CoMET-UDAF=====")
@@ -347,22 +347,46 @@ def run_wrf(CONFIG, queue = None):
             "UDAF_segmentation_2d": segmentation_to_UDAF(wrf_segmentation2d[0], linking_to_UDAF(wrf_tracks, "tobac"), "tobac"),
             "segmentation_3d": wrf_segmentation3d,
             "UDAF_segmentation_3d": segmentation_to_UDAF(wrf_segmentation3d[0], linking_to_UDAF(wrf_tracks, "tobac"), "tobac"),
-            "analysis": wrf_analysis_data
+            "analysis": wrf_tobac_analysis_data
             }
         
         if (CONFIG['verbose']): print("=====WRF tobac Tracking Complete=====")
-        
-        # Send return dict to queue if there is a queue object passed
-        if (queue is not None):
-            queue.put(user_return_dict)
-            return
-        
-        # Return dictionary
-        return (user_return_dict)
     
-    else:
-        raise Exception("!=====No Tracker or Invalid Tracker Found in CONFIG=====!")
+    # Run MOAAP if present
+    if ("moaap" in CONFIG["wrf"]):
+        from .wrf_moaap import wrf_moaap
+        
+        wrf_moaap_analysis_data = {}
+        
+        if (CONFIG["verbose"]): print("=====Starting WRF MOAAP Tracking=====")
+        
+        # Run MOAAP
+        mask_output = wrf_moaap(wrf_tracking_xarray, CONFIG)
+        
+        # Run analysis on MOAAP output
+        if ("analysis" in CONFIG['wrf']['moaap']):
+            
+            from CoMET.analysis.get_vars import get_var
+            
+            if (CONFIG['verbose']): print("=====Starting WRF MOAAP Analysis Calculations=====")
+            
+            # TODO: do all this stuff, heavy work needed in output translation layer
+
+        user_return_dict["wrf"]["moaap"] = {
+            "mask_xarray": mask_output,
+            "analysis": wrf_moaap_analysis_data
+        }
+
+        if (CONFIG["verbose"]): print("=====WRF MOAAP Tracking Complete=====")            
+
+
+    # Send return dict to queue if there is a queue object passed
+    if (queue is not None):
+        queue.put(user_return_dict)
         return
+    
+    # Return dictionary
+    return (user_return_dict)
 
 
 
@@ -408,7 +432,7 @@ def run_mesonh(CONFIG, queue = None):
         mesonh_tracks = None
         mesonh_segmentation2d = None
         mesonh_segmentation3d = None
-        mesonh_analysis_data = {}
+        mesonh_tobac_analysis_data = {}
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
         if ("feature_id" in CONFIG['mesonh']['tobac']):
@@ -457,7 +481,7 @@ def run_mesonh(CONFIG, queue = None):
                 # Add default tracking featured_id variable in place of variable if not present
                 if ("variable" not in CONFIG['mesonh']['tobac']['analysis'][var.lower()]): CONFIG['mesonh']['tobac']['analysis'][var.lower()]["variable"] = CONFIG["mesonh"]["feature_tracking_var"].upper()
                 
-                mesonh_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['mesonh']['tobac']['analysis'][var.lower()]))
+                mesonh_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['mesonh']['tobac']['analysis'][var.lower()]))
                 
     
         if (CONFIG['verbose']): print("=====Converting MesoNH tobac Output to CoMET-UDAF=====")
@@ -472,22 +496,19 @@ def run_mesonh(CONFIG, queue = None):
             "UDAF_segmentation_2d": segmentation_to_UDAF(mesonh_segmentation2d[0], linking_to_UDAF(mesonh_tracks, "tobac"), "tobac"),
             "segmentation_3d": mesonh_segmentation3d,
             "UDAF_segmentation_3d": segmentation_to_UDAF(mesonh_segmentation3d[0], linking_to_UDAF(mesonh_tracks, "tobac"), "tobac"),
-            "analysis": mesonh_analysis_data
+            "analysis": mesonh_tobac_analysis_data
             }
         
         if (CONFIG['verbose']): print("=====MesoNH tobac Tracking Complete=====")
         
-        # Send return dict to queue if there is a queue object passed
-        if (queue is not None):
-            queue.put(user_return_dict)
-            return
-        
-        # Return dictionary
-        return (user_return_dict)
     
-    else:
-        raise Exception("!=====No Tracker or Invalid Tracker Found in CONFIG=====!")
+    # Send return dict to queue if there is a queue object passed
+    if (queue is not None):
+        queue.put(user_return_dict)
         return
+    
+    # Return dictionary
+    return (user_return_dict)
 
 
 
@@ -531,7 +552,7 @@ def run_nexrad(CONFIG, queue = None):
         nexrad_tracks = None
         nexrad_segmentation2d = None
         nexrad_segmentation3d = None
-        nexrad_analysis_data = {}
+        nexrad_tobac_analysis_data = {}
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
         if ("feature_id" in CONFIG['nexrad']['tobac']):
@@ -580,7 +601,7 @@ def run_nexrad(CONFIG, queue = None):
                 # Add default tracking featured_id variable in place of variable if not present
                 if ("variable" not in CONFIG['nexrad']['tobac']['analysis'][var.lower()]): CONFIG['nexrad']['tobac']['analysis'][var.lower()]["variable"] = CONFIG["nexrad"]["feature_tracking_var"].upper()
                 
-                nexrad_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['nexrad']['tobac']['analysis'][var.lower()]))
+                nexrad_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['nexrad']['tobac']['analysis'][var.lower()]))
 
     
         if (CONFIG['verbose']): print("=====Converting NEXRAD tobac Output to CoMET-UDAF=====")
@@ -595,25 +616,22 @@ def run_nexrad(CONFIG, queue = None):
             "UDAF_segmentation_2d": segmentation_to_UDAF(nexrad_segmentation2d[0], linking_to_UDAF(nexrad_tracks, "tobac"), "tobac"),
             "segmentation_3d": nexrad_segmentation3d,
             "UDAF_segmentation_3d": segmentation_to_UDAF(nexrad_segmentation3d[0], linking_to_UDAF(nexrad_tracks, "tobac"), "tobac"),
-            "analysis": nexrad_analysis_data
+            "analysis": nexrad_tobac_analysis_data
             }
         
         if (CONFIG['verbose']): print("=====NEXRAD tobac Tracking Complete=====")
     
-        # Send return dict to queue if there is a queue object passed
-        if (queue is not None):
-            queue.put(user_return_dict)
-            return
     
-        # Return dictionary
-        return (user_return_dict)
-    
-    else:
-        raise Exception("!=====No Tracker or Invalid Tracker Found in CONFIG=====!")
+    # Send return dict to queue if there is a queue object passed
+    if (queue is not None):
+        queue.put(user_return_dict)
         return
 
+    # Return dictionary
+    return (user_return_dict)
     
 
+    
 """
 Inputs:
     CONFIG: User configuration file
@@ -645,7 +663,7 @@ def run_goes(CONFIG, queue = None):
         goes_features = None
         goes_tracks = None
         goes_segmentation2d = None
-        goes_analysis_data = {}
+        goes_tobac_analysis_data = {}
         
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
@@ -690,7 +708,7 @@ def run_goes(CONFIG, queue = None):
                 # Add default tracking featured_id variable in place of variable if not present
                 if ("variable" not in CONFIG['goes']['tobac']['analysis'][var.lower()]): CONFIG['goes']['tobac']['analysis'][var.lower()]["variable"] = CONFIG["goes"]["feature_tracking_var"].upper()
                 
-                goes_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['goes']['tobac']['analysis'][var.lower()]))
+                goes_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['goes']['tobac']['analysis'][var.lower()]))
 
 
         if (CONFIG['verbose']): print("=====Converting GOES tobac Output to CoMET-UDAF=====")
@@ -703,19 +721,16 @@ def run_goes(CONFIG, queue = None):
             "UDAF_linking": linking_to_UDAF(goes_tracks, "tobac"),
             "segmentation_2d": goes_segmentation2d,
             "UDAF_segmentation_2d": segmentation_to_UDAF(goes_segmentation2d[0], linking_to_UDAF(goes_tracks, "tobac"), "tobac"),
-            "analysis": goes_analysis_data
+            "analysis": goes_tobac_analysis_data
             }
         
         if (CONFIG['verbose']): print("=====GOES tobac Tracking Complete=====")
         
-        # Send return dict to queue if there is a queue object passed
-        if (queue is not None):
-            queue.put(user_return_dict)
-            return
-        
-        # Return dictionary
-        return (user_return_dict)
     
-    else:
-        raise Exception("!=====No Tracker or Invalid Tracker Found in CONFIG=====!")
+    # Send return dict to queue if there is a queue object passed
+    if (queue is not None):
+        queue.put(user_return_dict)
         return
+    
+    # Return dictionary
+    return (user_return_dict)
