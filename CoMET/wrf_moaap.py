@@ -33,7 +33,7 @@ def wrf_moaap(wrf_xarray, CONFIG):
     import numpy as np
     import pandas as pd
     import xarray as xr
-    from wrf_calculate_products import wrf_calculate_brightness_temp
+    from .wrf_calculate_products import wrf_calculate_brightness_temp
     from CoMET.MOAAP import moaap
     
     # Get basic setup variables including lat/lon, delta time, a pandas time range vector (TODO: adjust output to )
