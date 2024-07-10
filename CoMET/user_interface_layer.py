@@ -9,7 +9,9 @@ Created on Mon Jun 10 14:55:16 2024
 # =============================================================================
 # This is the interface layer between all of CoMET's backend functionality and the user. A sort of parser for a configuration input file. 
 # =============================================================================
-# TODO: Create CoMET-UDAF Specification for return object and hence for the analysis object
+# TODO: Create CoMET-UDAF Specification for return object
+
+
 
 """
 Inputs:
@@ -44,8 +46,14 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
         wrf_data = run_wrf(CONFIG)
 
 
+    # Handle MesoNH data
+    if ("mesonh" in CONFIG):
+        
+        # Call run mesonh function to handle all mesonh tasks
+        mesonh_data = run_mesonh(CONFIG)
+
     # Handle NEXRAD data
-    if ('nexrad' in CONFIG):
+    if ("nexrad" in CONFIG):
         
         # Call run nexrad function to handle all nexrad tasks
         nexrad_data = run_nexrad(CONFIG)
@@ -59,7 +67,7 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
 
 
     # Return dict at end
-    return (wrf_data | nexrad_data | goes_data)
+    return (wrf_data | mesonh_data | nexrad_data | goes_data)
 
 
 
@@ -99,6 +107,22 @@ def CoMET_start_multi(CONFIG):
             wrf_process = multiprocessing.Process(target=run_wrf, args=(CONFIG, queue))
             processes.append(wrf_process)
             wrf_process.start()
+            
+            active_process_count+=1
+        
+        
+        # Handle MesoNH data
+        if ("mesonh" in CONFIG):
+            
+            # Check to make sure max core count has not been exceeded
+            if (CONFIG['max_cores'] is not None and active_process_count + 1 > CONFIG['max_cores']):
+                raise Exception("!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!")
+                return
+            
+            # Call run MesoNH function to handle all MesoNH tasks
+            mesonh_process = multiprocessing.Process(target=run_mesonh, args=(CONFIG, queue))
+            processes.append(mesonh_process)
+            mesonh_process.start()
             
             active_process_count+=1
             
@@ -182,6 +206,8 @@ def CoMET_load(path_to_config):
     if ("wrf" in CONFIG and CONFIG['verbose']):
         print("=====WRF Setup Found in CONFIG=====")
     
+    if ("mesonh" in CONFIG and CONFIG["verbose"]):
+        print("=====MesoNH Setup Found in CONFIG=====")
     
     # if nexrad present, run nexrad 
     if ("nexrad" in CONFIG):
@@ -324,7 +350,132 @@ def run_wrf(CONFIG, queue = None):
             "analysis": wrf_analysis_data
             }
         
-        if (CONFIG['verbose']): print("=====GOES tobac Tracking Complete=====")
+        if (CONFIG['verbose']): print("=====WRF tobac Tracking Complete=====")
+        
+        # Send return dict to queue if there is a queue object passed
+        if (queue is not None):
+            queue.put(user_return_dict)
+            return
+        
+        # Return dictionary
+        return (user_return_dict)
+    
+    else:
+        raise Exception("!=====No Tracker or Invalid Tracker Found in CONFIG=====!")
+        return
+
+
+
+"""
+Inputs:
+    CONFIG: User configuration file
+Outputs:
+    user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
+"""
+def run_mesonh(CONFIG, queue = None):
+    from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
+    from .mesonh_load import mesonh_load_netcdf_iris
+    
+    if (CONFIG['verbose']): print("=====Loading MesoNH Data=====")
+    
+    mesonh_tracking_cube, mesonh_tracking_xarray = mesonh_load_netcdf_iris(CONFIG['mesonh']['path_to_data'], CONFIG['mesonh']['feature_tracking_var'], CONFIG)
+    
+    # if tracking and segmentation variables are different, load seperately
+    if (CONFIG['mesonh']['feature_tracking_var'] != CONFIG['mesonh']['segmentation_var']):
+        
+        mesonh_segmentation_cube, mesonh_segmentation_xarray = mesonh_load_netcdf_iris(CONFIG['mesonh']['path_to_data'], CONFIG['mesonh']['segmentation_var'], CONFIG)
+    
+    else:
+    
+        mesonh_segmentation_cube = mesonh_tracking_cube
+        mesonh_segmentation_xarray = mesonh_tracking_xarray
+    
+    # Add xarrays and cubes to return dict
+    user_return_dict = {}
+    
+    user_return_dict["mesonh"] = {
+        "tracking_xarray": mesonh_tracking_xarray,
+        "tracking_cube": mesonh_tracking_cube,
+        "segmentation_xarray": mesonh_segmentation_xarray,
+        "segmentation_cube": mesonh_segmentation_cube
+    }
+    
+    # now determine which tracker to use
+    if ("tobac" in CONFIG['mesonh']):
+        from .mesonh_tobac import mesonh_tobac_feature_id, mesonh_tobac_linking, mesonh_tobac_segmentation
+        
+        mesonh_features = None
+        mesonh_tracks = None
+        mesonh_segmentation2d = None
+        mesonh_segmentation3d = None
+        mesonh_analysis_data = {}
+        
+        # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
+        if ("feature_id" in CONFIG['mesonh']['tobac']):
+            
+            if (CONFIG['verbose']): print("=====Starting MesoNH tobac Feature ID=====")
+            
+            mesonh_features = mesonh_tobac_feature_id(mesonh_tracking_cube, CONFIG)
+        
+        if ("linking" in CONFIG['mesonh']['tobac']):
+            
+            if (CONFIG['verbose']): print("=====Starting MesoNH tobac Feature Linking=====")
+            
+            mesonh_tracks = mesonh_tobac_linking(mesonh_tracking_cube, mesonh_features, CONFIG)
+        
+        if ("segmentation_2d" in CONFIG['mesonh']['tobac']):
+            
+            if (CONFIG['verbose']): print("=====Starting MesoNH tobac 2D Segmentation=====")
+            
+            mesonh_segmentation2d = mesonh_tobac_segmentation(mesonh_segmentation_cube, mesonh_features, '2d', CONFIG, CONFIG['mesonh']['tobac']['segmentation_2d']['height'])
+    
+        if ("segmentation_3d" in CONFIG['mesonh']['tobac']):
+            
+            if (CONFIG['verbose']): print("=====Starting MesoNH tobac 3D Segmentation=====")
+            
+            mesonh_segmentation3d = mesonh_tobac_segmentation(mesonh_segmentation_cube, mesonh_features, '3d', CONFIG)
+    
+        if ("analysis" in CONFIG['mesonh']['tobac']):
+            
+            from CoMET.analysis.get_vars import get_var
+            
+            if (CONFIG['verbose']): print("=====Starting MesoNH tobac Analysis Calculations=====")
+            
+            # Create analysis object
+            analysis_object = {
+                "tracking_xarray": mesonh_tracking_xarray,
+                "segmentation_xarray": mesonh_segmentation_xarray,
+                "UDAF_features": feature_id_to_UDAF(mesonh_features, "tobac"),
+                "UDAF_linking": linking_to_UDAF(mesonh_tracks, "tobac"),
+                "UDAF_segmentation_2d": segmentation_to_UDAF(mesonh_segmentation2d[0], linking_to_UDAF(mesonh_tracks, "tobac"), "tobac"),
+                "UDAF_segmentation_3d": segmentation_to_UDAF(mesonh_segmentation3d[0], linking_to_UDAF(mesonh_tracks, "tobac"), "tobac")
+            }
+            
+            # Calcaulte each variable of interest and append to analysis data array
+            for var in CONFIG['mesonh']['tobac']['analysis'].keys():
+                
+                # Add default tracking featured_id variable in place of variable if not present
+                if ("variable" not in CONFIG['mesonh']['tobac']['analysis'][var.lower()]): CONFIG['mesonh']['tobac']['analysis'][var.lower()]["variable"] = CONFIG["mesonh"]["feature_tracking_var"].upper()
+                
+                mesonh_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['mesonh']['tobac']['analysis'][var.lower()]))
+                
+    
+        if (CONFIG['verbose']): print("=====Converting MesoNH tobac Output to CoMET-UDAF=====")
+        
+        # Add all products to return dict
+        user_return_dict["mesonh"]["tobac"] = {
+            "feature_id": mesonh_features,
+            "UDAF_features": feature_id_to_UDAF(mesonh_features, "tobac"),
+            "linking": mesonh_tracks,
+            "UDAF_linking": linking_to_UDAF(mesonh_tracks, "tobac"),
+            "segmentation_2d": mesonh_segmentation2d,
+            "UDAF_segmentation_2d": segmentation_to_UDAF(mesonh_segmentation2d[0], linking_to_UDAF(mesonh_tracks, "tobac"), "tobac"),
+            "segmentation_3d": mesonh_segmentation3d,
+            "UDAF_segmentation_3d": segmentation_to_UDAF(mesonh_segmentation3d[0], linking_to_UDAF(mesonh_tracks, "tobac"), "tobac"),
+            "analysis": mesonh_analysis_data
+            }
+        
+        if (CONFIG['verbose']): print("=====MesoNH tobac Tracking Complete=====")
         
         # Send return dict to queue if there is a queue object passed
         if (queue is not None):

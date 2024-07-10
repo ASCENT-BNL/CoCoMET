@@ -66,7 +66,32 @@ def wrf_calculate_reflectivity(wrf_xarray):
     # Assign attributes
     dBZ = dBZ.assign_attrs({"FieldType": 104, "MemoryOrder": "XYZ", "description": "radar reflectivity", "units": "dBZ", "stagger": "", "coordinates": "XLONG XLAT XTIME"})
     
-    return(dBZ)
+    return(dBZ.chunk(t.chunksizes))
+
+
+
+"""
+Inputs: 
+    wrf_xarray:xarray Dataset containing default WRF values
+Outputs:
+    TB: numpy array containing brightness temperature at each point and time--same dimension as input
+"""
+def wrf_calculate_brightness_temp(wrf_xarray):
+    import numpy as np
+    
+    OLR = wrf_xarray['OLR'].values
+    
+    TB = np.empty(OLR.shape)
+    
+    a = 1.228
+    b = -1.106e-3
+    sigma = 5.67e-8 # W m^-2 K^-4
+    
+    for tt,ix,iy in np.ndindex(OLR.shape):
+        tf = (OLR[tt,ix,iy]/sigma)**.25
+        TB[tt,ix,iy] = (-a + np.sqrt(a**2 + 4*b*tf))/(2*b)
+        
+    return(TB)
 
 
 
@@ -74,12 +99,13 @@ def wrf_calculate_reflectivity(wrf_xarray):
 Inputs:
     wrf_xarray: xarray Dataset containing default WRF values
 Outputs:
-    geopt: Dataarray of heights above MSL in m
+    geopt: Dataarray of heights AGL
 """
-def wrf_calculate_msl_z(wrf_xarray):
+def wrf_calculate_agl_z(wrf_xarray):
     
     ph = wrf_xarray["PH"]
     phb = wrf_xarray["PHB"]
+    hgt = wrf_xarray["HGT"][0].squeeze().values
     
     # Make sure we only take one time dimension
     geopt = (ph + phb)[0].squeeze()
@@ -88,7 +114,8 @@ def wrf_calculate_msl_z(wrf_xarray):
     geopt = 0.5 * geopt[1:] + 0.5 * geopt[:-1]
     geopt = geopt.rename(bottom_top_stag="bottom_top")
     
-    return(geopt / 9.81)
+    # Account for terrain to convert from MSL to AGL, hence the - hgt
+    return((geopt / 9.81) - hgt)
 
 
 

@@ -92,11 +92,18 @@ def calculate_ETH(analysis_object, threshold, verbose=False, variable=None, cell
             
             # Calculate ETH for each location
             for iy,ix in proper_indices:
+                
+                max_alt_index = np.argwhere(variable_field[frame[0],:,iy,ix].values > threshold)
+                    
+                # If there are no indices greater than threshold, skip
+                if (len(max_alt_index) != 0): 
+                    max_alt_index = max_alt_index.max()
+                else: continue
             
-                max_alt_index = np.argwhere(variable_field[frame[0],:,iy,ix].values > threshold).max()
                 max_alt = variable_field.altitude.values[max_alt_index]
                 eth_set.append(max_alt)
-            
+
+
             eth_info["frame"].append(frame[0])
             eth_info["feature_id"].append(feature[0])
             eth_info["cell_id"].append(feature[1]["cell_id"].min())

@@ -1,3 +1,5 @@
 CoMET.egg-info/
+CoMET/__pycache__
 dist/
-
+__pycache__
+.virtual_documents

@@ -7,6 +7,9 @@ from CoMET.analysis.create_analysis_object import *
 from .wrf_load import *
 from .wrf_tobac import *
 
+from .mesonh_load import *
+from .mesonh_tobac import *
+
 from .nexrad_load import *
 from .nexrad_tobac import *
 
