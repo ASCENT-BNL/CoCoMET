@@ -110,7 +110,7 @@ def wrf_moaap(wrf_xarray, CONFIG):
           )
 
 
-    output_filepath = CONFIG["wrf"]["moaap"]["tracking_save_path"] + str(times[0].year)+str(times[0].month).zfill(2)+'_CoMET_WRF_MOAAP_TRACKING_ObjectMasks_'+'_dt-%.2f' % dt + 'min_MOAAP-masks'+'.nc'
+    output_filepath = CONFIG["wrf"]["moaap"]["tracking_save_path"] + str(times[0].year)+str(times[0].month).zfill(2)+'_CoMET_WRF_MOAAP_TRACKING_ObjectMasks_dt-%.2f' % dt + 'min_MOAAP-masks'+'.nc'
     mask_file = xr.open_mfdataset(output_filepath, coords="all", concat_dim="time", combine="nested")
     
     return(mask_file)

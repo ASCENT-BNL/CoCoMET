@@ -37,6 +37,7 @@ def calculate_ETH(analysis_object, threshold, verbose=False, variable=None, cell
     import numpy as np
     import xarray as xr
     import pandas as pd
+    from tqdm import tqdm
     
     # If input variable field is 2D return None. Also, if DataArray, use those values for calculations. If Dataset, use tracking_var to get variable
     if (type(analysis_object['segmentation_xarray']) == xr.core.dataarray.DataArray):
@@ -78,11 +79,11 @@ def calculate_ETH(analysis_object, threshold, verbose=False, variable=None, cell
         "eth": [] # in km
     }
     
-    # Loop over each frame
-    for ii, frame in enumerate(analysis_object['UDAF_linking'].groupby("frame")):
-        
-        # TODO: Replace with tqdm progress bar
-        if (verbose): print(f"=====Calculating Echo Top Heights. {'%.2f' % ((ii+1)/len(np.unique(analysis_object['UDAF_linking'].frame))*100)}% Complete=====")
+    
+    frame_groups = analysis_object["UDAF_linking"].groupby("frame")
+    
+    # Loop over frames
+    for ii, frame in tqdm(enumerate(frame_groups), desc="=====Calculating Echo Top Heights=====",total=frame_groups.ngroups):
         
         # Loop over each feature
         for feature in frame[1].groupby("feature_id"):
@@ -125,6 +126,7 @@ Outputs:
 def calculate_area(analysis_object, verbose=False, height = 2000, **args):
     import numpy as np
     import pandas as pd
+    from tqdm import tqdm
     
     # If 3D segmentation is available, use that at given height, otherwise use 2D segmentation
     if (analysis_object['UDAF_segmentation_3d'] is not None):
@@ -163,10 +165,10 @@ def calculate_area(analysis_object, verbose=False, height = 2000, **args):
     cell_areas = np.outer(y_dim_sizes,x_dim_sizes)
     
     
-    # Loop over each frame
-    for ii, frame in enumerate(analysis_object['UDAF_linking'].groupby("frame")):
-        
-        if (verbose): print(f"=====Calculating Area. {'%.2f' % ((ii+1)/len(np.unique(analysis_object['UDAF_linking'].frame))*100)}% Complete=====")
+    frame_groups = analysis_object["UDAF_linking"].groupby("frame")
+    
+    # Loop over frames
+    for ii, frame in tqdm(enumerate(frame_groups), desc="=====Calculating Areas=====",total=frame_groups.ngroups):
         
         # Loop over each feature
         for feature in frame[1].groupby("feature_id"):
@@ -197,6 +199,7 @@ Outputs:
 def calculate_volume(analysis_object, verbose=False, **args):
     import numpy as np
     import pandas as pd
+    from tqdm import tqdm
     
     if (analysis_object['UDAF_segmentation_3d'] is None):
         raise Exception("!=====3D Segmentation Data is Required for Volume Calculation=====!")
@@ -226,10 +229,10 @@ def calculate_volume(analysis_object, verbose=False, **args):
     # use Einstein sum notation to get volume of cells
     cell_volumes = np.einsum('i,j,k->ijk',z_dim_sizes,y_dim_sizes,x_dim_sizes)
     
-    # Loop over each frame
-    for ii, frame in enumerate(analysis_object['UDAF_linking'].groupby("frame")):
-        
-        if (verbose): print(f"=====Calculating Volume. {'%.2f' % ((ii+1)/len(np.unique(analysis_object['UDAF_linking'].frame))*100)}% Complete=====")
+    frame_groups = analysis_object["UDAF_linking"].groupby("frame")
+    
+    # Loop over frames
+    for ii, frame in tqdm(enumerate(frame_groups), desc="=====Calculating Volumes=====",total=frame_groups.ngroups):
         
         # Loop over each feature
         for feature in frame[1].groupby("feature_id"):

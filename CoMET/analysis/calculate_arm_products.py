@@ -34,6 +34,7 @@ Outputs:
 def calculate_arm_vdisquants(analysis_object, path_to_files, verbose=False, **args):
     import numpy as np
     import xarray as xr
+    from tqdm import tqdm
     from vincenty import vincenty
     
     # Open video disdrometer product
@@ -54,10 +55,10 @@ def calculate_arm_vdisquants(analysis_object, path_to_files, verbose=False, **ar
         "xband_estimated_reflectivity": []
     }
     
+    frame_groups = analysis_object["UDAF_linking"].groupby("frame")
+    
     # Loop over frames
-    for ii, frame in enumerate(analysis_object["UDAF_linking"].groupby("frame")):
-        
-        if (verbose): print(f"=====Calculating VIDSQUANT Data. {'%.2f' % ((ii+1)/len(np.unique(analysis_object['UDAF_linking'].frame))*100)}% Complete=====")
+    for ii, frame in tqdm(enumerate(frame_groups), desc="=====Calculating VIDSQUANTS Data=====",total=frame_groups.ngroups):
         
         # Get VAP at current time step
         time_idx = find_nearest(vap.time.values, frame[1].time.values[0])
@@ -135,6 +136,7 @@ Outputs:
 def calculate_arm_interpsonde(analysis_object, path_to_files, verbose=False, **args):
     import numpy as np
     import xarray as xr
+    from tqdm import tqdm
     from vincenty import vincenty
     
     # Open video disdrometer product
@@ -157,10 +159,10 @@ def calculate_arm_interpsonde(analysis_object, path_to_files, verbose=False, **a
         "eastward_wind": []
     }
     
-    # Loop over frames
-    for ii, frame in enumerate(analysis_object["UDAF_linking"].groupby("frame")):
+    frame_groups = analysis_object["UDAF_linking"].groupby("frame")
     
-        if (verbose): print(f"=====Calculating INTERPSONDE Data. {'%.2f' % ((ii+1)/len(np.unique(analysis_object['UDAF_linking'].frame))*100)}% Complete=====")
+    # Loop over frames
+    for ii, frame in tqdm(enumerate(frame_groups), desc="=====Calculating INTERPSONDE Data=====",total=frame_groups.ngroups):
         
         # Get VAP at current time step
         time_idx = find_nearest(sonde.time.values, frame[1].time.values[0])

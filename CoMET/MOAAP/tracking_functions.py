@@ -4344,7 +4344,7 @@ def moaap(
     StartDay = Time[0]
     # SetupString = '_dt-'+str(dT*60)+'h_MOAAP-masks'
     SetupString = '_dt-%.2f' % (dT*60) + 'min_MOAAP-masks'
-    NCfile = OutputFolder + str(StartDay.year)+str(StartDay.month).zfill(2)+'_'+DataName+'_ObjectMasks_'+SetupString+'.nc'
+    NCfile = OutputFolder + str(StartDay.year)+str(StartDay.month).zfill(2)+'_'+DataName+'_ObjectMasks'+SetupString+'.nc'
     FrontMask = np.copy(Mask)
     try:
         FrontMask[np.abs(Lat) < 10] = 0

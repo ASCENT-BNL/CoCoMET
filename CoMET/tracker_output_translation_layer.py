@@ -153,13 +153,17 @@ def segmentation_to_UDAF(segmentation, UDAF_tracks, tracker):
     if (tracker.lower() == "tobac"):
         import numpy as np
         import xarray as xr
+        from tqdm import tqdm
         from copy import deepcopy
         
         feature_segmentation = (segmentation - 1).rename("Feature_Segmentation")    
         cell_segmentation = deepcopy(feature_segmentation).rename("Cell_Segmentation")
         
+        
+        frame_groups = UDAF_tracks.groupby("frame")
+        
         # Loop over tracks, replacing feature_id values with cell_id values in the cell_segmenation DataArray
-        for frame in UDAF_tracks.groupby("frame"):
+        for frame in tqdm(frame_groups, desc="=====Performing tobac Segmentation to UDAF=====",total=frame_groups.ngroups):
             
             # Loop over each feature in that frame
             for feature in frame[1].iterrows():

@@ -78,6 +78,7 @@ Outputs:
 """
 def wrf_calculate_brightness_temp(wrf_xarray):
     import numpy as np
+    from tqdm import tqdm
     
     OLR = wrf_xarray['OLR'].values
     
@@ -87,7 +88,7 @@ def wrf_calculate_brightness_temp(wrf_xarray):
     b = -1.106e-3
     sigma = 5.67e-8 # W m^-2 K^-4
     
-    for tt,ix,iy in np.ndindex(OLR.shape):
+    for tt,ix,iy in tqdm(np.ndindex(OLR.shape), desc="=====Calculating WRF Brightness Temperatures=====", total=np.prod(OLR.shape)):
         tf = (OLR[tt,ix,iy]/sigma)**.25
         TB[tt,ix,iy] = (-a + np.sqrt(a**2 + 4*b*tf))/(2*b)
         

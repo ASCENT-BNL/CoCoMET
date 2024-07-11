@@ -26,6 +26,7 @@ def gen_and_save_nexrad_grid(path_to_files, save_location, tracking_var, CONFIG,
     import glob
     import pyart
     import numpy as np
+    from tqdm import tqdm
     
     # If parallel processing is enabled, run that version and return
     if (parallel_processing):
@@ -37,9 +38,7 @@ def gen_and_save_nexrad_grid(path_to_files, save_location, tracking_var, CONFIG,
     # Extract just the filenames from the paths without the file extensions
     file_names = [os.path.basename(f).split('.')[0] for f in files]
     
-    for idx, ff in enumerate(files):
-        
-        if (CONFIG['verbose']): print(f"=====GRIDDING NEXRAD, ({'%5.2f' % ((idx+1)/len(files)*100) + '%'})=====")
+    for idx, ff in tqdm(enumerate(files), desc="=====Gridding NEXRAD=====", total=len(files)):
         
         if (tracking_var.lower() == 'dbz'):
             # Create radar object including only field of interest
@@ -70,7 +69,7 @@ def create_and_save_grid_single(file, save_location, tracking_var, CONFIG):
     import os
     import pyart
     
-    if (CONFIG['verbose']): print(f"=====PARALLEL GRIDDING NEXRAD, ({file})=====")
+    if (CONFIG['verbose']): print(f"=====Parallel Gridding NEXRAD, ({file})=====")
     
     if (tracking_var.lower() == 'dbz'):
         # Create radar object including only field of interest
