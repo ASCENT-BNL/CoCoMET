@@ -138,6 +138,7 @@ def calculate_arm_interpsonde(analysis_object, path_to_files, verbose=False, **a
     import xarray as xr
     from tqdm import tqdm
     from vincenty import vincenty
+    from .calculate_convective_properties import calculate_interp_sonde_convective_properties
     
     # Open video disdrometer product
     sonde = xr.open_mfdataset(path_to_files, coords="all", concat_dim="time", combine="nested")
@@ -159,12 +160,13 @@ def calculate_arm_interpsonde(analysis_object, path_to_files, verbose=False, **a
         "eastward_wind": []
     }
     
+    
     frame_groups = analysis_object["UDAF_linking"].groupby("frame")
     
     # Loop over frames
     for ii, frame in tqdm(enumerate(frame_groups), desc="=====Calculating INTERPSONDE Data=====",total=frame_groups.ngroups):
         
-        # Get VAP at current time step
+        # Get sonde at current time step
         time_idx = find_nearest(sonde.time.values, frame[1].time.values[0])
         time_delta = abs(sonde.time.values[time_idx]-frame[1].time.values[0])
         
@@ -203,13 +205,13 @@ def calculate_arm_interpsonde(analysis_object, path_to_files, verbose=False, **a
         sonde_info["eastward_wind"].append(sonde.u_wind.values[time_idx])
     
     
-    # Create output Dataset
-    output_data = xr.Dataset(
+    # Create sonde data output Dataset
+    sonde_output_data = xr.Dataset(
         coords = dict(
             frame=("time", sonde_info["frame"]),
             tracking_time=("time", sonde_info["tracking_time"]),
             sonde_time=("time", sonde_info["sonde_time"]),
-            height=sonde.height.values * 1000 #TODO: Adjust to be AGL instead of above MSL
+            height=((sonde.height.values) * 1000 - sonde.alt.values.min())
         ),
         data_vars=dict(
             time_delta=("time", sonde_info["time_delta"]),
@@ -229,4 +231,76 @@ def calculate_arm_interpsonde(analysis_object, path_to_files, verbose=False, **a
         )
     )
     
-    return (output_data)
+    
+    
+    convective_init_info = {
+        "sonde_time": [],
+        "cell_id": [],
+        "cape": [],
+        "ncape": [],
+        "cin": [],
+        "lnb": [],
+        "lfc": [],
+        "lcl": [],
+        "wind_shear": [],
+        "low_rh": [],
+        "mid_rh": [],
+        "richardson": [],
+        "elr_0_3": []
+    }
+    
+    
+    init_groups = analysis_object["UDAF_linking"].query("lifetime_percent==0").groupby("cell_id")
+    
+    # Loop over cell initations
+    for ii, cell in tqdm(enumerate(init_groups), desc="=====Calculating INTERPSONDE Initation Properties=====",total=init_groups.ngroups): 
+        
+        # Get sonde data at time step before initiation if possible
+        time_idx = find_nearest(sonde.time.values, cell[1].time.values[0])
+        time_idx_init = time_idx - 1 if time_idx > 0 else 0
+    
+        # Calculate CAPE, CIN, etc.
+        properties = calculate_interp_sonde_convective_properties(sonde.isel(time=time_idx_init), **args)
+    
+        convective_init_info["sonde_time"].append(sonde.time.values[time_idx_init])
+        convective_init_info["cell_id"].append(cell[0])
+        convective_init_info["cape"].append(properties["CAPE"])
+        convective_init_info["ncape"].append(properties["NCAPE"])
+        convective_init_info["cin"].append(properties["CIN"])
+        convective_init_info["lnb"].append(properties["LNB"])
+        convective_init_info["lfc"].append(properties["LFC"])
+        convective_init_info["lcl"].append(properties["LCL"])
+        convective_init_info["wind_shear"].append(properties["Wind_Shear"])
+        convective_init_info["low_rh"].append(properties["Low_RH"])
+        convective_init_info["mid_rh"].append(properties["Mid_RH"])
+        convective_init_info["richardson"].append(properties["Richardson"])
+        convective_init_info["elr_0_3"].append(properties["ELR_0-3km"])
+    
+    
+    
+    # Create sonde data output Dataset
+    sonde_output_init_data = xr.Dataset(
+        coords = dict(
+            cell_id=convective_init_info["cell_id"]
+        ),
+        data_vars=dict(
+            sonde_time=("cell_id",convective_init_info["sonde_time"]),
+            cape=("cell_id",convective_init_info["cape"]),
+            ncape=("cell_id",convective_init_info["ncape"]),
+            cin=("cell_id",convective_init_info["cin"]),
+            lnb=("cell_id",convective_init_info["lnb"]),
+            lfc=("cell_id",convective_init_info["lfc"]),
+            lcl=("cell_id",convective_init_info["lcl"]),
+            wind_shear=("cell_id",convective_init_info["wind_shear"]),
+            low_rh=("cell_id",convective_init_info["low_rh"]),
+            mid_rh=("cell_id",convective_init_info["mid_rh"]),
+            richardson=("cell_id",convective_init_info["richardson"]),
+            elr_0_3=("cell_id",convective_init_info["elr_0_3"])
+        ),
+        attrs=dict(
+            description="Convective properties calculated at the time before the initation of cell formations"
+        )
+    )
+    
+    
+    return ((sonde_output_data,sonde_output_init_data))

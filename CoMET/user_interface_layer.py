@@ -316,14 +316,16 @@ def run_wrf(CONFIG, queue = None):
             
             if (CONFIG['verbose']): print("=====Starting WRF tobac Analysis Calculations=====")
             
+            UDAF_tracks = linking_to_UDAF(wrf_tracks, "tobac")
+            
             # Create analysis object
             analysis_object = {
                 "tracking_xarray": wrf_tracking_xarray,
                 "segmentation_xarray": wrf_segmentation_xarray,
                 "UDAF_features": feature_id_to_UDAF(wrf_features, "tobac"),
-                "UDAF_linking": linking_to_UDAF(wrf_tracks, "tobac"),
-                "UDAF_segmentation_2d": segmentation_to_UDAF(wrf_segmentation2d[0], linking_to_UDAF(wrf_tracks, "tobac"), "tobac"),
-                "UDAF_segmentation_3d": segmentation_to_UDAF(wrf_segmentation3d[0], linking_to_UDAF(wrf_tracks, "tobac"), "tobac")
+                "UDAF_linking": UDAF_tracks,
+                "UDAF_segmentation_2d": segmentation_to_UDAF(wrf_segmentation2d[0], UDAF_tracks, "tobac"),
+                "UDAF_segmentation_3d": segmentation_to_UDAF(wrf_segmentation3d[0], UDAF_tracks, "tobac")
             }
             
             # Calcaulte each variable of interest and append to analysis data array
@@ -337,16 +339,18 @@ def run_wrf(CONFIG, queue = None):
     
         if (CONFIG['verbose']): print("=====Converting WRF tobac Output to CoMET-UDAF=====")
     
+        UDAF_tracks = linking_to_UDAF(wrf_tracks, "tobac")
+    
         # Add all products to return dict
         user_return_dict["wrf"]["tobac"] = {
             "feature_id": wrf_features,
             "UDAF_features": feature_id_to_UDAF(wrf_features, "tobac"),
             "linking": wrf_tracks,
-            "UDAF_linking": linking_to_UDAF(wrf_tracks, "tobac"),
+            "UDAF_linking": UDAF_tracks,
             "segmentation_2d": wrf_segmentation2d,
-            "UDAF_segmentation_2d": segmentation_to_UDAF(wrf_segmentation2d[0], linking_to_UDAF(wrf_tracks, "tobac"), "tobac"),
+            "UDAF_segmentation_2d": segmentation_to_UDAF(wrf_segmentation2d[0], UDAF_tracks, "tobac"),
             "segmentation_3d": wrf_segmentation3d,
-            "UDAF_segmentation_3d": segmentation_to_UDAF(wrf_segmentation3d[0], linking_to_UDAF(wrf_tracks, "tobac"), "tobac"),
+            "UDAF_segmentation_3d": segmentation_to_UDAF(wrf_segmentation3d[0], UDAF_tracks, "tobac"),
             "analysis": wrf_tobac_analysis_data
             }
         
@@ -371,6 +375,7 @@ def run_wrf(CONFIG, queue = None):
             if (CONFIG['verbose']): print("=====Starting WRF MOAAP Analysis Calculations=====")
             
             # TODO: do all this stuff, heavy work needed in output translation layer
+
 
         user_return_dict["wrf"]["moaap"] = {
             "mask_xarray": mask_output,
@@ -465,14 +470,16 @@ def run_mesonh(CONFIG, queue = None):
             
             if (CONFIG['verbose']): print("=====Starting MesoNH tobac Analysis Calculations=====")
             
+            UDAF_tracks = linking_to_UDAF(mesonh_tracks, "tobac")
+            
             # Create analysis object
             analysis_object = {
                 "tracking_xarray": mesonh_tracking_xarray,
                 "segmentation_xarray": mesonh_segmentation_xarray,
                 "UDAF_features": feature_id_to_UDAF(mesonh_features, "tobac"),
-                "UDAF_linking": linking_to_UDAF(mesonh_tracks, "tobac"),
-                "UDAF_segmentation_2d": segmentation_to_UDAF(mesonh_segmentation2d[0], linking_to_UDAF(mesonh_tracks, "tobac"), "tobac"),
-                "UDAF_segmentation_3d": segmentation_to_UDAF(mesonh_segmentation3d[0], linking_to_UDAF(mesonh_tracks, "tobac"), "tobac")
+                "UDAF_linking": UDAF_tracks,
+                "UDAF_segmentation_2d": segmentation_to_UDAF(mesonh_segmentation2d[0], UDAF_tracks, "tobac"),
+                "UDAF_segmentation_3d": segmentation_to_UDAF(mesonh_segmentation3d[0], UDAF_tracks, "tobac")
             }
             
             # Calcaulte each variable of interest and append to analysis data array
@@ -486,16 +493,18 @@ def run_mesonh(CONFIG, queue = None):
     
         if (CONFIG['verbose']): print("=====Converting MesoNH tobac Output to CoMET-UDAF=====")
         
+        UDAF_tracks = linking_to_UDAF(mesonh_tracks, "tobac")
+        
         # Add all products to return dict
         user_return_dict["mesonh"]["tobac"] = {
             "feature_id": mesonh_features,
             "UDAF_features": feature_id_to_UDAF(mesonh_features, "tobac"),
             "linking": mesonh_tracks,
-            "UDAF_linking": linking_to_UDAF(mesonh_tracks, "tobac"),
+            "UDAF_linking": UDAF_tracks,
             "segmentation_2d": mesonh_segmentation2d,
-            "UDAF_segmentation_2d": segmentation_to_UDAF(mesonh_segmentation2d[0], linking_to_UDAF(mesonh_tracks, "tobac"), "tobac"),
+            "UDAF_segmentation_2d": segmentation_to_UDAF(mesonh_segmentation2d[0], UDAF_tracks, "tobac"),
             "segmentation_3d": mesonh_segmentation3d,
-            "UDAF_segmentation_3d": segmentation_to_UDAF(mesonh_segmentation3d[0], linking_to_UDAF(mesonh_tracks, "tobac"), "tobac"),
+            "UDAF_segmentation_3d": segmentation_to_UDAF(mesonh_segmentation3d[0], UDAF_tracks, "tobac"),
             "analysis": mesonh_tobac_analysis_data
             }
         
@@ -585,14 +594,16 @@ def run_nexrad(CONFIG, queue = None):
             
             if (CONFIG['verbose']): print("=====Starting NEXRAD tobac Analysis Calculations=====")
             
+            UDAF_tracks = linking_to_UDAF(nexrad_tracks, "tobac")
+            
             # Create analysis object
             analysis_object = {
                 "tracking_xarray": nexrad_tracking_xarray,
                 "segmentation_xarray": nexrad_tracking_xarray,
                 "UDAF_features": feature_id_to_UDAF(nexrad_features, "tobac"),
-                "UDAF_linking": linking_to_UDAF(nexrad_tracks, "tobac"),
-                "UDAF_segmentation_2d": segmentation_to_UDAF(nexrad_segmentation2d[0], linking_to_UDAF(nexrad_tracks, "tobac"), "tobac"),
-                "UDAF_segmentation_3d": segmentation_to_UDAF(nexrad_segmentation3d[0], linking_to_UDAF(nexrad_tracks, "tobac"), "tobac")
+                "UDAF_linking": UDAF_tracks,
+                "UDAF_segmentation_2d": segmentation_to_UDAF(nexrad_segmentation2d[0], UDAF_tracks, "tobac"),
+                "UDAF_segmentation_3d": segmentation_to_UDAF(nexrad_segmentation3d[0], UDAF_tracks, "tobac")
             }
                 
             # Calcaulte each variable of interest and append to analysis data array
@@ -606,16 +617,18 @@ def run_nexrad(CONFIG, queue = None):
     
         if (CONFIG['verbose']): print("=====Converting NEXRAD tobac Output to CoMET-UDAF=====")
 
+        UDAF_tracks = linking_to_UDAF(nexrad_tracks, "tobac")
+
         # Add all products to return dict
         user_return_dict["nexrad"]["tobac"] = {
             "feature_id": nexrad_features,
             "UDAF_features": feature_id_to_UDAF(nexrad_features, "tobac"),
             "linking": nexrad_tracks,
-            "UDAF_linking": linking_to_UDAF(nexrad_tracks, "tobac"),
+            "UDAF_linking": UDAF_tracks,
             "segmentation_2d": nexrad_segmentation2d,
-            "UDAF_segmentation_2d": segmentation_to_UDAF(nexrad_segmentation2d[0], linking_to_UDAF(nexrad_tracks, "tobac"), "tobac"),
+            "UDAF_segmentation_2d": segmentation_to_UDAF(nexrad_segmentation2d[0], UDAF_tracks, "tobac"),
             "segmentation_3d": nexrad_segmentation3d,
-            "UDAF_segmentation_3d": segmentation_to_UDAF(nexrad_segmentation3d[0], linking_to_UDAF(nexrad_tracks, "tobac"), "tobac"),
+            "UDAF_segmentation_3d": segmentation_to_UDAF(nexrad_segmentation3d[0], UDAF_tracks, "tobac"),
             "analysis": nexrad_tobac_analysis_data
             }
         
@@ -692,13 +705,15 @@ def run_goes(CONFIG, queue = None):
             
             if (CONFIG['verbose']): print("=====Starting GOES tobac Analysis Calculations=====")
             
+            UDAF_tracks = linking_to_UDAF(goes_tracks, "tobac")
+            
             # Create analysis object
             analysis_object = {
                 "tracking_xarray": goes_tracking_xarray,
                 "segmentation_xarray": goes_tracking_xarray,
                 "UDAF_features": feature_id_to_UDAF(goes_features, "tobac"),
-                "UDAF_linking": linking_to_UDAF(goes_tracks, "tobac"),
-                "UDAF_segmentation_2d": segmentation_to_UDAF(goes_segmentation2d[0], linking_to_UDAF(goes_tracks, "tobac"), "tobac"),
+                "UDAF_linking": UDAF_tracks,
+                "UDAF_segmentation_2d": segmentation_to_UDAF(goes_segmentation2d[0], UDAF_tracks, "tobac"),
                 "UDAF_segmentation_3d": None
             }
             
@@ -713,14 +728,16 @@ def run_goes(CONFIG, queue = None):
 
         if (CONFIG['verbose']): print("=====Converting GOES tobac Output to CoMET-UDAF=====")
         
+        UDAF_tracks = linking_to_UDAF(goes_tracks, "tobac")
+        
         # Add all products to return dict
         user_return_dict["goes"]["tobac"] = {
             "feature_id": goes_features,
             "UDAF_features": feature_id_to_UDAF(goes_features, "tobac"),
             "linking": goes_tracks,
-            "UDAF_linking": linking_to_UDAF(goes_tracks, "tobac"),
+            "UDAF_linking": UDAF_tracks,
             "segmentation_2d": goes_segmentation2d,
-            "UDAF_segmentation_2d": segmentation_to_UDAF(goes_segmentation2d[0], linking_to_UDAF(goes_tracks, "tobac"), "tobac"),
+            "UDAF_segmentation_2d": segmentation_to_UDAF(goes_segmentation2d[0], UDAF_tracks, "tobac"),
             "analysis": goes_tobac_analysis_data
             }
         

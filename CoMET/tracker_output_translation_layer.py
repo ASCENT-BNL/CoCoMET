@@ -86,12 +86,14 @@ def linking_to_UDAF(tracks, tracker):
     
     if (tracker.lower() == "tobac"):
         import numpy as np
+        from tqdm import tqdm
         import geopandas as gpd
         from datetime import datetime
         
         # Extract values from features
         frames = tracks.frame.values
         times = np.array([datetime.fromisoformat(f.isoformat()) for f in tracks.time.values])
+        lifetimes = tracks.time_cell.values
         feature_ids = tracks.feature.values-1
         cell_ids = tracks.cell.values-1
         # Correct any -2 values, created as a result of shifting, back to -1
@@ -114,10 +116,26 @@ def linking_to_UDAF(tracks, tracker):
             up_downs = np.repeat(np.nan, tracks.shape[0])
         
         
+        lifetime_percents = []
+        
+        # Loop over rows
+        for row in tqdm(tracks.iterrows(), desc="=====Performing tobac Linking to UDAF====", total=tracks.shape[0]):
+            
+            cell_max_life = tracks.query("cell==@row[1].cell").time_cell.values.max()
+            
+            # If only tracked one time, add -1 to lifetime_percent
+            if cell_max_life == 0:
+                lifetime_percents.append(-1)
+            else:
+                lifetime_percents.append(row[1].time_cell/cell_max_life)
+                
+        
         # Create GeoDataFrame according to UDAF specification
         UDAF_tracks = gpd.GeoDataFrame(data = {
             "frame": frames,
             "time": times,
+            "lifetime": lifetimes,
+            "lifetime_percent": lifetime_percents,
             "feature_id": feature_ids,
             "cell_id": cell_ids,
             "south_north": north_souths,
