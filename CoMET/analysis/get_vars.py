@@ -25,6 +25,7 @@ Valid Variables:
     "volume"
 """
 def get_var(analysis_object, var, verbose=False, **args):
+    from .merge_split_detection import merge_split_tracking
     from .calculate_arm_products import calculate_arm_vdisquants, calculate_arm_interpsonde
     from .calculate_bulk_cell_statistics import calculate_ETH, calculate_area, calculate_volume
     
@@ -33,6 +34,7 @@ def get_var(analysis_object, var, verbose=False, **args):
         "eth": calculate_ETH,
         "area": calculate_area,
         "volume": calculate_volume,
+        "merge_split": merge_split_tracking,
         "vdisquants": calculate_arm_vdisquants,
         "interpsonde": calculate_arm_interpsonde
     }

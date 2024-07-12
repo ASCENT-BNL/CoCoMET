@@ -7,7 +7,7 @@ Created on Mon Jun 10 14:55:16 2024
 """
 
 # =============================================================================
-# This is the interface layer between all of CoMET's backend functionality and the user. A sort of parser for a configuration input file. 
+# This is the interface layer between all of CoMET"s backend functionality and the user. A sort of parser for a configuration input file. 
 # =============================================================================
 # TODO: Create CoMET-UDAF Specification for return object
 
@@ -37,7 +37,7 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
     
     
     # Create empty dictionaries for each data type
-    wrf_data = nexrad_data = goes_data = {}
+    wrf_data = mesonh_data = nexrad_data = goes_data = {}
     
     # if wrf is present in CONFIG, run the necessary wrf functions
     if ("wrf" in CONFIG):
@@ -81,13 +81,13 @@ def CoMET_start_multi(CONFIG):
     import multiprocessing
     
     # This is necessary for python reasons I suppose may need to check this after some kind of release
-    if __name__ == 'CoMET.user_interface_layer':
+    if __name__ == "CoMET.user_interface_layer":
 
         # Keep track of active core count. Should start at one.
         active_process_count = 1
         
         # Keep track of for when doing gridding
-        inital_max_cores = CONFIG['max_cores']
+        inital_max_cores = CONFIG["max_cores"]
         
         # Start a queue so processes can finish at different times
         queue = multiprocessing.Queue()
@@ -99,7 +99,7 @@ def CoMET_start_multi(CONFIG):
         if ("wrf" in CONFIG):
             
             # Check to make sure max core count has not been exceeded
-            if (CONFIG['max_cores'] is not None and active_process_count + 1 > CONFIG['max_cores']):
+            if (CONFIG["max_cores"] is not None and active_process_count + 1 > CONFIG["max_cores"]):
                 raise Exception("!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!")
                 return
             
@@ -115,7 +115,7 @@ def CoMET_start_multi(CONFIG):
         if ("mesonh" in CONFIG):
             
             # Check to make sure max core count has not been exceeded
-            if (CONFIG['max_cores'] is not None and active_process_count + 1 > CONFIG['max_cores']):
+            if (CONFIG["max_cores"] is not None and active_process_count + 1 > CONFIG["max_cores"]):
                 raise Exception("!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!")
                 return
             
@@ -131,7 +131,7 @@ def CoMET_start_multi(CONFIG):
         if ("goes" in CONFIG):
             
             # Check to make sure max core count has not been exceeded
-            if (CONFIG['max_cores'] is not None and active_process_count + 1 > CONFIG['max_cores']):
+            if (CONFIG["max_cores"] is not None and active_process_count + 1 > CONFIG["max_cores"]):
                 raise Exception("!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!")
                 return
             
@@ -144,18 +144,18 @@ def CoMET_start_multi(CONFIG):
 
 
         # Handle NEXRAD data
-        if ('nexrad' in CONFIG):
+        if ("nexrad" in CONFIG):
             
             # Check to make sure max core count has not been exceeded
-            if (CONFIG['max_cores'] is not None and active_process_count + 1 > CONFIG['max_cores']):
+            if (CONFIG["max_cores"] is not None and active_process_count + 1 > CONFIG["max_cores"]):
                 raise Exception("!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!")
                 return
             
             # If gridding is enabled, make sure doing so will not exceed the max number of cores and adjust the CONFIG values accordingly
-            if (CONFIG['max_cores'] is not None and "gridding" in CONFIG['nexrad']):
-                CONFIG['max_cores'] = CONFIG['max_cores'] - active_process_count - 1
+            if (CONFIG["max_cores"] is not None and "gridding" in CONFIG["nexrad"]):
+                CONFIG["max_cores"] = CONFIG["max_cores"] - active_process_count - 1
             
-                if (CONFIG['max_cores'] <= 0):
+                if (CONFIG["max_cores"] <= 0):
                     raise Exception("!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!")
                     return
             
@@ -179,7 +179,7 @@ def CoMET_start_multi(CONFIG):
             return_dict = return_dict | responses[ii] 
     
         # Reset CONFIG max cores if necessary
-        CONFIG['max_cores'] = inital_max_cores
+        CONFIG["max_cores"] = inital_max_cores
     
         # Return dict at end
         return (return_dict)
@@ -198,12 +198,12 @@ def CoMET_load(path_to_config):
     import numpy as np
     
     # Open and read config file
-    with open(path_to_config, 'r') as f:
+    with open(path_to_config, "r") as f:
         CONFIG = yaml.safe_load(f)
         
         
     # Go through each potential option and determine which functions need to run
-    if ("wrf" in CONFIG and CONFIG['verbose']):
+    if ("wrf" in CONFIG and CONFIG["verbose"]):
         print("=====WRF Setup Found in CONFIG=====")
     
     if ("mesonh" in CONFIG and CONFIG["verbose"]):
@@ -211,27 +211,27 @@ def CoMET_load(path_to_config):
     
     # if nexrad present, run nexrad 
     if ("nexrad" in CONFIG):
-        if(CONFIG['verbose']): print("=====NEXRAD Setup Found in CONFIG=====")
+        if(CONFIG["verbose"]): print("=====NEXRAD Setup Found in CONFIG=====")
         
         # If nexrad gridding is needed, change grid shapes and limits back to tuples
         if ("gridding" in CONFIG["nexrad"]):
         
             # Convert grid_shape and grid_limits back into proper tuples and ensure correct data types--auto correct automatically
-            grid_shape = ast.literal_eval(CONFIG['nexrad']['gridding']['grid_shape'])
+            grid_shape = ast.literal_eval(CONFIG["nexrad"]["gridding"]["grid_shape"])
             # Ensure int grid shapes
             grid_shape = tuple([int(grid_shape[ii]) for ii in range(len(grid_shape))])
             
             # Ensure float for grid_limits
-            grid_limits = ast.literal_eval(CONFIG['nexrad']['gridding']['grid_limits'])
+            grid_limits = ast.literal_eval(CONFIG["nexrad"]["gridding"]["grid_limits"])
             grid_limits = np.array(grid_limits).astype(float)
             grid_limits = tuple([tuple(row) for row in grid_limits])
     
             # Adjust CONFIG values
-            CONFIG['nexrad']['gridding']['grid_shape'] = grid_shape
-            CONFIG['nexrad']['gridding']['grid_limits'] = grid_limits
+            CONFIG["nexrad"]["gridding"]["grid_shape"] = grid_shape
+            CONFIG["nexrad"]["gridding"]["grid_limits"] = grid_limits
     
     
-    if ("goes" in CONFIG and CONFIG['verbose']):
+    if ("goes" in CONFIG and CONFIG["verbose"]):
         print("=====GOES Setup Found in CONFIG=====")
     
     return(CONFIG)
@@ -251,14 +251,14 @@ def run_wrf(CONFIG, queue = None):
     from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
     from .wrf_load import wrf_load_netcdf_iris
     
-    if (CONFIG['verbose']): print("=====Loading WRF Data=====")
+    if (CONFIG["verbose"]): print("=====Loading WRF Data=====")
     
-    wrf_tracking_cube, wrf_tracking_xarray = wrf_load_netcdf_iris(CONFIG['wrf']['path_to_data'], CONFIG['wrf']['feature_tracking_var'], CONFIG)
+    wrf_tracking_cube, wrf_tracking_xarray = wrf_load_netcdf_iris(CONFIG["wrf"]["path_to_data"], CONFIG["wrf"]["feature_tracking_var"], CONFIG)
     
     # if tracking and segmentation variables are different, load seperately
-    if (CONFIG['wrf']['feature_tracking_var'] != CONFIG['wrf']['segmentation_var']):
+    if (CONFIG["wrf"]["feature_tracking_var"] != CONFIG["wrf"]["segmentation_var"]):
         
-        wrf_segmentation_cube, wrf_segmentation_xarray = wrf_load_netcdf_iris(CONFIG['wrf']['path_to_data'], CONFIG['wrf']['segmentation_var'], CONFIG)
+        wrf_segmentation_cube, wrf_segmentation_xarray = wrf_load_netcdf_iris(CONFIG["wrf"]["path_to_data"], CONFIG["wrf"]["segmentation_var"], CONFIG)
     
     else:
     
@@ -276,7 +276,7 @@ def run_wrf(CONFIG, queue = None):
     }
     
     # now determine which tracker(s) to use
-    if ("tobac" in CONFIG['wrf']):
+    if ("tobac" in CONFIG["wrf"]):
         from .wrf_tobac import wrf_tobac_feature_id, wrf_tobac_linking, wrf_tobac_segmentation
         
         wrf_features = None
@@ -286,35 +286,35 @@ def run_wrf(CONFIG, queue = None):
         wrf_tobac_analysis_data = {}
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
-        if ("feature_id" in CONFIG['wrf']['tobac']):
+        if ("feature_id" in CONFIG["wrf"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting WRF tobac Feature ID=====")
+            if (CONFIG["verbose"]): print("=====Starting WRF tobac Feature ID=====")
             
             wrf_features = wrf_tobac_feature_id(wrf_tracking_cube, CONFIG)
         
-        if ("linking" in CONFIG['wrf']['tobac']):
+        if ("linking" in CONFIG["wrf"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting WRF tobac Feature Linking=====")
+            if (CONFIG["verbose"]): print("=====Starting WRF tobac Feature Linking=====")
             
             wrf_tracks = wrf_tobac_linking(wrf_tracking_cube, wrf_features, CONFIG)
         
-        if ("segmentation_2d" in CONFIG['wrf']['tobac']):
+        if ("segmentation_2d" in CONFIG["wrf"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting WRF tobac 2D Segmentation=====")
+            if (CONFIG["verbose"]): print("=====Starting WRF tobac 2D Segmentation=====")
             
-            wrf_segmentation2d = wrf_tobac_segmentation(wrf_segmentation_cube, wrf_features, '2d', CONFIG, CONFIG['wrf']['tobac']['segmentation_2d']['height'])
+            wrf_segmentation2d = wrf_tobac_segmentation(wrf_segmentation_cube, wrf_features, "2d", CONFIG, CONFIG["wrf"]["tobac"]["segmentation_2d"]["height"])
     
-        if ("segmentation_3d" in CONFIG['wrf']['tobac']):
+        if ("segmentation_3d" in CONFIG["wrf"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting WRF tobac 3D Segmentation=====")
+            if (CONFIG["verbose"]): print("=====Starting WRF tobac 3D Segmentation=====")
             
-            wrf_segmentation3d = wrf_tobac_segmentation(wrf_segmentation_cube, wrf_features, '3d', CONFIG)
+            wrf_segmentation3d = wrf_tobac_segmentation(wrf_segmentation_cube, wrf_features, "3d", CONFIG)
     
-        if ("analysis" in CONFIG['wrf']['tobac']):
+        if ("analysis" in CONFIG["wrf"]["tobac"]):
             
             from CoMET.analysis.get_vars import get_var
             
-            if (CONFIG['verbose']): print("=====Starting WRF tobac Analysis Calculations=====")
+            if (CONFIG["verbose"]): print("=====Starting WRF tobac Analysis Calculations=====")
             
             UDAF_tracks = linking_to_UDAF(wrf_tracks, "tobac")
             
@@ -329,15 +329,15 @@ def run_wrf(CONFIG, queue = None):
             }
             
             # Calcaulte each variable of interest and append to analysis data array
-            for var in CONFIG['wrf']['tobac']['analysis'].keys():
+            for var in CONFIG["wrf"]["tobac"]["analysis"].keys():
                 
                 # Add default tracking featured_id variable in place of variable if not present
-                if ("variable" not in CONFIG['wrf']['tobac']['analysis'][var.lower()]): CONFIG['wrf']['tobac']['analysis'][var.lower()]["variable"] = CONFIG["wrf"]["feature_tracking_var"].upper()
+                if ("variable" not in CONFIG["wrf"]["tobac"]["analysis"][var.lower()]): CONFIG["wrf"]["tobac"]["analysis"][var.lower()]["variable"] = CONFIG["wrf"]["feature_tracking_var"].upper()
                 
-                wrf_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['wrf']['tobac']['analysis'][var.lower()]))
+                wrf_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG["verbose"], **CONFIG["wrf"]["tobac"]["analysis"][var.lower()]))
                 
     
-        if (CONFIG['verbose']): print("=====Converting WRF tobac Output to CoMET-UDAF=====")
+        if (CONFIG["verbose"]): print("=====Converting WRF tobac Output to CoMET-UDAF=====")
     
         UDAF_tracks = linking_to_UDAF(wrf_tracks, "tobac")
     
@@ -354,7 +354,7 @@ def run_wrf(CONFIG, queue = None):
             "analysis": wrf_tobac_analysis_data
             }
         
-        if (CONFIG['verbose']): print("=====WRF tobac Tracking Complete=====")
+        if (CONFIG["verbose"]): print("=====WRF tobac Tracking Complete=====")
     
     # Run MOAAP if present
     if ("moaap" in CONFIG["wrf"]):
@@ -368,11 +368,11 @@ def run_wrf(CONFIG, queue = None):
         mask_output = wrf_moaap(wrf_tracking_xarray, CONFIG)
         
         # Run analysis on MOAAP output
-        if ("analysis" in CONFIG['wrf']['moaap']):
+        if ("analysis" in CONFIG["wrf"]["moaap"]):
             
             from CoMET.analysis.get_vars import get_var
             
-            if (CONFIG['verbose']): print("=====Starting WRF MOAAP Analysis Calculations=====")
+            if (CONFIG["verbose"]): print("=====Starting WRF MOAAP Analysis Calculations=====")
             
             # TODO: do all this stuff, heavy work needed in output translation layer
 
@@ -405,14 +405,14 @@ def run_mesonh(CONFIG, queue = None):
     from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
     from .mesonh_load import mesonh_load_netcdf_iris
     
-    if (CONFIG['verbose']): print("=====Loading MesoNH Data=====")
+    if (CONFIG["verbose"]): print("=====Loading MesoNH Data=====")
     
-    mesonh_tracking_cube, mesonh_tracking_xarray = mesonh_load_netcdf_iris(CONFIG['mesonh']['path_to_data'], CONFIG['mesonh']['feature_tracking_var'], CONFIG)
+    mesonh_tracking_cube, mesonh_tracking_xarray = mesonh_load_netcdf_iris(CONFIG["mesonh"]["path_to_data"], CONFIG["mesonh"]["feature_tracking_var"], CONFIG)
     
     # if tracking and segmentation variables are different, load seperately
-    if (CONFIG['mesonh']['feature_tracking_var'] != CONFIG['mesonh']['segmentation_var']):
+    if (CONFIG["mesonh"]["feature_tracking_var"] != CONFIG["mesonh"]["segmentation_var"]):
         
-        mesonh_segmentation_cube, mesonh_segmentation_xarray = mesonh_load_netcdf_iris(CONFIG['mesonh']['path_to_data'], CONFIG['mesonh']['segmentation_var'], CONFIG)
+        mesonh_segmentation_cube, mesonh_segmentation_xarray = mesonh_load_netcdf_iris(CONFIG["mesonh"]["path_to_data"], CONFIG["mesonh"]["segmentation_var"], CONFIG)
     
     else:
     
@@ -430,7 +430,7 @@ def run_mesonh(CONFIG, queue = None):
     }
     
     # now determine which tracker to use
-    if ("tobac" in CONFIG['mesonh']):
+    if ("tobac" in CONFIG["mesonh"]):
         from .mesonh_tobac import mesonh_tobac_feature_id, mesonh_tobac_linking, mesonh_tobac_segmentation
         
         mesonh_features = None
@@ -440,35 +440,35 @@ def run_mesonh(CONFIG, queue = None):
         mesonh_tobac_analysis_data = {}
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
-        if ("feature_id" in CONFIG['mesonh']['tobac']):
+        if ("feature_id" in CONFIG["mesonh"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting MesoNH tobac Feature ID=====")
+            if (CONFIG["verbose"]): print("=====Starting MesoNH tobac Feature ID=====")
             
             mesonh_features = mesonh_tobac_feature_id(mesonh_tracking_cube, CONFIG)
         
-        if ("linking" in CONFIG['mesonh']['tobac']):
+        if ("linking" in CONFIG["mesonh"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting MesoNH tobac Feature Linking=====")
+            if (CONFIG["verbose"]): print("=====Starting MesoNH tobac Feature Linking=====")
             
             mesonh_tracks = mesonh_tobac_linking(mesonh_tracking_cube, mesonh_features, CONFIG)
         
-        if ("segmentation_2d" in CONFIG['mesonh']['tobac']):
+        if ("segmentation_2d" in CONFIG["mesonh"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting MesoNH tobac 2D Segmentation=====")
+            if (CONFIG["verbose"]): print("=====Starting MesoNH tobac 2D Segmentation=====")
             
-            mesonh_segmentation2d = mesonh_tobac_segmentation(mesonh_segmentation_cube, mesonh_features, '2d', CONFIG, CONFIG['mesonh']['tobac']['segmentation_2d']['height'])
+            mesonh_segmentation2d = mesonh_tobac_segmentation(mesonh_segmentation_cube, mesonh_features, "2d", CONFIG, CONFIG["mesonh"]["tobac"]["segmentation_2d"]["height"])
     
-        if ("segmentation_3d" in CONFIG['mesonh']['tobac']):
+        if ("segmentation_3d" in CONFIG["mesonh"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting MesoNH tobac 3D Segmentation=====")
+            if (CONFIG["verbose"]): print("=====Starting MesoNH tobac 3D Segmentation=====")
             
-            mesonh_segmentation3d = mesonh_tobac_segmentation(mesonh_segmentation_cube, mesonh_features, '3d', CONFIG)
+            mesonh_segmentation3d = mesonh_tobac_segmentation(mesonh_segmentation_cube, mesonh_features, "3d", CONFIG)
     
-        if ("analysis" in CONFIG['mesonh']['tobac']):
+        if ("analysis" in CONFIG["mesonh"]["tobac"]):
             
             from CoMET.analysis.get_vars import get_var
             
-            if (CONFIG['verbose']): print("=====Starting MesoNH tobac Analysis Calculations=====")
+            if (CONFIG["verbose"]): print("=====Starting MesoNH tobac Analysis Calculations=====")
             
             UDAF_tracks = linking_to_UDAF(mesonh_tracks, "tobac")
             
@@ -483,15 +483,15 @@ def run_mesonh(CONFIG, queue = None):
             }
             
             # Calcaulte each variable of interest and append to analysis data array
-            for var in CONFIG['mesonh']['tobac']['analysis'].keys():
+            for var in CONFIG["mesonh"]["tobac"]["analysis"].keys():
                 
                 # Add default tracking featured_id variable in place of variable if not present
-                if ("variable" not in CONFIG['mesonh']['tobac']['analysis'][var.lower()]): CONFIG['mesonh']['tobac']['analysis'][var.lower()]["variable"] = CONFIG["mesonh"]["feature_tracking_var"].upper()
+                if ("variable" not in CONFIG["mesonh"]["tobac"]["analysis"][var.lower()]): CONFIG["mesonh"]["tobac"]["analysis"][var.lower()]["variable"] = CONFIG["mesonh"]["feature_tracking_var"].upper()
                 
-                mesonh_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['mesonh']['tobac']['analysis'][var.lower()]))
+                mesonh_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG["verbose"], **CONFIG["mesonh"]["tobac"]["analysis"][var.lower()]))
                 
     
-        if (CONFIG['verbose']): print("=====Converting MesoNH tobac Output to CoMET-UDAF=====")
+        if (CONFIG["verbose"]): print("=====Converting MesoNH tobac Output to CoMET-UDAF=====")
         
         UDAF_tracks = linking_to_UDAF(mesonh_tracks, "tobac")
         
@@ -508,7 +508,7 @@ def run_mesonh(CONFIG, queue = None):
             "analysis": mesonh_tobac_analysis_data
             }
         
-        if (CONFIG['verbose']): print("=====MesoNH tobac Tracking Complete=====")
+        if (CONFIG["verbose"]): print("=====MesoNH tobac Tracking Complete=====")
         
     
     # Send return dict to queue if there is a queue object passed
@@ -531,16 +531,16 @@ def run_nexrad(CONFIG, queue = None):
     from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
     from .nexrad_load import nexrad_load_netcdf_iris
     
-    if (CONFIG['verbose']): print("=====Loading NEXRAD Data=====")
+    if (CONFIG["verbose"]): print("=====Loading NEXRAD Data=====")
     
     # determine if gridding is necessary or not
-    if ("gridding" in CONFIG['nexrad']):
+    if ("gridding" in CONFIG["nexrad"]):
         
-        if (CONFIG['verbose']): print("=====Gridding NEXRAD Data=====")
-        nexrad_tracking_cube, nexrad_tracking_xarray = nexrad_load_netcdf_iris(CONFIG['nexrad']['path_to_data'], 'ar2v', CONFIG['nexrad']['feature_tracking_var'], CONFIG, CONFIG['nexrad']['gridding']['gridding_save_path'])
+        if (CONFIG["verbose"]): print("=====Gridding NEXRAD Data=====")
+        nexrad_tracking_cube, nexrad_tracking_xarray = nexrad_load_netcdf_iris(CONFIG["nexrad"]["path_to_data"], "ar2v", CONFIG["nexrad"]["feature_tracking_var"], CONFIG, CONFIG["nexrad"]["gridding"]["gridding_save_path"])
     
     else:
-        nexrad_tracking_cube, nexrad_tracking_xarray = nexrad_load_netcdf_iris(CONFIG['nexrad']['path_to_data'], 'nc', CONFIG['nexrad']['feature_tracking_var'], CONFIG)
+        nexrad_tracking_cube, nexrad_tracking_xarray = nexrad_load_netcdf_iris(CONFIG["nexrad"]["path_to_data"], "nc", CONFIG["nexrad"]["feature_tracking_var"], CONFIG)
     
     # Add xarrays and cubes to return dict
     user_return_dict = {}
@@ -554,7 +554,7 @@ def run_nexrad(CONFIG, queue = None):
     
     
     # determine which tracker to use
-    if ("tobac" in CONFIG['nexrad']):
+    if ("tobac" in CONFIG["nexrad"]):
         from .nexrad_tobac import nexrad_tobac_feature_id, nexrad_tobac_linking, nexrad_tobac_segmentation
         
         nexrad_features = None
@@ -564,35 +564,35 @@ def run_nexrad(CONFIG, queue = None):
         nexrad_tobac_analysis_data = {}
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
-        if ("feature_id" in CONFIG['nexrad']['tobac']):
+        if ("feature_id" in CONFIG["nexrad"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting NEXRAD tobac Feature ID=====")
+            if (CONFIG["verbose"]): print("=====Starting NEXRAD tobac Feature ID=====")
             
             nexrad_features = nexrad_tobac_feature_id(nexrad_tracking_cube, CONFIG)
         
-        if ("linking" in CONFIG['nexrad']['tobac']):
+        if ("linking" in CONFIG["nexrad"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting NEXRAD tobac Feature Linking=====")
+            if (CONFIG["verbose"]): print("=====Starting NEXRAD tobac Feature Linking=====")
             
             nexrad_tracks = nexrad_tobac_linking(nexrad_tracking_cube, nexrad_features, CONFIG)
         
-        if ("segmentation_2d" in CONFIG['nexrad']['tobac']):
+        if ("segmentation_2d" in CONFIG["nexrad"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting NEXRAD tobac 2D Segmentation=====")
+            if (CONFIG["verbose"]): print("=====Starting NEXRAD tobac 2D Segmentation=====")
             
-            nexrad_segmentation2d = nexrad_tobac_segmentation(nexrad_tracking_cube, nexrad_features, '2d', CONFIG, CONFIG['nexrad']['tobac']['segmentation_2d']['height'])
+            nexrad_segmentation2d = nexrad_tobac_segmentation(nexrad_tracking_cube, nexrad_features, "2d", CONFIG, CONFIG["nexrad"]["tobac"]["segmentation_2d"]["height"])
     
-        if ("segmentation_3d" in CONFIG['nexrad']['tobac']):
+        if ("segmentation_3d" in CONFIG["nexrad"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting NEXRAD tobac 3D Segmentation=====")
+            if (CONFIG["verbose"]): print("=====Starting NEXRAD tobac 3D Segmentation=====")
             
-            nexrad_segmentation3d = nexrad_tobac_segmentation(nexrad_tracking_cube, nexrad_features, '3d', CONFIG)
+            nexrad_segmentation3d = nexrad_tobac_segmentation(nexrad_tracking_cube, nexrad_features, "3d", CONFIG)
 
-        if ("analysis" in CONFIG['nexrad']['tobac']):
+        if ("analysis" in CONFIG["nexrad"]["tobac"]):
             
             from CoMET.analysis.get_vars import get_var
             
-            if (CONFIG['verbose']): print("=====Starting NEXRAD tobac Analysis Calculations=====")
+            if (CONFIG["verbose"]): print("=====Starting NEXRAD tobac Analysis Calculations=====")
             
             UDAF_tracks = linking_to_UDAF(nexrad_tracks, "tobac")
             
@@ -607,15 +607,15 @@ def run_nexrad(CONFIG, queue = None):
             }
                 
             # Calcaulte each variable of interest and append to analysis data array
-            for var in CONFIG['nexrad']['tobac']['analysis'].keys():
+            for var in CONFIG["nexrad"]["tobac"]["analysis"].keys():
                 
                 # Add default tracking featured_id variable in place of variable if not present
-                if ("variable" not in CONFIG['nexrad']['tobac']['analysis'][var.lower()]): CONFIG['nexrad']['tobac']['analysis'][var.lower()]["variable"] = CONFIG["nexrad"]["feature_tracking_var"].upper()
+                if ("variable" not in CONFIG["nexrad"]["tobac"]["analysis"][var.lower()]): CONFIG["nexrad"]["tobac"]["analysis"][var.lower()]["variable"] = CONFIG["nexrad"]["feature_tracking_var"].upper()
                 
-                nexrad_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['nexrad']['tobac']['analysis'][var.lower()]))
+                nexrad_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG["verbose"], **CONFIG["nexrad"]["tobac"]["analysis"][var.lower()]))
 
     
-        if (CONFIG['verbose']): print("=====Converting NEXRAD tobac Output to CoMET-UDAF=====")
+        if (CONFIG["verbose"]): print("=====Converting NEXRAD tobac Output to CoMET-UDAF=====")
 
         UDAF_tracks = linking_to_UDAF(nexrad_tracks, "tobac")
 
@@ -632,7 +632,7 @@ def run_nexrad(CONFIG, queue = None):
             "analysis": nexrad_tobac_analysis_data
             }
         
-        if (CONFIG['verbose']): print("=====NEXRAD tobac Tracking Complete=====")
+        if (CONFIG["verbose"]): print("=====NEXRAD tobac Tracking Complete=====")
     
     
     # Send return dict to queue if there is a queue object passed
@@ -655,9 +655,9 @@ def run_goes(CONFIG, queue = None):
     from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
     from .goes_load import goes_load_netcdf_iris
 
-    if (CONFIG['verbose']): print("=====Loading GOES Data=====")
+    if (CONFIG["verbose"]): print("=====Loading GOES Data=====")
     
-    goes_tracking_cube, goes_tracking_xarray = goes_load_netcdf_iris(CONFIG['goes']['path_to_data'], CONFIG['goes']['feature_tracking_var'], CONFIG)
+    goes_tracking_cube, goes_tracking_xarray = goes_load_netcdf_iris(CONFIG["goes"]["path_to_data"], CONFIG["goes"]["feature_tracking_var"], CONFIG)
     
     # Add xarrays and cubes to return dict
     user_return_dict = {}
@@ -670,7 +670,7 @@ def run_goes(CONFIG, queue = None):
     }
     
     # determine which tracker to use
-    if ("tobac" in CONFIG['goes']):
+    if ("tobac" in CONFIG["goes"]):
         from .goes_tobac import goes_tobac_feature_id, goes_tobac_linking, goes_tobac_segmentation
     
         goes_features = None
@@ -680,30 +680,30 @@ def run_goes(CONFIG, queue = None):
         
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
-        if ("feature_id" in CONFIG['goes']['tobac']):
+        if ("feature_id" in CONFIG["goes"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting GOES tobac Feature ID=====")
+            if (CONFIG["verbose"]): print("=====Starting GOES tobac Feature ID=====")
             
             goes_features = goes_tobac_feature_id(goes_tracking_cube, CONFIG)
         
-        if ("linking" in CONFIG['goes']['tobac']):
+        if ("linking" in CONFIG["goes"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting GOES tobac Feature Linking=====")
+            if (CONFIG["verbose"]): print("=====Starting GOES tobac Feature Linking=====")
             
             goes_tracks = goes_tobac_linking(goes_tracking_cube, goes_features, CONFIG)
         
-        if ("segmentation_2d" in CONFIG['goes']['tobac']):
+        if ("segmentation_2d" in CONFIG["goes"]["tobac"]):
             
-            if (CONFIG['verbose']): print("=====Starting GOES tobac 2D Segmentation=====")
+            if (CONFIG["verbose"]): print("=====Starting GOES tobac 2D Segmentation=====")
             
             # TB is 2D from satellite so no height parameter necessary
             goes_segmentation2d = goes_tobac_segmentation(goes_tracking_cube, goes_features, CONFIG)
         
-        if ("analysis" in CONFIG['goes']['tobac']):
+        if ("analysis" in CONFIG["goes"]["tobac"]):
             
             from CoMET.analysis.get_vars import get_var
             
-            if (CONFIG['verbose']): print("=====Starting GOES tobac Analysis Calculations=====")
+            if (CONFIG["verbose"]): print("=====Starting GOES tobac Analysis Calculations=====")
             
             UDAF_tracks = linking_to_UDAF(goes_tracks, "tobac")
             
@@ -718,15 +718,15 @@ def run_goes(CONFIG, queue = None):
             }
             
             # Calcaulte each variable of interest and append to analysis data array
-            for var in CONFIG['goes']['tobac']['analysis'].keys():
+            for var in CONFIG["goes"]["tobac"]["analysis"].keys():
                 
                 # Add default tracking featured_id variable in place of variable if not present
-                if ("variable" not in CONFIG['goes']['tobac']['analysis'][var.lower()]): CONFIG['goes']['tobac']['analysis'][var.lower()]["variable"] = CONFIG["goes"]["feature_tracking_var"].upper()
+                if ("variable" not in CONFIG["goes"]["tobac"]["analysis"][var.lower()]): CONFIG["goes"]["tobac"]["analysis"][var.lower()]["variable"] = CONFIG["goes"]["feature_tracking_var"].upper()
                 
-                goes_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG['verbose'], **CONFIG['goes']['tobac']['analysis'][var.lower()]))
+                goes_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG["verbose"], **CONFIG["goes"]["tobac"]["analysis"][var.lower()]))
 
 
-        if (CONFIG['verbose']): print("=====Converting GOES tobac Output to CoMET-UDAF=====")
+        if (CONFIG["verbose"]): print("=====Converting GOES tobac Output to CoMET-UDAF=====")
         
         UDAF_tracks = linking_to_UDAF(goes_tracks, "tobac")
         
@@ -741,7 +741,7 @@ def run_goes(CONFIG, queue = None):
             "analysis": goes_tobac_analysis_data
             }
         
-        if (CONFIG['verbose']): print("=====GOES tobac Tracking Complete=====")
+        if (CONFIG["verbose"]): print("=====GOES tobac Tracking Complete=====")
         
     
     # Send return dict to queue if there is a queue object passed
