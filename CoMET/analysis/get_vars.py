@@ -25,7 +25,7 @@ Valid Variables:
     "volume"
 """
 def get_var(analysis_object, var, verbose=False, **args):
-    from .calculate_arm_products import calculate_arm_vdisquants
+    from .calculate_arm_products import calculate_arm_vdisquants, calculate_arm_interpsonde
     from .calculate_bulk_cell_statistics import calculate_ETH, calculate_area, calculate_volume
     
     # Map the correct functions to the proper variables. This is a list of all the calculatable variables as well.
@@ -33,7 +33,8 @@ def get_var(analysis_object, var, verbose=False, **args):
         "eth": calculate_ETH,
         "area": calculate_area,
         "volume": calculate_volume,
-        "vdisquants": calculate_arm_vdisquants
+        "vdisquants": calculate_arm_vdisquants,
+        "interpsonde": calculate_arm_interpsonde
     }
     
     # Check for valid variables

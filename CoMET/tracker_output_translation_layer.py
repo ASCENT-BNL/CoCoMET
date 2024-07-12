@@ -86,12 +86,14 @@ def linking_to_UDAF(tracks, tracker):
     
     if (tracker.lower() == "tobac"):
         import numpy as np
+        from tqdm import tqdm
         import geopandas as gpd
         from datetime import datetime
         
         # Extract values from features
         frames = tracks.frame.values
         times = np.array([datetime.fromisoformat(f.isoformat()) for f in tracks.time.values])
+        lifetimes = tracks.time_cell.values
         feature_ids = tracks.feature.values-1
         cell_ids = tracks.cell.values-1
         # Correct any -2 values, created as a result of shifting, back to -1
@@ -114,10 +116,26 @@ def linking_to_UDAF(tracks, tracker):
             up_downs = np.repeat(np.nan, tracks.shape[0])
         
         
+        lifetime_percents = []
+        
+        # Loop over rows
+        for row in tqdm(tracks.iterrows(), desc="=====Performing tobac Linking to UDAF====", total=tracks.shape[0]):
+            
+            cell_max_life = tracks.query("cell==@row[1].cell").time_cell.values.max()
+            
+            # If only tracked one time, add -1 to lifetime_percent
+            if cell_max_life == 0:
+                lifetime_percents.append(-1)
+            else:
+                lifetime_percents.append(row[1].time_cell/cell_max_life)
+                
+        
         # Create GeoDataFrame according to UDAF specification
         UDAF_tracks = gpd.GeoDataFrame(data = {
             "frame": frames,
             "time": times,
+            "lifetime": lifetimes,
+            "lifetime_percent": lifetime_percents,
             "feature_id": feature_ids,
             "cell_id": cell_ids,
             "south_north": north_souths,
@@ -153,13 +171,17 @@ def segmentation_to_UDAF(segmentation, UDAF_tracks, tracker):
     if (tracker.lower() == "tobac"):
         import numpy as np
         import xarray as xr
+        from tqdm import tqdm
         from copy import deepcopy
         
         feature_segmentation = (segmentation - 1).rename("Feature_Segmentation")    
         cell_segmentation = deepcopy(feature_segmentation).rename("Cell_Segmentation")
         
+        
+        frame_groups = UDAF_tracks.groupby("frame")
+        
         # Loop over tracks, replacing feature_id values with cell_id values in the cell_segmenation DataArray
-        for frame in UDAF_tracks.groupby("frame"):
+        for frame in tqdm(frame_groups, desc="=====Performing tobac Segmentation to UDAF=====",total=frame_groups.ngroups):
             
             # Loop over each feature in that frame
             for feature in frame[1].iterrows():

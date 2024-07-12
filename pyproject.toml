@@ -4,28 +4,29 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "CoMET"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
-    'importlib-metadata; python_version=="3.11.9"',
-    'numpy',
-    'xarray',
-    'netCDF4',
-    'wrf-python',
-    'arm-pyart',
-    'tobac',
-    'pandas',
-    'geopandas',
-    'cftime',
-    'yaml',
-    'vincenty',
-    'iris'
+    "numpy<=1.26.4",
+    "numba",
+    "xarray",
+    "netCDF4",
+    "arm-pyart",
+    "pandas",
+    "geopandas",
+    "cftime",
+    "pyyaml",
+    "vincenty",
+    "iris",
+    "tobac @ git+https://github.com/tobac-project/tobac.git@37ddd51",
+    "tqdm",
+    "metpy"
 ]
 authors = [
   { name="Travis Hahn", email="travis.hahn@psu.edu" },
 ]
 description = "Convective cloud Model Evaluation Toolkit (CoMET)"
 readme = "README.md"
-requires-python = "==3.11.9"
+requires-python = ">=3.11.0"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: BSD-3 License",

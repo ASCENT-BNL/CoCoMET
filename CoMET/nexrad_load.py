@@ -26,20 +26,24 @@ def gen_and_save_nexrad_grid(path_to_files, save_location, tracking_var, CONFIG,
     import glob
     import pyart
     import numpy as np
+    from tqdm import tqdm
+        
+    # Get all archive files and iterate over them
+    files = np.sort(glob.glob(path_to_files))
+    
+    if (len(files) == 0):
+        raise Exception('!=====No Files Present to Grid=====!')
+        return
     
     # If parallel processing is enabled, run that version and return
     if (parallel_processing):
-        gen_and_save_nexrad_grid_multi(np.sort(glob.glob(path_to_files)), save_location, tracking_var, CONFIG, max_cores)
+        gen_and_save_nexrad_grid_multi(files, save_location, tracking_var, CONFIG, max_cores)
         return
     
-    # Get all archive files and iterate over them
-    files = np.sort(glob.glob(path_to_files))
     # Extract just the filenames from the paths without the file extensions
     file_names = [os.path.basename(f).split('.')[0] for f in files]
     
-    for idx, ff in enumerate(files):
-        
-        if (CONFIG['verbose']): print(f"=====GRIDDING NEXRAD, ({'%5.2f' % ((idx+1)/len(files)*100) + '%'})=====")
+    for idx, ff in tqdm(enumerate(files), desc="=====Gridding NEXRAD=====", total=len(files)):
         
         if (tracking_var.lower() == 'dbz'):
             # Create radar object including only field of interest
@@ -60,8 +64,7 @@ def gen_and_save_nexrad_grid(path_to_files, save_location, tracking_var, CONFIG,
         
     return
     
-
-
+        
 
 """
 Helper Function for Parallel Processing
@@ -69,8 +72,6 @@ Helper Function for Parallel Processing
 def create_and_save_grid_single(file, save_location, tracking_var, CONFIG):
     import os
     import pyart
-    
-    if (CONFIG['verbose']): print(f"=====PARALLEL GRIDDING NEXRAD, ({file})=====")
     
     if (tracking_var.lower() == 'dbz'):
         # Create radar object including only field of interest
@@ -90,6 +91,8 @@ def create_and_save_grid_single(file, save_location, tracking_var, CONFIG):
         raise Exception(f'!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!')
         return
     
+
+
 """
 Inputs:
     files: list containing all paths to NEXRAD level 2 archive files
@@ -100,17 +103,17 @@ Inputs:
 """
 def gen_and_save_nexrad_grid_multi(files, save_location, tracking_var, CONFIG, max_cores):
     import multiprocessing
+    from tqdm import tqdm
     from functools import partial
     
-    if (len(files) == 0):
-        raise Exception('!=====No Files Present to Grid=====!')
-        return
-    
     # Start a pool with max_cores and run the grid function
-    multi_pool = multiprocessing.Pool(max_cores)
-    multi_pool.map(partial(create_and_save_grid_single, save_location=save_location, tracking_var=tracking_var, CONFIG=CONFIG), files)
-    multi_pool.close()
-    multi_pool.join()
+    with multiprocessing.Pool(max_cores) as multi_pool:
+        
+        with tqdm(total=len(files),desc="=====Parallel Gridding NEXRAD=====") as pbar:
+            
+            for _ in multi_pool.imap_unordered(partial(create_and_save_grid_single, save_location=save_location, tracking_var=tracking_var, CONFIG=CONFIG), files):
+                
+                pbar.update()
     
     return
 
@@ -229,7 +232,7 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             # Subset location of interest
             if ('nexrad' in CONFIG):
                 
-                if ('bounds' in CONFIG['goes']):
+                if ('bounds' in CONFIG['nexrad']):
 
                     mask_lon = (nexrad_xarray.lon >= CONFIG['nexrad']['bounds'][0]) & (nexrad_xarray.lon <= CONFIG['nexrad']['bounds'][1])
                     mask_lat = (nexrad_xarray.lat >= CONFIG['nexrad']['bounds'][2]) & (nexrad_xarray.lat <= CONFIG['nexrad']['bounds'][3])
@@ -323,7 +326,7 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
             # Subset location of interest
             if ('nexrad' in CONFIG):
                 
-                if ('bounds' in CONFIG['goes']):
+                if ('bounds' in CONFIG['nexrad']):
 
                     mask_lon = (nexrad_xarray.lon >= CONFIG['nexrad']['bounds'][0]) & (nexrad_xarray.lon <= CONFIG['nexrad']['bounds'][1])
                     mask_lat = (nexrad_xarray.lat >= CONFIG['nexrad']['bounds'][2]) & (nexrad_xarray.lat <= CONFIG['nexrad']['bounds'][3])
@@ -381,7 +384,7 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
             # Subset location of interest
             if ('nexrad' in CONFIG):
                 
-                if ('bounds' in CONFIG['goes']):
+                if ('bounds' in CONFIG['nexrad']):
 
                     mask_lon = (nexrad_xarray.lon >= CONFIG['nexrad']['bounds'][0]) & (nexrad_xarray.lon <= CONFIG['nexrad']['bounds'][1])
                     mask_lat = (nexrad_xarray.lat >= CONFIG['nexrad']['bounds'][2]) & (nexrad_xarray.lat <= CONFIG['nexrad']['bounds'][3])

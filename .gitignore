@@ -1,3 +1,5 @@
 CoMET.egg-info/
 dist/
-
+__pycache__
+.virtual_documents
+.ipynb_checkpoints
