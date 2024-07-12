@@ -91,26 +91,43 @@ def calculate_ETH(analysis_object, threshold, verbose=False, variable=None, cell
             
             # Get the indices of the cell footprint
             proper_indices = np.argwhere(footprint_data[frame[0]].values == feature[0])
+            
+            # Cells which have no segmented output should get a NaN
+            if (len(proper_indices) == 0):
+                
+                eth_info["frame"].append(frame[0])
+                eth_info["feature_id"].append(feature[0])
+                eth_info["cell_id"].append(feature[1]["cell_id"].min())
+                eth_info["eth"].append(np.nan)
+                continue
+                
+            
             eth_set = []
             
             # Calculate ETH for each location
             for iy,ix in proper_indices:
                 
                 max_alt_index = np.argwhere(variable_field[frame[0],:,iy,ix].values > threshold)
-                    
+                
                 # If there are no indices greater than threshold, skip
                 if (len(max_alt_index) != 0): 
                     max_alt_index = max_alt_index.max()
-                else: continue
+                else: 
+                    eth_set.append(np.nan)
+                    continue
             
                 max_alt = variable_field.altitude.values[max_alt_index]
                 eth_set.append(max_alt)
 
-            # print(eth_set)
             eth_info["frame"].append(frame[0])
             eth_info["feature_id"].append(feature[0])
             eth_info["cell_id"].append(feature[1]["cell_id"].min())
-            eth_info["eth"].append(np.nanquantile(eth_set, quantile)/1000)
+            
+            # If all NaN slice, append just np.nan
+            if np.isnan(eth_set).all():
+                eth_info["eth"].append(np.nan)
+            else:
+                eth_info["eth"].append(np.nanquantile(eth_set, quantile)/1000)
     
     return(pd.DataFrame(eth_info))
 
@@ -177,6 +194,15 @@ def calculate_area(analysis_object, verbose=False, height = 2000, **args):
             # Get valid indices of a given features
             proper_indices = np.argwhere(mask[frame[0]].values == feature[0])
             
+            # Cells which have no segmented output should get a NaN
+            if (len(proper_indices) == 0):
+                
+                area_info["frame"].append(frame[0])
+                area_info["feature_id"].append(feature[0])
+                area_info["cell_id"].append(feature[1]["cell_id"].min())
+                area_info["area"].append(np.nan)
+                continue
+            
             # Sum up all the areas that comprise it
             total = np.sum([cell_areas[iy,ix] for iy,ix in proper_indices])
 
@@ -240,6 +266,15 @@ def calculate_volume(analysis_object, verbose=False, **args):
             
             # Get valid indices of a given features
             proper_indices = np.argwhere(mask[frame[0]].values == feature[0])
+            
+            # Cells which have no segmented output should get a NaN
+            if (len(proper_indices) == 0):
+                
+                volume_info["frame"].append(frame[0])
+                volume_info["feature_id"].append(feature[0])
+                volume_info["cell_id"].append(feature[1]["cell_id"].min())
+                volume_info["volume"].append(np.nan)
+                continue
             
             # Sum up all the volumes that comprise it
             total = np.sum([cell_volumes[iz,iy,ix] for iz,iy,ix in proper_indices])
