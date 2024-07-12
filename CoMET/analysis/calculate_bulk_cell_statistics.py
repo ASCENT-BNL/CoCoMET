@@ -5,7 +5,7 @@ Created on Fri Jun 28 15:00:59 2024
 
 @author: thahn
 """
-
+# TODO: Convert these outputs to datasets
 # =============================================================================
 # This contains all of the functions to calculate basic bulk cell statistics (ETH, area, etc.) from CoMET-UDAF data
 # =============================================================================
@@ -79,6 +79,7 @@ def calculate_ETH(analysis_object, threshold, verbose=False, variable=None, cell
         "eth": [] # in km
     }
     
+    # TODO: look into why we get all these NaN warnings...doesn't make sense
     
     frame_groups = analysis_object["UDAF_linking"].groupby("frame")
     
@@ -105,7 +106,7 @@ def calculate_ETH(analysis_object, threshold, verbose=False, variable=None, cell
                 max_alt = variable_field.altitude.values[max_alt_index]
                 eth_set.append(max_alt)
 
-
+            # print(eth_set)
             eth_info["frame"].append(frame[0])
             eth_info["feature_id"].append(feature[0])
             eth_info["cell_id"].append(feature[1]["cell_id"].min())
