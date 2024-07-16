@@ -22,9 +22,15 @@ wrf:
     segmentation_var: "wa"
             
     moaap:
-        tracking_save_path: "/D3/data/thahn/wrf/wrfout_2023_07_09/moaap_test/"
-        # MinTimePR: 0.5
-        # MinAreaPR: 10
+        tracking_save_path: "/D3/data/thahn/wrf/wrfout_2023_07_09/moaap_test/test/"
+        
+        MCS_Minsize: 1000
+        MCS_minPR: 10
+        MCS_minTime: 2
+        CL_Area: 10000
+        
+        MinAreaC: 10000
+        MinTimeC: 2
         
         analysis:
             # None yet

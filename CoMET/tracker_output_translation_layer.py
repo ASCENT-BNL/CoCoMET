@@ -261,3 +261,59 @@ def segmentation_to_UDAF(segmentation, UDAF_tracks, tracker):
     
     else:
         raise Exception(f"!=====Invalid Tracker, You Entered: {tracker.lower()}=====!")
+
+
+
+"""
+Inputs:
+    mask: An xarray file which is the default output from MOAAP and contains the mask information for all tracked types
+    convert_type: The type of tracking data to extract. Either "MCS" or "Clouds"
+Outputs:
+    return_tuple: A tuple containing the UDAF_features, UDAF_tracks, and UDAF_segmentation outputs
+"""
+def bulk_moaap_to_UDAF(mask, convert_type="clouds"):
+    import numpy as np
+    import pandas as pd
+    from tqdm import tqdm
+    
+    print("=====In Progress=====")
+    
+    # Get the numpy array that contains the object we care about's mask
+    if (convert_type.lower() == "clouds"):
+        
+        mask_field = mask.BT_Objects.values
+        
+    elif (convert_type.lower() == "mcs"):
+        
+        mask_field = mask.MCS_Tb_Objects.values
+    
+    else:
+        raise Exception(f"!=====Invalid Phenomena Type Selected. You Entered: {convert_type.lower()}!=====")
+    
+    
+    frames = []
+    times = []
+    feature_ids = [-1]
+    cell_ids = []
+        
+    # Loop over frames
+    for ii in tqdm(range(mask_field.shape[0]), desc="=====Converting MOAAP to UDAF=====", total=mask_field.shape[0]):
+        
+        # Get unique cell ids for this frame
+        unique_cells = np.unique(mask_field[ii])[1:]
+        
+        # Loop over unique cell ids
+        for cell_id in unique_cells:
+            
+            # Append timing information and cell/feature ids
+            frames.append(ii)
+            times.append(mask.time.values[ii])
+            
+            feature_ids.append(feature_ids[-1] + 1)
+            cell_ids.append(int(cell_id) - 1)
+            continue
+    
+    
+    UDAF_linking = pd.DataFrame(data={"frame": frames, "time": times, "feature_id": feature_ids[1:], "cell_id": cell_ids})
+    
+    return (UDAF_linking)

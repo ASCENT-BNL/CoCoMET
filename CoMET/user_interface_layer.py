@@ -324,7 +324,7 @@ Outputs:
     user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
 """
 def run_wrf(CONFIG, queue = None):
-    from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
+    from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF, bulk_moaap_to_UDAF
     from .wrf_load import wrf_load_netcdf_iris
     
     if (CONFIG["verbose"]): print("=====Loading WRF Data=====")
@@ -450,8 +450,28 @@ def run_wrf(CONFIG, queue = None):
             
             if (CONFIG["verbose"]): print("=====Starting WRF MOAAP Analysis Calculations=====")
             
+            UDAF_values = bulk_moaap_to_UDAF(mask_output)
+            
             # TODO: do all this stuff, heavy work needed in output translation layer
-
+            analysis_object = {
+                "tracking_xarray": wrf_tracking_xarray,
+                "segmentation_xarray": wrf_segmentation_xarray,
+                "UDAF_features": None,
+                "UDAF_linking": None,
+                "UDAF_segmentation_2d": None,
+                "UDAF_segmentation_3d": None
+            }
+            
+            # Calcaulte each variable of interest and append to analysis data array
+            for var in CONFIG["wrf"]["moaap"]["analysis"].keys():
+                
+                # Add default tracking featured_id variable in place of variable if not present
+                if ("variable" not in CONFIG["wrf"]["moaap"]["analysis"][var.lower()]): CONFIG["wrf"]["moaap"]["analysis"][var.lower()]["variable"] = CONFIG["wrf"]["feature_tracking_var"].upper()
+                
+                wrf_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG["verbose"], **CONFIG["wrf"]["moaap"]["analysis"][var.lower()]))
+                
+        
+        UDAF_values = bulk_moaap_to_UDAF(mask_output)
 
         user_return_dict["wrf"]["moaap"] = {
             "mask_xarray": mask_output,

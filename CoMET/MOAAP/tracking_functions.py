@@ -4801,7 +4801,7 @@ def moaap(
         
         grCs = calc_object_characteristics(C_objects, # feature object file
                              tb,         # original file used for feature detection
-                             OutputFolder+'Clouds_'+str(StartDay.year)+str(StartDay.month).zfill(2)+'_'+SetupString,
+                             OutputFolder+'Clouds_'+str(StartDay.year)+str(StartDay.month).zfill(2)+SetupString,
                              Time,            # timesteps of the data
                              Lat,             # 2D latidudes
                              Lon,             # 2D Longitudes
@@ -4812,7 +4812,7 @@ def moaap(
         grMCSs_Tb = calc_object_characteristics(
             MCS_objects_Tb,  # feature object file
             pr,  # original file used for feature detection
-            OutputFolder+'MCSs_'+str(StartDay.year)+str(StartDay.month).zfill(2)+'_'+SetupString,
+            OutputFolder+'MCSs_'+str(StartDay.year)+str(StartDay.month).zfill(2)+SetupString,
             Time,            # timesteps of the data
             Lat,             # 2D latidudes
             Lon,             # 2D Longitudes
