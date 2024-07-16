@@ -20,6 +20,7 @@ Inputs:
     CONFIG: Optional to just pass a config dict object instead of filepath
 """
 def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
+    import time
     
     # Load CONFIG if not present
     if (CONFIG is None):
@@ -33,11 +34,15 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
     if (CONFIG["parallel_processing"]):
         
         # Return CoMET multi processes output which should be a dictionary
-        return (CoMET_start_multi(CONFIG))
+        multi_output = CoMET_start_multi(CONFIG)
+        
+        return (multi_output)
     
+    
+    start_time = time.perf_counter()
     
     # Create empty dictionaries for each data type
-    wrf_data = mesonh_data = nexrad_data = goes_data = {}
+    wrf_data = mesonh_data = nexrad_data = multi_nexrad_data = goes_data = {}
     
     # if wrf is present in CONFIG, run the necessary wrf functions
     if ("wrf" in CONFIG):
@@ -52,12 +57,19 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
         # Call run mesonh function to handle all mesonh tasks
         mesonh_data = run_mesonh(CONFIG)
 
+
     # Handle NEXRAD data
     if ("nexrad" in CONFIG):
         
         # Call run nexrad function to handle all nexrad tasks
         nexrad_data = run_nexrad(CONFIG)
+    
+    
+    # Handle Multi-NEXRAD data
+    if ("multi_nexrad" in CONFIG):
         
+        # Call run multi nexrad function to handle all multi nexrad tasks
+        multi_nexrad_data = run_multi_nexrad(CONFIG)
     
     # Handle GOES data
     if ("goes" in CONFIG):
@@ -66,8 +78,12 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
         goes_data = run_goes(CONFIG)
 
 
+    end_time = time.perf_counter()
+    
+    if (CONFIG["verbose"]): print(f"""=====CoMET Performance Diagonistics=====\n$ Total Process Time: {"%.2f Seconds" % (end_time-start_time)}\n$ Allocated Resources: Cores = 1""")
+
     # Return dict at end
-    return (wrf_data | mesonh_data | nexrad_data | goes_data)
+    return (wrf_data | mesonh_data | nexrad_data | multi_nexrad_data | goes_data)
 
 
 
@@ -78,10 +94,13 @@ Outputs:
     return_dict: Dictionary designed according to the CoMET-UDAF standard
 """
 def CoMET_start_multi(CONFIG):
+    import time
     import multiprocessing
     
     # This is necessary for python reasons I suppose may need to check this after some kind of release
     if __name__ == "CoMET.user_interface_layer":
+
+        start_time = time.perf_counter()        
 
         # Keep track of active core count. Should start at one.
         active_process_count = 1
@@ -165,8 +184,33 @@ def CoMET_start_multi(CONFIG):
             nexrad_process.start()
             
             active_process_count+=1
-            
 
+        
+        # Handle Multi NEXRAD data
+        if ("multi_nexrad" in CONFIG):
+            
+            # Check to make sure max core count has not been exceeded
+            if (CONFIG["max_cores"] is not None and active_process_count + 1 > CONFIG["max_cores"]):
+                raise Exception("!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!")
+                return
+            
+            # If gridding is enabled, make sure doing so will not exceed the max number of cores and adjust the CONFIG values accordingly
+            if (CONFIG["max_cores"] is not None and "gridding" in CONFIG["multi_nexrad"]):
+                CONFIG["max_cores"] = CONFIG["max_cores"] - active_process_count - 1
+            
+                if (CONFIG["max_cores"] <= 0):
+                    raise Exception("!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!")
+                    return
+            
+            # Call run nexrad function to handle all nexrad tasks
+            multi_nexrad_process = multiprocessing.Process(target=run_multi_nexrad, args=(CONFIG, queue))
+            processes.append(multi_nexrad_process)
+            multi_nexrad_process.start()
+            
+            active_process_count+=1
+            
+        
+        
         for p in processes:
             responses.append(queue.get())
         for p in processes:
@@ -180,6 +224,12 @@ def CoMET_start_multi(CONFIG):
     
         # Reset CONFIG max cores if necessary
         CONFIG["max_cores"] = inital_max_cores
+    
+    
+        end_time = time.perf_counter()
+        
+        if (CONFIG["verbose"]): print(f"""=====CoMET Performance Diagonistics=====\n$ Total Process Time: {"%.2f Seconds" % (end_time-start_time)}\n$ Allocated Resources: Cores = {CONFIG["max_cores"]}""")
+    
     
         # Return dict at end
         return (return_dict)
@@ -209,8 +259,9 @@ def CoMET_load(path_to_config):
     if ("mesonh" in CONFIG and CONFIG["verbose"]):
         print("=====MesoNH Setup Found in CONFIG=====")
     
-    # if nexrad present, run nexrad 
+    # if nexrad present, check for tuples 
     if ("nexrad" in CONFIG):
+        
         if(CONFIG["verbose"]): print("=====NEXRAD Setup Found in CONFIG=====")
         
         # If nexrad gridding is needed, change grid shapes and limits back to tuples
@@ -231,8 +282,33 @@ def CoMET_load(path_to_config):
             CONFIG["nexrad"]["gridding"]["grid_limits"] = grid_limits
     
     
+    # if multi nexrad present, check for tuples 
+    if ("multi_nexrad" in CONFIG):
+        
+        if(CONFIG["verbose"]): print("=====Multi-NEXRAD Setup Found in CONFIG=====")
+        
+        # If nexrad gridding is needed, change grid shapes and limits back to tuples
+        if ("gridding" in CONFIG["multi_nexrad"]):
+        
+            # Convert grid_shape and grid_limits back into proper tuples and ensure correct data types--auto correct automatically
+            grid_shape = ast.literal_eval(CONFIG["multi_nexrad"]["gridding"]["grid_shape"])
+            # Ensure int grid shapes
+            grid_shape = tuple([int(grid_shape[ii]) for ii in range(len(grid_shape))])
+            
+            # Ensure float for grid_limits
+            grid_limits = ast.literal_eval(CONFIG["multi_nexrad"]["gridding"]["grid_limits"])
+            grid_limits = np.array(grid_limits).astype(float)
+            grid_limits = tuple([tuple(row) for row in grid_limits])
+    
+            # Adjust CONFIG values
+            CONFIG["multi_nexrad"]["gridding"]["grid_shape"] = grid_shape
+            CONFIG["multi_nexrad"]["gridding"]["grid_limits"] = grid_limits
+    
+    
+    
     if ("goes" in CONFIG and CONFIG["verbose"]):
         print("=====GOES Setup Found in CONFIG=====")
+    
     
     return(CONFIG)
         
@@ -643,6 +719,130 @@ def run_nexrad(CONFIG, queue = None):
     # Return dictionary
     return (user_return_dict)
     
+
+
+"""
+Inputs:
+    CONFIG: User configuration file
+Outputs:
+    user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
+"""
+def run_multi_nexrad(CONFIG, queue = None):
+    from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
+    from .multi_nexrad_load import multi_nexrad_load_netcdf_iris
+    
+    if (CONFIG["verbose"]): print("=====Loading Multi-NEXRAD Data=====")
+    
+    # determine if gridding is necessary or not
+    if ("gridding" in CONFIG["multi_nexrad"]):
+        
+        if (CONFIG["verbose"]): print("=====Gridding Multi-NEXRAD Data=====")
+        multi_nexrad_tracking_cube, multi_nexrad_tracking_xarray = multi_nexrad_load_netcdf_iris(CONFIG["multi_nexrad"]["path_to_data"], "ar2v", CONFIG["multi_nexrad"]["feature_tracking_var"], CONFIG, CONFIG["multi_nexrad"]["gridding"]["gridding_save_path"])
+    
+    else:
+        multi_nexrad_tracking_cube, multi_nexrad_tracking_xarray = multi_nexrad_load_netcdf_iris(CONFIG["multi_nexrad"]["path_to_data"], "nc", CONFIG["multi_nexrad"]["feature_tracking_var"], CONFIG)
+    
+    # Add xarrays and cubes to return dict
+    user_return_dict = {}
+    
+    user_return_dict["multi_nexrad"] = {
+        "tracking_xarray": multi_nexrad_tracking_xarray,
+        "tracking_cube": multi_nexrad_tracking_cube,
+        "segmentation_xarray": multi_nexrad_tracking_xarray,
+        "segmentation_cube": multi_nexrad_tracking_cube
+    }
+    
+    
+    # determine which tracker to use
+    if ("tobac" in CONFIG["multi_nexrad"]):
+        from .multi_nexrad_tobac import multi_nexrad_tobac_feature_id, multi_nexrad_tobac_linking, multi_nexrad_tobac_segmentation
+        
+        multi_nexrad_features = None
+        multi_nexrad_tracks = None
+        multi_nexrad_segmentation2d = None
+        multi_nexrad_segmentation3d = None
+        multi_nexrad_tobac_analysis_data = {}
+        
+        # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
+        if ("feature_id" in CONFIG["multi_nexrad"]["tobac"]):
+            
+            if (CONFIG["verbose"]): print("=====Starting Multi-NEXRAD tobac Feature ID=====")
+            
+            multi_nexrad_features = multi_nexrad_tobac_feature_id(multi_nexrad_tracking_cube, CONFIG)
+        
+        if ("linking" in CONFIG["multi_nexrad"]["tobac"]):
+            
+            if (CONFIG["verbose"]): print("=====Starting Multi-NEXRAD tobac Feature Linking=====")
+            
+            multi_nexrad_tracks = multi_nexrad_tobac_linking(multi_nexrad_tracking_cube, multi_nexrad_features, CONFIG)
+        
+        if ("segmentation_2d" in CONFIG["multi_nexrad"]["tobac"]):
+            
+            if (CONFIG["verbose"]): print("=====Starting Multi-NEXRAD tobac 2D Segmentation=====")
+            
+            multi_nexrad_segmentation2d = multi_nexrad_tobac_segmentation(multi_nexrad_tracking_cube, multi_nexrad_features, "2d", CONFIG, CONFIG["multi_nexrad"]["tobac"]["segmentation_2d"]["height"])
+    
+        if ("segmentation_3d" in CONFIG["multi_nexrad"]["tobac"]):
+            
+            if (CONFIG["verbose"]): print("=====Starting Multi-NEXRAD tobac 3D Segmentation=====")
+            
+            multi_nexrad_segmentation3d = multi_nexrad_tobac_segmentation(multi_nexrad_tracking_cube, multi_nexrad_features, "3d", CONFIG)
+
+        if ("analysis" in CONFIG["multi_nexrad"]["tobac"]):
+            
+            from CoMET.analysis.get_vars import get_var
+            
+            if (CONFIG["verbose"]): print("=====Starting Multi-NEXRAD tobac Analysis Calculations=====")
+            
+            UDAF_tracks = linking_to_UDAF(multi_nexrad_tracks, "tobac")
+            
+            # Create analysis object
+            analysis_object = {
+                "tracking_xarray": multi_nexrad_tracking_xarray,
+                "segmentation_xarray": multi_nexrad_tracking_xarray,
+                "UDAF_features": feature_id_to_UDAF(multi_nexrad_features, "tobac"),
+                "UDAF_linking": UDAF_tracks,
+                "UDAF_segmentation_2d": segmentation_to_UDAF(multi_nexrad_segmentation2d[0], UDAF_tracks, "tobac"),
+                "UDAF_segmentation_3d": segmentation_to_UDAF(multi_nexrad_segmentation3d[0], UDAF_tracks, "tobac")
+            }
+                
+            # Calcaulte each variable of interest and append to analysis data array
+            for var in CONFIG["multi_nexrad"]["tobac"]["analysis"].keys():
+                
+                # Add default tracking featured_id variable in place of variable if not present
+                if ("variable" not in CONFIG["multi_nexrad"]["tobac"]["analysis"][var.lower()]): CONFIG["multi_nexrad"]["tobac"]["analysis"][var.lower()]["variable"] = CONFIG["multi_nexrad"]["feature_tracking_var"].upper()
+                
+                multi_nexrad_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG["verbose"], **CONFIG["multi_nexrad"]["tobac"]["analysis"][var.lower()]))
+
+    
+        if (CONFIG["verbose"]): print("=====Converting Multi-NEXRAD tobac Output to CoMET-UDAF=====")
+
+        UDAF_tracks = linking_to_UDAF(multi_nexrad_tracks, "tobac")
+
+        # Add all products to return dict
+        user_return_dict["multi_nexrad"]["tobac"] = {
+            "feature_id": multi_nexrad_features,
+            "UDAF_features": feature_id_to_UDAF(multi_nexrad_features, "tobac"),
+            "linking": multi_nexrad_tracks,
+            "UDAF_linking": UDAF_tracks,
+            "segmentation_2d": multi_nexrad_segmentation2d,
+            "UDAF_segmentation_2d": segmentation_to_UDAF(multi_nexrad_segmentation2d[0], UDAF_tracks, "tobac"),
+            "segmentation_3d": multi_nexrad_segmentation3d,
+            "UDAF_segmentation_3d": segmentation_to_UDAF(multi_nexrad_segmentation3d[0], UDAF_tracks, "tobac"),
+            "analysis": multi_nexrad_tobac_analysis_data
+            }
+        
+        if (CONFIG["verbose"]): print("=====Multi-NEXRAD tobac Tracking Complete=====")
+    
+    
+    # Send return dict to queue if there is a queue object passed
+    if (queue is not None):
+        queue.put(user_return_dict)
+        return
+
+    # Return dictionary
+    return (user_return_dict)
+
 
     
 """

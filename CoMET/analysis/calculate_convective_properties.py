@@ -291,14 +291,13 @@ def calculate_interp_sonde_convective_properties(sonde,
         depth_index = start
     elif parcel == 2: # mixed-layer parcel
         depth_index = np.where(z <= ml_depth)
-        print (depth_index[0])
         if len(depth_index[0]) < start:
             depth_index[0] = []
         if len(depth_index[0]) < 1:
-            print ('error: Mixed-layer depth and starting index are incorrect.',
+            raise Exception('error: Mixed-layer depth and starting index are incorrect.',
                    ' Values result in no starting parcel.')
         elif len(depth_index[0]) == 1:
-            print ('warning: Only 1 starting height is valid for mixed-layer parcel')
+            raise Exception('warning: Only 1 starting height is valid for mixed-layer parcel')
     elif parcel == 3: # most unstable parcel
         # Get Theta-E of environment to choose parcel
         # Temperature of lcl (Bolton 1980)

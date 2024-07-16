@@ -1,127 +1,231 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jun 10 16:28:49 2024
+Created on Mon Jul 15 11:57:43 2024
 
 @author: thahn
 """
 
 # =============================================================================
-# Loads in and grids the NEXRAD Arhcival Level 2 Data using ARM-Pyart then converts into iris cubes and xarray Datasets for use in trackers
+# This file contains scripts for loading (and gridding) multiple NEXRAD radars at once
 # =============================================================================
+
+
+
+# Calculate nearest item in list to given pivot
+def find_nearest(array, pivot):
+    import numpy as np
+    
+    array = np.asarray(array)
+    idx = (np.abs(array - pivot)).argmin()
+    return idx
 
 
 
 """
 Inputs:
-    path_to_files: glob type path to the NEXRAD level 2 archive files
+    paths_to_files: Array of glob path to archival NEXRAD level 2 input files--i.e. ["/data/usr/KVNX*_V06.ar2v", "/data/usr/KIVX*_V06.ar2v"]
     save_location: path to where the gridded NEXRAD files should be saved to, should be a directory and end with "/"
     tracking_var: ["dbz"], variable which is going to be used for tracking--reflectivity
     CONFIG: User configuration file
     parallel_processing: [True, False], bool determinig whether to use parallel processing when gridding files
     max_cores: Number of cores to use if parallel_processing == True
 """
-def gen_and_save_nexrad_grid(path_to_files, save_location, tracking_var, CONFIG, parallel_processing = False, max_cores = None):
-    import os
+def gen_and_save_multi_nexrad_grid(paths_to_files, save_location, tracking_var, CONFIG, parallel_processing = False, max_cores = None):
     import glob
     import pyart
     import numpy as np
     from tqdm import tqdm
-        
-    # Get all archive files and iterate over them
-    files = np.sort(glob.glob(path_to_files))
     
-    if (len(files) == 0):
-        raise Exception("!=====No Files Present to Grid=====!")
-        return
+    # TODO: Adjust this from using radar objects to just using their paths to save gridding memory usage
     
-    # If parallel processing is enabled, run that version and return
-    if (parallel_processing):
-        gen_and_save_nexrad_grid_multi(files, save_location, tracking_var, CONFIG, max_cores)
-        return
-    
-    # Extract just the filenames from the paths without the file extensions
-    file_names = [os.path.basename(f).split(".")[0] for f in files]
-    
-    for idx, ff in tqdm(enumerate(files), desc="=====Gridding NEXRAD=====", total=len(files)):
+    # No parallel processing for this as the time of arrival matters
+    radar_list = []
+    radar_time_list = []
+
+    for ii, radar_path in enumerate(paths_to_files):
         
-        if (tracking_var.lower() == "dbz"):
-            # Create radar object including only field of interest
-            radar = pyart.io.read_nexrad_archive(ff,include_fields="reflectivity")
+        radar_list.append([])
+        radar_time_list.append([])
         
-            # Create radar grid using user-defined params
-            radar_grid = pyart.map.grid_from_radars(radar, **CONFIG["nexrad"]["gridding"])
-            
-            # Save radar grid to save_location as a netcdf file and delete radar and radar_grid objects to free memory
-            pyart.io.write_grid(save_location + file_names[idx] + "_grid.nc", radar_grid, arm_alt_lat_lon_variables=True, write_point_x_y_z=True, write_point_lon_lat_alt=True)
+        # Get all archive files and iterate over them
+        files = np.sort(glob.glob(radar_path))
         
-            del radar
-            del radar_grid
-        
-        else:
-            raise Exception(f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!")
+        if (len(files) == 0):
+            raise Exception("!=====No Files Present to Grid=====!")
             return
         
-    return
+        # Get radars and their respective times. Don't load them all at once to conserve memory
+        for idx, ff in tqdm(enumerate(files), desc=f"=====Loading NEXRAD #{ii+1}=====", total=len(files)):
+            
+            if (tracking_var.lower() == "dbz"):
+                
+                # Create radar object including only field of interest
+                radar = pyart.io.read_nexrad_archive(ff,include_fields="reflectivity")
+            
+                radar_list[ii].append(ff)
+                
+                # Add datetime of radar
+                radar_time_list[ii].append(pyart.util.datetime_from_radar(radar,))
+                
+                del radar
+            
+            else:
+                raise Exception(f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!")
+                return
     
+    
+    # First get all lenghts
+    radar_lens = np.array([len(f) for f in radar_list])
+    
+    # If parallel processing, save grids multi
+    if (parallel_processing):
+        import multiprocessing
+        from tqdm import tqdm
+        from functools import partial
         
-
-"""
-Helper Function for Parallel Processing
-"""
-def create_and_save_grid_single(file, save_location, tracking_var, CONFIG):
-    import os
-    import pyart
-    
-    if (tracking_var.lower() == "dbz"):
-        # Create radar object including only field of interest
-        radar = pyart.io.read_nexrad_archive(file,include_fields="reflectivity")
-    
-        # Create radar grid using user-defined params
-        radar_grid = pyart.map.grid_from_radars(radar, **CONFIG["nexrad"]["gridding"])
-
-        # Save radar grid to save_location as a netcdf file and delete radar and radar_grid objects to free memory
-        file_name = os.path.basename(file).split(".")[0]
-        pyart.io.write_grid(save_location + file_name + "_grid.nc", radar_grid, arm_alt_lat_lon_variables=True, write_point_x_y_z=True, write_point_lon_lat_alt=True)
-    
-        del radar
-        del radar_grid
-    
-    else:
-        raise Exception(f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!")
+        # Start a pool with max_cores and run the grid function
+        with multiprocessing.Pool(max_cores) as multi_pool:
+            
+            with tqdm(total=np.min(radar_lens),desc="=====Parallel Gridding Combined NEXRAD=====") as pbar:
+                
+                for _ in multi_pool.imap_unordered(partial(parallel_save_grid, save_location=save_location, radar_list=radar_list, radar_time_list=radar_time_list, CONFIG=CONFIG), np.arange(0, np.min(radar_lens))):
+                    
+                    pbar.update()
+        
+        # Delete remaining radar arrays
+        del radar_list
+        del radar_time_list
+        
         return
     
-
-
-"""
-Inputs:
-    files: list containing all paths to NEXRAD level 2 archive files
-    save_location: path to where the gridded NEXRAD files should be saved to
-    tracking_var: ["dbz"], variable which is going to be used for tracking--reflectivity
-    CONFIG: User configuration file
-    max_cores: Number of cores to use for parallel processing
-"""
-def gen_and_save_nexrad_grid_multi(files, save_location, tracking_var, CONFIG, max_cores):
-    import multiprocessing
-    from tqdm import tqdm
-    from functools import partial
     
-    # Start a pool with max_cores and run the grid function
-    with multiprocessing.Pool(max_cores) as multi_pool:
+    # Now loop over shortest subset of radar objects
+    
+    # Find the shortest radar and get the index in the radar list of said radar
+    shortest_radar_idx = np.where(radar_lens == np.min(radar_lens))[0][0]
+    
+    # Do this to make the for loop indexing slightly easier
+    shortest_radar_list = radar_list[shortest_radar_idx]
+    shortest_radar_time_list = radar_time_list[shortest_radar_idx]
+    
+    radar_list.pop(shortest_radar_idx)
+    radar_time_list.pop(shortest_radar_idx)
+    
+    
+    # Loop over shortest length
+    for ii in tqdm(range(np.min(radar_lens)), desc="=====Gridding Combined NEXRAD Data=====", total=np.min(radar_lens)):
         
-        with tqdm(total=len(files),desc="=====Parallel Gridding NEXRAD=====") as pbar:
+        # Keep track of the radars we are merging and the average position of them 
+        merge_radar_list = []
+        lats = []
+        lons = []
+        
+        # Append the base radar
+        base_radar = pyart.io.read_nexrad_archive(shortest_radar_list[ii],include_fields="reflectivity")
+        merge_radar_list.append(base_radar)
+        lats.append(base_radar.latitude["data"][0])
+        lons.append(base_radar.longitude["data"][0])
+        
+        # For each additional radar, add the nearest time and then its position
+        for jj, additional_radar in enumerate(radar_list):
             
-            for _ in multi_pool.imap_unordered(partial(create_and_save_grid_single, save_location=save_location, tracking_var=tracking_var, CONFIG=CONFIG), files):
-                
-                pbar.update()
+            # Grab the nearest radar object to the shortest iith one for every other radar
+            nearest_time_idx = find_nearest(radar_time_list[jj], shortest_radar_time_list[ii])
+            
+            addit_radar = pyart.io.read_nexrad_archive(additional_radar[nearest_time_idx],include_fields="reflectivity")
+            merge_radar_list.append(addit_radar)
+            
+            lats.append(addit_radar.latitude["data"][0])
+            lons.append(addit_radar.longitude["data"][0])
+            
+            del addit_radar
+        
+        
+        # Now merge the radars
+        combined_grid = pyart.map.grid_from_radars(merge_radar_list, 
+                                   grid_origin = (np.mean(lats), np.mean(lons)),
+                                   **CONFIG["multi_nexrad"]["gridding"])
+        
+        # Save radar grid to save_location as a netcdf file
+        pyart.io.write_grid(save_location + f"combined_grid_{shortest_radar_time_list[ii].strftime('%Y_%m_%d_%H:%M:%S')}.nc", combined_grid, arm_alt_lat_lon_variables=True, write_point_x_y_z=True, write_point_lon_lat_alt=True)
+    
+        del base_radar
+        del combined_grid
+        del merge_radar_list
+    
+    # Delete remaining radar arrays
+    del radar_list
+    del radar_time_list
     
     return
 
 
 
 """
+Helper function for multi-processing
+"""
+def parallel_save_grid(ii, save_location, radar_list, radar_time_list, CONFIG):
+    import pyart
+    import numpy as np
+    
+    # Now loop over shortest subset of radar objects
+    radar_lens = np.array([len(f) for f in radar_list])
+    
+    # Find the shortest radar and get the index in the radar list of said radar
+    shortest_radar_idx = np.where(radar_lens == np.min(radar_lens))[0][0]
+    
+    # Do this to make the for loop indexing slightly easier
+    shortest_radar_list = radar_list[shortest_radar_idx]
+    shortest_radar_time_list = radar_time_list[shortest_radar_idx]
+    
+    radar_list.pop(shortest_radar_idx)
+    radar_time_list.pop(shortest_radar_idx)
+    
+    
+    # Keep track of the radars we are merging and the average position of them 
+    merge_radar_list = []
+    lats = []
+    lons = []
+    
+    # Append the base radar
+    base_radar = pyart.io.read_nexrad_archive(shortest_radar_list[ii],include_fields="reflectivity")
+    merge_radar_list.append(base_radar)
+    lats.append(base_radar.latitude["data"][0])
+    lons.append(base_radar.longitude["data"][0])
+    
+    # For each additional radar, add the nearest time and then its position
+    for jj, additional_radar in enumerate(radar_list):
+        
+        # Grab the nearest radar object to the shortest iith one for every other radar
+        nearest_time_idx = find_nearest(radar_time_list[jj], shortest_radar_time_list[ii])
+        
+        addit_radar = pyart.io.read_nexrad_archive(additional_radar[nearest_time_idx],include_fields="reflectivity")
+        merge_radar_list.append(addit_radar)
+        
+        lats.append(addit_radar.latitude["data"][0])
+        lons.append(addit_radar.longitude["data"][0])
+        
+        del addit_radar
+    
+    
+    # Now merge the radars
+    combined_grid = pyart.map.grid_from_radars(merge_radar_list, 
+                               grid_origin = (np.mean(lats), np.mean(lons)),
+                               **CONFIG["multi_nexrad"]["gridding"])
+    
+    # Save radar grid to save_location as a netcdf file
+    pyart.io.write_grid(save_location + f"combined_grid_{shortest_radar_time_list[ii].strftime('%Y_%m_%d_%H:%M:%S')}.nc", combined_grid, arm_alt_lat_lon_variables=True, write_point_x_y_z=True, write_point_lon_lat_alt=True)
+
+    del base_radar
+    del combined_grid
+    del merge_radar_list
+
+
+
+"""
 Inputs:
-    path_to_files: Glob path to input files, either archival or grided netcdf--i.e. "/data/usr/KVNX*_V06.ar2v"
+    paths_to_files: Array of glob path to input files, either archival or grided netcdf--i.e. ["/data/usr/KVNX*_V06.ar2v", "/data/usr/KIVX*_V06.ar2v"]. ONLY AN ARRAY WHEN NOT GRIDDED YET
     file_type: ["ar2v", "nc"] type of input file--either archival or netcdf
     tracking_var: ["dbz"], variable which is going to be used for tracking--reflectivity.
     CONFIG: User configuration file
@@ -130,7 +234,7 @@ Outputs:
     cube: iris cube continaing gridded reflectivity data ready for tobac tracking 
     nexrad_xarray: Xarray dataset containing gridded NEXRAD archival data
 """
-def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save_location=None):
+def multi_nexrad_load_netcdf_iris(paths_to_files, file_type, tracking_var, CONFIG, save_location=None):
     import glob
     import pyart
     import cftime
@@ -147,7 +251,7 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             save_location = save_location + "//"
         
         # Create grid
-        gen_and_save_nexrad_grid(path_to_files, save_location, tracking_var, CONFIG, CONFIG["parallel_processing"], CONFIG["max_cores"])  
+        gen_and_save_multi_nexrad_grid(paths_to_files, save_location, tracking_var, CONFIG, CONFIG["parallel_processing"], CONFIG["max_cores"])  
            
         if (tracking_var.lower() == "dbz"):
             
@@ -166,17 +270,17 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             del radar_objects
             
             # Subset location of interest
-            if ("nexrad" in CONFIG):
+            if ("multi_nexrad" in CONFIG):
                 
-                if ("bounds" in CONFIG["nexrad"]):
+                if ("bounds" in CONFIG["multi_nexrad"]):
 
-                    mask_lon = (nexrad_xarray.lon >= CONFIG["nexrad"]["bounds"][0]) & (nexrad_xarray.lon <= CONFIG["nexrad"]["bounds"][1])
-                    mask_lat = (nexrad_xarray.lat >= CONFIG["nexrad"]["bounds"][2]) & (nexrad_xarray.lat <= CONFIG["nexrad"]["bounds"][3])
+                    mask_lon = (nexrad_xarray.lon >= CONFIG["multi_nexrad"]["bounds"][0]) & (nexrad_xarray.lon <= CONFIG["multi_nexrad"]["bounds"][1])
+                    mask_lat = (nexrad_xarray.lat >= CONFIG["multi_nexrad"]["bounds"][2]) & (nexrad_xarray.lat <= CONFIG["multi_nexrad"]["bounds"][3])
                     
                     nexrad_xarray = nexrad_xarray.where(mask_lon & mask_lat, drop=True)
             
             else:
-                raise Exception("!=====CONFIG Missing \"nexrad\" Field=====!")
+                raise Exception("!=====CONFIG Missing \"multi_nexrad\" Field=====!")
                 return
             
             
@@ -207,6 +311,7 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             raise Exception(f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!")
             return
         
+        
     # If data already grided, just return concated netcdf dataset
     elif (file_type.lower() == "nc"):
         
@@ -216,7 +321,7 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             # Read radar objects in and concat into one xarray datarray
             # This is a stupid hacky fix because pyart is dumb
             radar_objects = []
-            for file in np.sort(glob.glob(path_to_files)):
+            for file in np.sort(glob.glob(paths_to_files)):
                 
                 # Ignore import warnings
                 with warnings.catch_warnings():
@@ -229,17 +334,17 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
             
 
             # Subset location of interest
-            if ("nexrad" in CONFIG):
+            if ("multi_nexrad" in CONFIG):
                 
-                if ("bounds" in CONFIG["nexrad"]):
+                if ("bounds" in CONFIG["multi_nexrad"]):
 
-                    mask_lon = (nexrad_xarray.lon >= CONFIG["nexrad"]["bounds"][0]) & (nexrad_xarray.lon <= CONFIG["nexrad"]["bounds"][1])
-                    mask_lat = (nexrad_xarray.lat >= CONFIG["nexrad"]["bounds"][2]) & (nexrad_xarray.lat <= CONFIG["nexrad"]["bounds"][3])
+                    mask_lon = (nexrad_xarray.lon >= CONFIG["multi_nexrad"]["bounds"][0]) & (nexrad_xarray.lon <= CONFIG["multi_nexrad"]["bounds"][1])
+                    mask_lat = (nexrad_xarray.lat >= CONFIG["multi_nexrad"]["bounds"][2]) & (nexrad_xarray.lat <= CONFIG["multi_nexrad"]["bounds"][3])
                     
                     nexrad_xarray = nexrad_xarray.where(mask_lon & mask_lat, drop=True)
             
             else:
-                raise Exception("!=====CONFIG Missing \"nexrad\" Field=====!")
+                raise Exception("!=====CONFIG Missing \"multi_nexrad\" Field=====!")
                 return
 
             
@@ -274,11 +379,11 @@ def nexrad_load_netcdf_iris(path_to_files, file_type, tracking_var, CONFIG, save
         raise Exception(f"!=====Invalid File Type. You Entered: {file_type.lower()}=====!")
         return
 
-    
-    
+
+
 """
 Inputs:
-    path_to_files: Glob path to input files, either archival or grided netcdf--i.e. "/data/usr/KVNX*_V06.ar2v"
+    path_to_files: Array of glob path to archival NEXRAD level 2 input files--i.e. ["/data/usr/KVNX*_V06.ar2v", "/data/usr/KIVX*_V06.ar2v"]. ONLY AN ARRAY WHEN NOT GRIDDED YET
     file_type: ["ar2v", "nc"] type of input file--either archival or netcdf
     tracking_var: ["dbz"], variable which is going to be used for tracking--reflectivity.
     CONFIG: User configuration file
@@ -286,7 +391,7 @@ Inputs:
 Outputs:
     nexrad_xarray: Xarray dataset containing gridded NEXRAD archival data
 """
-def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_location=None):
+def multi_nexrad_load_netcdf(paths_to_files, file_type, tracking_var, CONFIG, save_location=None):
     import glob
     import pyart
     import cftime
@@ -302,7 +407,7 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
             save_location = save_location + "//"
         
         # Create grid
-        gen_and_save_nexrad_grid(path_to_files, save_location, tracking_var, CONFIG, CONFIG["parallel_processing"], CONFIG["max_cores"])
+        gen_and_save_multi_nexrad_grid(paths_to_files, save_location, tracking_var, CONFIG, CONFIG["parallel_processing"], CONFIG["max_cores"])
         
         # Open them as netcdf file and return
         if (tracking_var.lower() == "dbz"):
@@ -323,12 +428,12 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
             
 
             # Subset location of interest
-            if ("nexrad" in CONFIG):
+            if ("multi_nexrad" in CONFIG):
                 
-                if ("bounds" in CONFIG["nexrad"]):
+                if ("bounds" in CONFIG["multi_nexrad"]):
 
-                    mask_lon = (nexrad_xarray.lon >= CONFIG["nexrad"]["bounds"][0]) & (nexrad_xarray.lon <= CONFIG["nexrad"]["bounds"][1])
-                    mask_lat = (nexrad_xarray.lat >= CONFIG["nexrad"]["bounds"][2]) & (nexrad_xarray.lat <= CONFIG["nexrad"]["bounds"][3])
+                    mask_lon = (nexrad_xarray.lon >= CONFIG["multi_nexrad"]["bounds"][0]) & (nexrad_xarray.lon <= CONFIG["multi_nexrad"]["bounds"][1])
+                    mask_lat = (nexrad_xarray.lat >= CONFIG["multi_nexrad"]["bounds"][2]) & (nexrad_xarray.lat <= CONFIG["multi_nexrad"]["bounds"][3])
                     
                     nexrad_xarray = nexrad_xarray.where(mask_lon & mask_lat, drop=True)
             
@@ -368,7 +473,7 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
             # Read radar objects in and concat into one xarray datarray
             # This is a stupid hacky fix because pyart is dumb
             radar_objects = []
-            for file in np.sort(glob.glob(path_to_files)):
+            for file in np.sort(glob.glob(paths_to_files)):
                 
                 # Ignore import warnings
                 with warnings.catch_warnings():
@@ -381,17 +486,17 @@ def nexrad_load_netcdf(path_to_files, file_type, tracking_var, CONFIG, save_loca
             
 
             # Subset location of interest
-            if ("nexrad" in CONFIG):
+            if ("multi_nexrad" in CONFIG):
                 
-                if ("bounds" in CONFIG["nexrad"]):
+                if ("bounds" in CONFIG["multi_nexrad"]):
 
-                    mask_lon = (nexrad_xarray.lon >= CONFIG["nexrad"]["bounds"][0]) & (nexrad_xarray.lon <= CONFIG["nexrad"]["bounds"][1])
-                    mask_lat = (nexrad_xarray.lat >= CONFIG["nexrad"]["bounds"][2]) & (nexrad_xarray.lat <= CONFIG["nexrad"]["bounds"][3])
+                    mask_lon = (nexrad_xarray.lon >= CONFIG["multi_nexrad"]["bounds"][0]) & (nexrad_xarray.lon <= CONFIG["multi_nexrad"]["bounds"][1])
+                    mask_lat = (nexrad_xarray.lat >= CONFIG["multi_nexrad"]["bounds"][2]) & (nexrad_xarray.lat <= CONFIG["multi_nexrad"]["bounds"][3])
                     
                     nexrad_xarray = nexrad_xarray.where(mask_lon & mask_lat, drop=True)
             
             else:
-                raise Exception("!=====CONFIG Missing \"nexrad\" Field=====!")
+                raise Exception("!=====CONFIG Missing \"multi_nexrad\" Field=====!")
                 return
             
             

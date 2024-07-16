@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Tue Jul 16 10:25:47 2024
+
+@author: thahn
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Tue Jun 11 17:36:27 2024
 
 @author: thahn
@@ -29,7 +37,7 @@ Inputs:
 Outputs:
     nexrad_geopd: geodataframe containing all default tobac feature id outputs
 """
-def nexrad_tobac_feature_id(cube, CONFIG):
+def multi_nexrad_tobac_feature_id(cube, CONFIG):
     import tobac
     import geopandas as gpd
     from copy import deepcopy
@@ -37,32 +45,32 @@ def nexrad_tobac_feature_id(cube, CONFIG):
     feat_cube = deepcopy(cube)
     inCONFIG = deepcopy(CONFIG)
     
-    if ("height" in inCONFIG["nexrad"]["tobac"]["feature_id"]):
+    if ("height" in inCONFIG["multi_nexrad"]["tobac"]["feature_id"]):
         
         # Ensure segmentation_height is a proper number before running
-        if (inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] == None or type(inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] ) == str or type(CONFIG["nexrad"]["tobac"]["feature_id"]["height"] ) == bool):
-            raise Exception(f"""!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] .lower()}=====!""")
+        if (inCONFIG["multi_nexrad"]["tobac"]["feature_id"]["height"] == None or type(inCONFIG["multi_nexrad"]["tobac"]["feature_id"]["height"] ) == str or type(CONFIG["multi_nexrad"]["tobac"]["feature_id"]["height"] ) == bool):
+            raise Exception(f"""!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG["multi_nexrad"]["tobac"]["feature_id"]["height"] .lower()}=====!""")
             return
-        if (inCONFIG["nexrad"]["tobac"]["feature_id"]["height"]  > cube.coord("altitude").points.max() or inCONFIG["nexrad"]["tobac"]["feature_id"]["height"]  < cube.coord("altitude").points.min()):
-            raise Exception(f"""!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] .lower()}=====!""")
+        if (inCONFIG["multi_nexrad"]["tobac"]["feature_id"]["height"]  > cube.coord("altitude").points.max() or inCONFIG["multi_nexrad"]["tobac"]["feature_id"]["height"]  < cube.coord("altitude").points.min()):
+            raise Exception(f"""!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG["multi_nexrad"]["tobac"]["feature_id"]["height"] .lower()}=====!""")
             return
             
         
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
-        height_index = find_nearest(cube.coord("altitude").points, inCONFIG["nexrad"]["tobac"]["feature_id"]["height"])
+        height_index = find_nearest(cube.coord("altitude").points, inCONFIG["multi_nexrad"]["tobac"]["feature_id"]["height"])
         
         feat_cube = feat_cube[:,height_index]
         feat_cube.remove_coord("altitude")
         feat_cube.remove_coord("model_level_number")
         
         
-        del inCONFIG["nexrad"]["tobac"]["feature_id"]["height"]
+        del inCONFIG["multi_nexrad"]["tobac"]["feature_id"]["height"]
     
     # Get horozontal spacings
     dxy = tobac.get_spacings(cube)[0]
     
     # Perform tobac feature identification and then convert to a geodataframe before returning
-    nexrad_radar_features = tobac.feature_detection.feature_detection_multithreshold(feat_cube, dxy=dxy, **inCONFIG["nexrad"]["tobac"]["feature_id"])
+    nexrad_radar_features = tobac.feature_detection.feature_detection_multithreshold(feat_cube, dxy=dxy, **inCONFIG["multi_nexrad"]["tobac"]["feature_id"])
     
     if (nexrad_radar_features is None):
         return None
@@ -83,7 +91,7 @@ Inputs:
 Outputs:
     nexrad_geopd_tracks: geodataframe containing all default tobac feature id outputs
 """
-def nexrad_tobac_linking(cube, radar_features, CONFIG):
+def multi_nexrad_tobac_linking(cube, radar_features, CONFIG):
     import tobac
     import numpy as np
     import geopandas as gpd
@@ -97,7 +105,7 @@ def nexrad_tobac_linking(cube, radar_features, CONFIG):
     dt = np.nanmean(diffs) * 60
     
     # Do tracking then convert output dataframe to a geodataframe
-    nexrad_tracks = tobac.linking_trackpy(radar_features,cube,dt=dt,dxy=dxy,vertical_coord="altitude",**CONFIG["nexrad"]["tobac"]["linking"])
+    nexrad_tracks = tobac.linking_trackpy(radar_features,cube,dt=dt,dxy=dxy,vertical_coord="altitude",**CONFIG["multi_nexrad"]["tobac"]["linking"])
     
     if (nexrad_tracks is None):
         return None
@@ -120,7 +128,7 @@ Inputs:
 Outputs:
     (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
 """
-def nexrad_tobac_segmentation(cube, radar_features, segmentation_type, CONFIG, segmentation_height = None):
+def multi_nexrad_tobac_segmentation(cube, radar_features, segmentation_type, CONFIG, segmentation_height = None):
     import tobac
     import xarray as xr
     from copy import deepcopy
@@ -137,7 +145,7 @@ def nexrad_tobac_segmentation(cube, radar_features, segmentation_type, CONFIG, s
     # 2D and 3D segmentation have different requirements so they are split up here
     if (segmentation_type.lower() == "2d"):
         
-        if ("height" in inCONFIG["nexrad"]["tobac"]["segmentation_2d"]): del inCONFIG["nexrad"]["tobac"]["segmentation_2d"]["height"]
+        if ("height" in inCONFIG["multi_nexrad"]["tobac"]["segmentation_2d"]): del inCONFIG["multi_nexrad"]["tobac"]["segmentation_2d"]["height"]
         
         # Ensure segmentation_height is a proper number before running
         if (segmentation_height == None or type(segmentation_height) == str or type(segmentation_height) == bool):
@@ -157,7 +165,7 @@ def nexrad_tobac_segmentation(cube, radar_features, segmentation_type, CONFIG, s
         seg_cube.remove_coord("model_level_number")
         
         # Perform the 2d segmentation at the height_index and return the segmented cube and new geodataframe
-        segment_cube, segment_features = tobac.segmentation_2D(radar_features, seg_cube, dxy=dxy, **inCONFIG["nexrad"]["tobac"]["segmentation_2d"])
+        segment_cube, segment_features = tobac.segmentation_2D(radar_features, seg_cube, dxy=dxy, **inCONFIG["multi_nexrad"]["tobac"]["segmentation_2d"])
         
         # Convert iris cube to xarray and return
         # Add projection x and y back to xarray DataArray
@@ -170,7 +178,7 @@ def nexrad_tobac_segmentation(cube, radar_features, segmentation_type, CONFIG, s
     elif (segmentation_type.lower() == "3d"):
         
         # Similarly, perform 3d segmentation then return products
-        segment_cube, segment_features = tobac.segmentation_3D(radar_features, cube, dxy=dxy, **inCONFIG["nexrad"]["tobac"]["segmentation_3d"])
+        segment_cube, segment_features = tobac.segmentation_3D(radar_features, cube, dxy=dxy, **inCONFIG["multi_nexrad"]["tobac"]["segmentation_3d"])
            
         # Convert iris cube to xarray and return
         # Add projection x and y back to xarray DataArray
