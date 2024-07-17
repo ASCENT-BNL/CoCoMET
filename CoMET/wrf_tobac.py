@@ -112,7 +112,7 @@ Inputs:
     radar_features: tobac radar features from wrf_tobac_feature_id output
     segmentation_type: ['2D', '3D'], whether to perform 2d segmentation or 3d segmentation
     CONFIG: User configuration file
-    segmentation_height: height, in meters, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var != tb
+    segmentation_height: height, in meters, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var != tb or pr
 Outputs:
     (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
 """
@@ -123,9 +123,9 @@ def wrf_tobac_segmentation(cube, radar_features, segmentation_type, CONFIG, segm
     
     if (radar_features is None): return None
     
-    # Enforce 2D tracking only for brightness temperature tracking
-    if (cube.name().lower() == 'tb' and not segmentation_type.lower() == '2d'):
-        raise Exception(f'!=====Invalid Segmentation Type. You Entered: {segmentation_type.lower()}. TB Tracking Restricted to 2D Segmentation=====!')
+    # Enforce 2D tracking only for brightness temperature and precip rate tracking
+    if ((cube.name().lower() == 'tb' or cube.name().lower() == "pr") and not segmentation_type.lower() == '2d'):
+        raise Exception(f'!=====Invalid Segmentation Type. You Entered: {segmentation_type.lower()}. TB and PR Tracking Restricted to 2D Segmentation=====!')
         return
     
     dxy = tobac.get_spacings(cube)[0]
@@ -138,8 +138,8 @@ def wrf_tobac_segmentation(cube, radar_features, segmentation_type, CONFIG, segm
         
         # If altitude and/or model level number is present, remove it
         
-        # If tracking var is tb, bypass height
-        if (cube.name().lower() == 'tb'):
+        # If tracking var is tb or pr, bypass height
+        if (cube.name().lower() == 'tb' or cube.name().lower() == "pr"):
             # Perform the 2d segmentation at the height_index and return the segmented cube and new geodataframe
             segment_cube, segment_features = tobac.segmentation_2D(radar_features, cube, dxy=dxy,**inCONFIG['wrf']['tobac']['segmentation_2d'])
             

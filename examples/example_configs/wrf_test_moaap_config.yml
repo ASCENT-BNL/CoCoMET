@@ -18,19 +18,40 @@ max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None 
 wrf:
     path_to_data: "/D3/data/diewang/real_world_mcs_prein/4km/mao_20140319_09:00:00_L4/wrfout_d01*"
 
-    feature_tracking_var: "wa" #DBZ, TB, WA
-    segmentation_var: "wa"
+    feature_tracking_var: "tb" #DBZ, TB, WA
+    segmentation_var: "tb"
             
     moaap:
         tracking_save_path: "/D3/data/thahn/wrf/wrfout_2023_07_09/moaap_test/test/"
         
+        analysis_type: "MCS" # "MCS" or "Cloud"
+        
         MCS_Minsize: 1000
         MCS_minPR: 10
-        MCS_minTime: 2
+        MCS_minTime: 1
         CL_Area: 10000
         
         MinAreaC: 10000
-        MinTimeC: 2
+        MinTimeC: 1
         
         analysis:
-            # None yet
+            area: {}
+
+mesonh:
+    path_to_data: "/D3/data/thahn/MesoNH/CLN/0_5km/500*"
+
+    feature_tracking_var: "wa" #DBZ, TB, WA
+    segmentation_var: "wa"
+    
+    moaap:
+        tracking_save_path: "/D3/data/thahn/MesoNH/CLN/0_5km/moaap_test/"
+        
+        analysis_type: "MCS" # "MCS" or "Cloud"
+        
+        MCS_Minsize: 10
+        MCS_minPR: 1
+        MCS_minTime: 1
+        CL_Area: 100
+        
+        MinAreaC: 100
+        MinTimeC: 1

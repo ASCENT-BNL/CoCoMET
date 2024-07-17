@@ -107,6 +107,6 @@ Inputs:
 Outputs:
     geopt: Dataarray of heights AGL in m
 """
-def mesonh_calculate_msl_z(mesonh_xarray):
+def mesonh_calculate_agl_z(mesonh_xarray):
     
     return mesonh_xarray.Z[0].squeeze()

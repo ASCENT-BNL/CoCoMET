@@ -32,6 +32,9 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
     
     # If parallelization is True, run the multiprocessing version instead
     if (CONFIG["parallel_processing"]):
+        import os
+        
+        os.environ["OMP_NUM_THREADS"] = str(CONFIG["max_cores"] * 2) # Take advantage of hyper threading
         
         # Return CoMET multi processes output which should be a dictionary
         multi_output = CoMET_start_multi(CONFIG)
@@ -357,8 +360,8 @@ def run_wrf(CONFIG, queue = None):
         
         wrf_features = None
         wrf_tracks = None
-        wrf_segmentation2d = None
-        wrf_segmentation3d = None
+        wrf_segmentation2d = (None, None)
+        wrf_segmentation3d = (None, None)
         wrf_tobac_analysis_data = {}
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
@@ -387,8 +390,9 @@ def run_wrf(CONFIG, queue = None):
             wrf_segmentation3d = wrf_tobac_segmentation(wrf_segmentation_cube, wrf_features, "3d", CONFIG)
     
         if ("analysis" in CONFIG["wrf"]["tobac"]):
-            
             from CoMET.analysis.get_vars import get_var
+            
+            if (CONFIG["wrf"]["tobac"]["analysis"] is None): CONFIG["wrf"]["tobac"]["analysis"] = {}
             
             if (CONFIG["verbose"]): print("=====Starting WRF tobac Analysis Calculations=====")
             
@@ -445,25 +449,30 @@ def run_wrf(CONFIG, queue = None):
         
         # Run analysis on MOAAP output
         if ("analysis" in CONFIG["wrf"]["moaap"]):
-            
             from CoMET.analysis.get_vars import get_var
+            
+            if (CONFIG["wrf"]["moaap"]["analysis"] is None): CONFIG["wrf"]["moaap"]["analysis"] = {}
             
             if (CONFIG["verbose"]): print("=====Starting WRF MOAAP Analysis Calculations=====")
             
-            UDAF_values = bulk_moaap_to_UDAF(mask_output)
             
-            # TODO: do all this stuff, heavy work needed in output translation layer
+            UDAF_values = bulk_moaap_to_UDAF(mask_output, wrf_tracking_xarray.PROJX.values, wrf_tracking_xarray.PROJY.values, convert_type=CONFIG["wrf"]["moaap"]["analysis_type"])
+            
+            if (UDAF_values is None): UDAF_values = [None, None, None]
+            
             analysis_object = {
                 "tracking_xarray": wrf_tracking_xarray,
                 "segmentation_xarray": wrf_segmentation_xarray,
-                "UDAF_features": None,
-                "UDAF_linking": None,
-                "UDAF_segmentation_2d": None,
+                "UDAF_features": UDAF_values[0],
+                "UDAF_linking": UDAF_values[1],
+                "UDAF_segmentation_2d": UDAF_values[2],
                 "UDAF_segmentation_3d": None
             }
             
             # Calcaulte each variable of interest and append to analysis data array
             for var in CONFIG["wrf"]["moaap"]["analysis"].keys():
+                
+                if (UDAF_values == [None, None, None]): continue
                 
                 # Add default tracking featured_id variable in place of variable if not present
                 if ("variable" not in CONFIG["wrf"]["moaap"]["analysis"][var.lower()]): CONFIG["wrf"]["moaap"]["analysis"][var.lower()]["variable"] = CONFIG["wrf"]["feature_tracking_var"].upper()
@@ -471,10 +480,15 @@ def run_wrf(CONFIG, queue = None):
                 wrf_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG["verbose"], **CONFIG["wrf"]["moaap"]["analysis"][var.lower()]))
                 
         
-        UDAF_values = bulk_moaap_to_UDAF(mask_output)
-
+        UDAF_values = bulk_moaap_to_UDAF(mask_output, wrf_tracking_xarray.PROJX.values, wrf_tracking_xarray.PROJY.values, convert_type=CONFIG["wrf"]["moaap"]["analysis_type"])
+        
+        if (UDAF_values is None): UDAF_values = [None, None, None]
+        
         user_return_dict["wrf"]["moaap"] = {
             "mask_xarray": mask_output,
+            "UDAF_features": UDAF_values[0],
+            "UDAF_linking": UDAF_values[1],
+            "UDAF_segmentation_2d": UDAF_values[2],
             "analysis": wrf_moaap_analysis_data
         }
 
@@ -498,7 +512,7 @@ Outputs:
     user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
 """
 def run_mesonh(CONFIG, queue = None):
-    from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
+    from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF, bulk_moaap_to_UDAF
     from .mesonh_load import mesonh_load_netcdf_iris
     
     if (CONFIG["verbose"]): print("=====Loading MesoNH Data=====")
@@ -531,8 +545,8 @@ def run_mesonh(CONFIG, queue = None):
         
         mesonh_features = None
         mesonh_tracks = None
-        mesonh_segmentation2d = None
-        mesonh_segmentation3d = None
+        mesonh_segmentation2d = (None, None)
+        mesonh_segmentation3d = (None, None)
         mesonh_tobac_analysis_data = {}
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
@@ -561,8 +575,9 @@ def run_mesonh(CONFIG, queue = None):
             mesonh_segmentation3d = mesonh_tobac_segmentation(mesonh_segmentation_cube, mesonh_features, "3d", CONFIG)
     
         if ("analysis" in CONFIG["mesonh"]["tobac"]):
-            
             from CoMET.analysis.get_vars import get_var
+            
+            if (CONFIG["mesonh"]["tobac"]["analysis"] is None): CONFIG["mesonh"]["tobac"]["analysis"] = {}
             
             if (CONFIG["verbose"]): print("=====Starting MesoNH tobac Analysis Calculations=====")
             
@@ -605,7 +620,66 @@ def run_mesonh(CONFIG, queue = None):
             }
         
         if (CONFIG["verbose"]): print("=====MesoNH tobac Tracking Complete=====")
+    
+    
+    # Run MOAAP if present
+    if ("moaap" in CONFIG["mesonh"]):
+        from .mesonh_moaap import mesonh_moaap
         
+        messonh_moaap_analysis_data = {}
+        
+        if (CONFIG["verbose"]): print("=====Starting MesoNH MOAAP Tracking=====")
+        
+        # Run MOAAP
+        mask_output = mesonh_moaap(mesonh_tracking_xarray, CONFIG)
+        
+        # Run analysis on MOAAP output
+        if ("analysis" in CONFIG["mesonh"]["moaap"]):
+            from CoMET.analysis.get_vars import get_var
+            
+            if (CONFIG["mesonh"]["moaap"]["analysis"] is None): CONFIG["mesonh"]["moaap"]["analysis"] = {}
+            
+            if (CONFIG["verbose"]): print("=====Starting MesoNH MOAAP Analysis Calculations=====")
+            
+            
+            UDAF_values = bulk_moaap_to_UDAF(mask_output, mesonh_tracking_xarray.PROJX.values, mesonh_tracking_xarray.PROJY.values, convert_type=CONFIG["mesonh"]["moaap"]["analysis_type"])
+            
+            if (UDAF_values is None): UDAF_values = [None, None, None]
+            
+            analysis_object = {
+                "tracking_xarray": mesonh_tracking_xarray,
+                "segmentation_xarray": mesonh_tracking_xarray,
+                "UDAF_features": UDAF_values[0],
+                "UDAF_linking": UDAF_values[1],
+                "UDAF_segmentation_2d": UDAF_values[2],
+                "UDAF_segmentation_3d": None
+            }
+            
+            # Calcaulte each variable of interest and append to analysis data array
+            for var in CONFIG["mesonh"]["moaap"]["analysis"].keys():
+                
+                if (UDAF_values == [None, None, None]): continue
+                
+                # Add default tracking featured_id variable in place of variable if not present
+                if ("variable" not in CONFIG["mesonh"]["moaap"]["analysis"][var.lower()]): CONFIG["mesonh"]["moaap"]["analysis"][var.lower()]["variable"] = CONFIG["mesonh"]["feature_tracking_var"].upper()
+                
+                messonh_moaap_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG["verbose"], **CONFIG["mesonh"]["moaap"]["analysis"][var.lower()]))
+                
+        
+        UDAF_values = bulk_moaap_to_UDAF(mask_output, mesonh_tracking_xarray.PROJX.values, mesonh_tracking_xarray.PROJY.values, convert_type=CONFIG["mesonh"]["moaap"]["analysis_type"])
+
+        if (UDAF_values is None): UDAF_values = [None, None, None]
+
+        user_return_dict["mesonh"]["moaap"] = {
+            "mask_xarray": mask_output,
+            "UDAF_features": UDAF_values[0],
+            "UDAF_linking": UDAF_values[1],
+            "UDAF_segmentation_2d": UDAF_values[2],
+            "analysis": messonh_moaap_analysis_data
+        }
+
+        if (CONFIG["verbose"]): print("=====MesoNH MOAAP Tracking Complete=====")     
+    
     
     # Send return dict to queue if there is a queue object passed
     if (queue is not None):
@@ -655,8 +729,8 @@ def run_nexrad(CONFIG, queue = None):
         
         nexrad_features = None
         nexrad_tracks = None
-        nexrad_segmentation2d = None
-        nexrad_segmentation3d = None
+        nexrad_segmentation2d = (None, None)
+        nexrad_segmentation3d = (None, None)
         nexrad_tobac_analysis_data = {}
         
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
@@ -684,9 +758,10 @@ def run_nexrad(CONFIG, queue = None):
             
             nexrad_segmentation3d = nexrad_tobac_segmentation(nexrad_tracking_cube, nexrad_features, "3d", CONFIG)
 
-        if ("analysis" in CONFIG["nexrad"]["tobac"]):
-            
+        if ("analysis" in CONFIG["nexrad"]["tobac"]):  
             from CoMET.analysis.get_vars import get_var
+            
+            if (CONFIG["nexrad"]["tobac"]["analysis"] is None): CONFIG["nexrad"]["tobac"]["analysis"] = {}
             
             if (CONFIG["verbose"]): print("=====Starting NEXRAD tobac Analysis Calculations=====")
             
@@ -809,8 +884,9 @@ def run_multi_nexrad(CONFIG, queue = None):
             multi_nexrad_segmentation3d = multi_nexrad_tobac_segmentation(multi_nexrad_tracking_cube, multi_nexrad_features, "3d", CONFIG)
 
         if ("analysis" in CONFIG["multi_nexrad"]["tobac"]):
-            
             from CoMET.analysis.get_vars import get_var
+            
+            if (CONFIG["multi_nexrad"]["tobac"]["analysis"] is None): CONFIG["multi_nexrad"]["tobac"]["analysis"] = {}
             
             if (CONFIG["verbose"]): print("=====Starting Multi-NEXRAD tobac Analysis Calculations=====")
             
@@ -920,8 +996,9 @@ def run_goes(CONFIG, queue = None):
             goes_segmentation2d = goes_tobac_segmentation(goes_tracking_cube, goes_features, CONFIG)
         
         if ("analysis" in CONFIG["goes"]["tobac"]):
-            
             from CoMET.analysis.get_vars import get_var
+            
+            if (CONFIG["goes"]["tobac"]["analysis"] is None): CONFIG["goes"]["tobac"]["analysis"] = {}
             
             if (CONFIG["verbose"]): print("=====Starting GOES tobac Analysis Calculations=====")
             

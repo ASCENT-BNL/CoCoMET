@@ -27,19 +27,19 @@ Inputs:
     wrf_xarray: xarray Dataset containing WRF data calculated from wrf_load.py
     CONFIG: User configuration file
 Outputs:
-    TBD
+    mask_file: The xarray object containing the default MOAAP outputs
 """
 def wrf_moaap(wrf_xarray, CONFIG):
     import numpy as np
     import pandas as pd
     import xarray as xr
-    from .wrf_calculate_products import wrf_calculate_brightness_temp
+    from .wrf_calculate_products import wrf_calculate_brightness_temp, wrf_calculate_precip_rate
     from CoMET.MOAAP import moaap
     
     # Get basic setup variables including lat/lon, delta time, a pandas time range vector (TODO: adjust output to )
     latitudes = wrf_xarray.XLAT[0].values
     longitudes = wrf_xarray.XLONG[0].values
-    dt = np.median(np.diff(wrf_xarray.XTIME).astype("timedelta64[m]")).astype(float)
+    dt = wrf_xarray.DT
     times = pd.date_range(start=wrf_xarray.XTIME[0].values,end=wrf_xarray.XTIME[-1].values,freq=str(dt)+"min")
     mask = np.ones(latitudes.shape)
     
@@ -82,14 +82,15 @@ def wrf_moaap(wrf_xarray, CONFIG):
     geopt = 0.5 * geopt[:,1:] + 0.5 * geopt[:,:-1]
     
     # Get brightness temp
-    tb = wrf_calculate_brightness_temp(wrf_xarray)
-    
+    tb = wrf_xarray.TB.values if "TB" in wrf_xarray else wrf_calculate_brightness_temp(wrf_xarray)
     
     # Get total mixing ratio at 850hPA
     mr = (wrf_xarray.QVAPOR + wrf_xarray.QCLOUD + wrf_xarray.QRAIN + wrf_xarray.QICE + wrf_xarray.QSNOW + wrf_xarray.QGRAUP)[:,height_idx_850]
     
     # Get accumulated precipitation
-    pr = (wrf_xarray.RAINC+wrf_xarray.RAINNC)
+    # TODO: Figure out if this is accumulated or precipitation rate
+    pr = wrf_calculate_precip_rate(wrf_xarray) / (60 / wrf_xarray.DT)
+    # pr = (wrf_xarray.RAINC+wrf_xarray.RAINNC)
     
     moaap(longitudes,
           latitudes,

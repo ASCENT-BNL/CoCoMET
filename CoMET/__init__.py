@@ -8,9 +8,13 @@ from CoMET.MOAAP import moaap
 
 from .wrf_load import *
 from .wrf_tobac import *
+from .wrf_moaap import *
+from .wrf_calculate_products import *
 
 from .mesonh_load import *
 from .mesonh_tobac import *
+from .mesonh_tobac import *
+from .mesonh_calculate_products import *
 
 from .nexrad_load import *
 from .nexrad_tobac import *

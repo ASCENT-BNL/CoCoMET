@@ -140,3 +140,24 @@ def wrf_calculate_wa(wrf_xarray):
     wa = wa.assign_attrs({"units": "m s-1", "coordinates": "XLONG XLAT XTIME", "description": "updraft velocity", "MemoryOrder": "XYZ"})
     
     return(wa)
+
+
+
+"""
+Inputs:
+    wrf_xarray: xarray Dataset containing default WRF values
+Outputs:
+    pr: Numpy array of precipitation rate in mm/hr
+"""
+def wrf_calculate_precip_rate(wrf_xarray):
+    import numpy as np
+    from tqdm import tqdm
+    
+    total_precip = (wrf_xarray.RAINC + wrf_xarray.RAINNC).values
+    precip_rate = np.zeros(total_precip.shape)
+    
+    for ii in tqdm(range(total_precip.shape[0] - 1), desc="=====Calculating WRF Precipitation Rate=====", total=total_precip.shape[0] - 1):
+        
+        precip_rate[ii] = (total_precip[ii+1] - total_precip[ii]) * (60/wrf_xarray.DT)
+    
+    return (precip_rate)
