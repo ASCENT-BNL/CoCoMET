@@ -477,7 +477,7 @@ def run_wrf(CONFIG, queue = None):
                 # Add default tracking featured_id variable in place of variable if not present
                 if ("variable" not in CONFIG["wrf"]["moaap"]["analysis"][var.lower()]): CONFIG["wrf"]["moaap"]["analysis"][var.lower()]["variable"] = CONFIG["wrf"]["feature_tracking_var"].upper()
                 
-                wrf_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG["verbose"], **CONFIG["wrf"]["moaap"]["analysis"][var.lower()]))
+                wrf_moaap_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG["verbose"], **CONFIG["wrf"]["moaap"]["analysis"][var.lower()]))
                 
         
         UDAF_values = bulk_moaap_to_UDAF(mask_output, wrf_tracking_xarray.PROJX.values, wrf_tracking_xarray.PROJY.values, convert_type=CONFIG["wrf"]["moaap"]["analysis_type"])

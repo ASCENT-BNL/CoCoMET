@@ -30,6 +30,7 @@ Outputs:
 """
 def merge_split_tracking(analysis_object,
                        variable,
+                       invert=False, # For fields where we care about 
                        verbose=False,
                        cell_footprint_height = 2000, #m
                        touching_threshold = .20,
@@ -84,6 +85,12 @@ def merge_split_tracking(analysis_object,
         raise Exception("!=====Missing Segmentation Input=====!")
         return
 
+    # If we care about tracking lower values such as brightness temperature (i.e. we want to flood fill stuff less than a threshold), we need to invert the data so we can use the same algorithm. Will also invert background value
+    if (invert): 
+        
+        variable_field = 1 / variable_field
+        flood_background = 1 / flood_background
+
     
     output_frame_list_merge = []
     output_init_cells_merge = []
@@ -96,6 +103,7 @@ def merge_split_tracking(analysis_object,
     frame_groups = Tracks.groupby("frame")
     
     for frame in tqdm(frame_groups, desc="=====Calculating Mergers and Splitters=====", total=frame_groups.ngroups):
+        
         if(frame[1].frame.min() >= (Tracks.frame.max()-(steps_forward_back-1))): continue
         if(frame[1].frame.min() <= (Tracks.frame.min()+(steps_forward_back-1))): continue
 
@@ -104,6 +112,7 @@ def merge_split_tracking(analysis_object,
 
 
         for feature in frame[1].iterrows():
+        
             feature_mask = deepcopy(footprint_data[frame[1].frame.min()])
             feature_mask.values[~isin(feature_mask.values,feature[1].feature_id)] = 0
             
@@ -121,17 +130,21 @@ def merge_split_tracking(analysis_object,
         ne = []
         tu = []
         for cell_id in valid_cells:
+            
             num_of_edges = 0
             touching = []
             
             # Get indices of valid cells in mask
             # Loop over indices
             for nx,ny in zip(*np.where(cell_data==cell_id)):
+                
                 # Find if location is on edge of cell (i.e. any touching cells not)
                 neighboring_cells = []
                 
                 for mx in range(nx-1,nx+2):
+                    
                     for my in range(ny-1,ny+2):
+                        
                         try:
                             t = cell_data[mx,my]
                         except:
@@ -139,7 +152,10 @@ def merge_split_tracking(analysis_object,
                             
                         neighboring_cells.append(t)
                 
+                # Get all 9 adjecent data cells to the current data cell of interest
                 neighboring_cells = np.array(neighboring_cells).reshape((3,3))
+                
+                # If touching any data cells not belonging to the cell of interest, consider that cell an edge
                 if(np.sum(neighboring_cells!=cell_id)!=0): num_of_edges += 1
                 
                 temp = neighboring_cells[neighboring_cells!=0]
@@ -158,12 +174,14 @@ def merge_split_tracking(analysis_object,
         
         # As long as one of the cells exceeds out threshold of touching, it will get added to tracked list, so no need to do anything more complex
         for cell in cell_info_df.iterrows():
+            
             uu = np.unique(cell[1].Touching_Edges, return_counts=True)
             
             for touching_cellid, touching_edge_count in zip(uu[0],uu[1]):
                 
                 # If touching by over a certain percent threshold, add to valid touching set
-                if ((touching_edge_count/cell[1].Num_Edges) > touching_threshold): 
+                if ((touching_edge_count / cell[1].Num_Edges) > touching_threshold): 
+                    
                     touching_tuple = tuple(np.sort((cell[1].cell,touching_cellid)))
                     valid_touching_cell_sets.append(touching_tuple)
         
@@ -173,6 +191,7 @@ def merge_split_tracking(analysis_object,
         valid_overlap_cell_sets = []
         
         for cell_set in valid_touching_cell_sets:
+            
             # Cell 1 and 2 checks
             cell1_data = frame[1].query("cell_id==@cell_set[0]")
             cell2_data = frame[1].query("cell_id==@cell_set[1]")
@@ -182,35 +201,47 @@ def merge_split_tracking(analysis_object,
                 
                 height_index = find_nearest(analysis_object["UDAF_segmentation_3d"].altitude.values, cell_footprint_height)
                 reflectivity_data = deepcopy(variable_field[cell1_data.frame.min()]).values[height_index]
+            
             else:
+                
                 reflectivity_data = deepcopy(variable_field[cell1_data.frame.min()]).values
             
             #flood fill cell 1
             row_1 = int(np.round(cell1_data.south_north.values[0]))
             col_1 = int(np.round(cell1_data.west_east.values[0]))
             
+            # Calculate the cell adjusted variable field, radius and then get the max distance of the search radius
             adj_Rmax_1 = np.round(reflectivity_data[row_1,col_1]-flood_background)
             cell_1_radius = np.ceil(cell_info_df.query("cell==@cell_set[0]").Num_Edges.values[0]/(2*np.pi))
             cell_1_radius = int(np.ceil((1+radius_multiplyer)*cell_1_radius))
             max_dist_1 = np.sqrt(2)*cell_1_radius
             segmented_1 = np.zeros(reflectivity_data.shape)
             
-            
+            # Loop over search radius
             for mx in range(row_1-cell_1_radius,row_1+cell_1_radius+1):
+                
                 for my in range(col_1-cell_1_radius,col_1+cell_1_radius+1):
+                    
                     try:
+                        
+                        # Calculate score function
                         R_adj = reflectivity_data[mx,my]-flood_background
                         dis = np.sqrt((my-col_1)**2+(mx-row_1)**2)
                         
-                        if(R_adj < 0 or not np.isfinite(R_adj)): continue
+                        # If the adjusted variable field value is not finite, skip it
+                        if(not np.isfinite(R_adj)): continue
                     
+                        # If the cell is the center of the search radius, will be a part of the cell
                         if(dis==0): segmented_1[mx,my] = 1; continue
                     
+                        # If the maximum variable value or maximum distance is 0, just skip since every data cell would be counted
                         if(adj_Rmax_1==0 or max_dist_1==0): continue
-                    
+                        
+                        # Calculate the score and see if it exceeds the threshold
                         score = (R_adj/adj_Rmax_1)-(dis/max_dist_1)
                         
                         if(score>score_threshold): segmented_1[mx,my] = 1
+                        
                     except:
                         continue
 
@@ -220,6 +251,7 @@ def merge_split_tracking(analysis_object,
             row_2 = int(np.round(cell2_data.south_north.values[0]))
             col_2 = int(np.round(cell2_data.west_east.values[0]))
             
+            # Calculate adjusted max variable, radius values and then max distance
             adj_Rmax_2 = np.round(reflectivity_data[row_2,col_2]-flood_background)
             cell_2_radius = np.ceil(cell_info_df.query("cell==@cell_set[1]").Num_Edges.values[0]/(2*np.pi))
             cell_2_radius = int(np.ceil(1.1*cell_2_radius))
@@ -227,12 +259,16 @@ def merge_split_tracking(analysis_object,
             segmented_2 = np.zeros(reflectivity_data.shape)
             
             for mx in range(row_2-cell_2_radius,row_2+cell_2_radius+1):
+                
                 for my in range(col_2-cell_2_radius,col_2+cell_2_radius+1):
+                    
                     try:
+                        
+                        # Repeat same process but for the second cell in the pair
                         R_adj = reflectivity_data[mx,my]-flood_background
                         dis = np.sqrt((my-col_2)**2+(mx-row_2)**2)
                         
-                        if(R_adj < 0 or not np.isfinite(R_adj)): continue
+                        if(not np.isfinite(R_adj)): continue
                     
                         if(dis==0): segmented_2[mx,my] = 1; continue
                     
@@ -241,6 +277,7 @@ def merge_split_tracking(analysis_object,
                         score = (R_adj/adj_Rmax_2)-(dis/max_dist_2)
                         
                         if(score>score_threshold): segmented_2[mx,my] = 1
+                    
                     except:
                         continue
             

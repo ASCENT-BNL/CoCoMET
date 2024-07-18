@@ -87,10 +87,8 @@ def wrf_moaap(wrf_xarray, CONFIG):
     # Get total mixing ratio at 850hPA
     mr = (wrf_xarray.QVAPOR + wrf_xarray.QCLOUD + wrf_xarray.QRAIN + wrf_xarray.QICE + wrf_xarray.QSNOW + wrf_xarray.QGRAUP)[:,height_idx_850]
     
-    # Get accumulated precipitation
-    # TODO: Figure out if this is accumulated or precipitation rate
+    # Get precipitation rate
     pr = wrf_calculate_precip_rate(wrf_xarray) / (60 / wrf_xarray.DT)
-    # pr = (wrf_xarray.RAINC+wrf_xarray.RAINNC)
     
     moaap(longitudes,
           latitudes,
@@ -110,7 +108,7 @@ def wrf_moaap(wrf_xarray, CONFIG):
           z500=geopt.values[:,height_idx_500],
           v200=v_winds_200,
           u200=u_winds_200,
-          pr=pr.values,
+          pr=pr,
           tb=tb,
           
           # Any user defined params
