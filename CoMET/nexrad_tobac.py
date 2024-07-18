@@ -61,8 +61,15 @@ def nexrad_tobac_feature_id(cube, CONFIG):
     # Get horozontal spacings
     dxy = tobac.get_spacings(cube)[0]
     
-    # Perform tobac feature identification and then convert to a geodataframe before returning
-    nexrad_radar_features = tobac.feature_detection.feature_detection_multithreshold(feat_cube, dxy=dxy, **inCONFIG["nexrad"]["tobac"]["feature_id"])
+    if (cube.coord("altitude").shape[0] == 1):
+    
+        # Perform tobac feature identification and then convert to a geodataframe before returning
+        nexrad_radar_features = tobac.feature_detection.feature_detection_multithreshold(feat_cube[:,0], dxy=dxy, **inCONFIG["nexrad"]["tobac"]["feature_id"])
+    
+    else:
+        
+        # Perform tobac feature identification and then convert to a geodataframe before returning
+        nexrad_radar_features = tobac.feature_detection.feature_detection_multithreshold(feat_cube, dxy=dxy, **inCONFIG["nexrad"]["tobac"]["feature_id"])
     
     if (nexrad_radar_features is None):
         return None
@@ -93,11 +100,21 @@ def nexrad_tobac_linking(cube, radar_features, CONFIG):
     # Get time spacing
     diffs = []
     for ii in range(cube.coord("time").points.shape[0]-1):
+        
         diffs.append(cube.coord("time").points[ii+1] - cube.coord("time").points[ii])
-    dt = np.nanmean(diffs) * 60
     
-    # Do tracking then convert output dataframe to a geodataframe
-    nexrad_tracks = tobac.linking_trackpy(radar_features,cube,dt=dt,dxy=dxy,vertical_coord="altitude",**CONFIG["nexrad"]["tobac"]["linking"])
+    dt = np.nanmedian(diffs) * 60
+    
+    if (cube.coord("altitude").shape[0] == 1):
+    
+        # Do tracking then convert output dataframe to a geodataframe
+        nexrad_tracks = tobac.linking_trackpy(radar_features,cube[:,0],dt=dt,dxy=dxy,vertical_coord="altitude",**CONFIG["nexrad"]["tobac"]["linking"])
+    
+    else:
+        
+        # Do tracking then convert output dataframe to a geodataframe
+        nexrad_tracks = tobac.linking_trackpy(radar_features,cube,dt=dt,dxy=dxy,vertical_coord="altitude",**CONFIG["nexrad"]["tobac"]["linking"])
+        
     
     if (nexrad_tracks is None):
         return None
@@ -140,10 +157,21 @@ def nexrad_tobac_segmentation(cube, radar_features, segmentation_type, CONFIG, s
         if ("height" in inCONFIG["nexrad"]["tobac"]["segmentation_2d"]): del inCONFIG["nexrad"]["tobac"]["segmentation_2d"]["height"]
         
         # Ensure segmentation_height is a proper number before running
-        if (segmentation_height == None or type(segmentation_height) == str or type(segmentation_height) == bool):
+        if (type(segmentation_height) == str or type(segmentation_height) == bool):
             raise Exception(f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!")
             return
-        if (segmentation_height > cube.coord("altitude").points.max() or segmentation_height < cube.coord("altitude").points.min()):
+        
+        if (segmentation_height is not None and cube.coord("altitude").shape[0] > 1):
+        
+            if (segmentation_height > cube.coord("altitude").points.max() or segmentation_height < cube.coord("altitude").points.min()):
+                raise Exception(f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!")
+                return
+            
+        elif (segmentation_height is None and cube.coord("altitude").shape[0] == 1):
+            
+            segmentation_height = cube.coord("altitude").points[0]
+        
+        elif (segmentation_height is None and cube.coord("altitude").shape[0] > 1):
             raise Exception(f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!")
             return
             
@@ -151,7 +179,7 @@ def nexrad_tobac_segmentation(cube, radar_features, segmentation_type, CONFIG, s
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
         height_index = find_nearest(cube.coord("altitude").points, segmentation_height)
         
-        # Remove 1 dimensional coordinates cause by taking only one altitude
+        # Remove 1 dimensional coordinates caused by taking only one altitude
         seg_cube = deepcopy(cube[:,height_index])
         seg_cube.remove_coord("altitude")
         seg_cube.remove_coord("model_level_number")
@@ -168,6 +196,10 @@ def nexrad_tobac_segmentation(cube, radar_features, segmentation_type, CONFIG, s
         return ((outXarray, segment_features))
     
     elif (segmentation_type.lower() == "3d"):
+        
+        if (cube.coord("altitude").shape[0] == 1):
+            raise Exception("!=====Invalid Segmentation Type. Only One Altitude Present=====!")
+            return
         
         # Similarly, perform 3d segmentation then return products
         segment_cube, segment_features = tobac.segmentation_3D(radar_features, cube, dxy=dxy, **inCONFIG["nexrad"]["tobac"]["segmentation_3d"])

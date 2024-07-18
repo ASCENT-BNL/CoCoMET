@@ -45,7 +45,7 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
     start_time = time.perf_counter()
     
     # Create empty dictionaries for each data type
-    wrf_data = mesonh_data = nexrad_data = multi_nexrad_data = goes_data = {}
+    wrf_data = mesonh_data = nexrad_data = multi_nexrad_data = standard_radar_data = goes_data = {}
     
     # if wrf is present in CONFIG, run the necessary wrf functions
     if ("wrf" in CONFIG):
@@ -74,6 +74,12 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
         # Call run multi nexrad function to handle all multi nexrad tasks
         multi_nexrad_data = run_multi_nexrad(CONFIG)
     
+    # Handle standard radar data
+    if ("standard_radar" in CONFIG):
+        
+        # Call run standard radar function to handle all standard radar tasks
+        standard_radar_data = run_standard_radar(CONFIG)
+    
     # Handle GOES data
     if ("goes" in CONFIG):
         
@@ -86,7 +92,7 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
     if (CONFIG["verbose"]): print(f"""=====CoMET Performance Diagonistics=====\n$ Total Process Time: {"%.2f Seconds" % (end_time-start_time)}\n$ Allocated Resources: Cores = 1""")
 
     # Return dict at end
-    return (wrf_data | mesonh_data | nexrad_data | multi_nexrad_data | goes_data)
+    return (wrf_data | mesonh_data | nexrad_data | multi_nexrad_data | standard_radar_data | goes_data)
 
 
 
@@ -211,11 +217,27 @@ def CoMET_start_multi(CONFIG):
             multi_nexrad_process.start()
             
             active_process_count+=1
+           
             
+        # Handle standard radar data
+        if ("standard_radar" in CONFIG):
+        
+            # Check to make sure max core count has not been exceeded
+            if (CONFIG["max_cores"] is not None and active_process_count + 1 > CONFIG["max_cores"]):
+                raise Exception("!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!")
+                return
+            
+            # Call run goes function to handle all goes tasks
+            radar_process = multiprocessing.Process(target=run_standard_radar, args=(CONFIG, queue))
+            processes.append(radar_process)
+            radar_process.start()
+            
+            active_process_count+=1
         
         
         for p in processes:
             responses.append(queue.get())
+        
         for p in processes:
             p.join()
             active_process_count-=1
@@ -225,14 +247,13 @@ def CoMET_start_multi(CONFIG):
         for ii in range(len(responses)):
             return_dict = return_dict | responses[ii] 
     
+    
         # Reset CONFIG max cores if necessary
         CONFIG["max_cores"] = inital_max_cores
-    
     
         end_time = time.perf_counter()
         
         if (CONFIG["verbose"]): print(f"""=====CoMET Performance Diagonistics=====\n$ Total Process Time: {"%.2f Seconds" % (end_time-start_time)}\n$ Allocated Resources: Cores = {CONFIG["max_cores"]}""")
-    
     
         # Return dict at end
         return (return_dict)
@@ -307,6 +328,9 @@ def CoMET_load(path_to_config):
             CONFIG["multi_nexrad"]["gridding"]["grid_shape"] = grid_shape
             CONFIG["multi_nexrad"]["gridding"]["grid_limits"] = grid_limits
     
+    
+    if ("standard_radar" in CONFIG and CONFIG["verbose"]):
+        print("=====RADAR Setup Found in CONFIG")
     
     
     if ("goes" in CONFIG and CONFIG["verbose"]):
@@ -940,7 +964,127 @@ def run_multi_nexrad(CONFIG, queue = None):
     return (user_return_dict)
 
 
+
+"""
+Inputs:
+    CONFIG: User configuration file
+Outputs:
+    user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
+"""
+def run_standard_radar(CONFIG, queue = None):
+    from .tracker_output_translation_layer import feature_id_to_UDAF, linking_to_UDAF, segmentation_to_UDAF
+    from .standard_radar_load import standard_radar_load_netcdf_iris
     
+    if (CONFIG["verbose"]): print("=====Loading RADAR Data=====")
+    
+    radar_tracking_cube, radar_tracking_xarray = standard_radar_load_netcdf_iris(CONFIG["standard_radar"]["path_to_data"], CONFIG["standard_radar"]["feature_tracking_var"], CONFIG)
+    
+    # Add xarrays and cubes to return dict
+    user_return_dict = {}
+    
+    user_return_dict["standard_radar"] = {
+        "tracking_xarray": radar_tracking_xarray,
+        "tracking_cube": radar_tracking_cube,
+        "segmentation_xarray": radar_tracking_xarray,
+        "segmentation_cube": radar_tracking_cube
+    }
+    
+    
+    # determine which tracker to use
+    if ("tobac" in CONFIG["standard_radar"]):
+        from .standard_radar_tobac import standard_radar_tobac_feature_id, standard_radar_tobac_linking, standard_radar_tobac_segmentation
+        
+        radar_features = None
+        radar_tracks = None
+        radar_segmentation2d = (None, None)
+        radar_segmentation3d = (None, None)
+        radar_tobac_analysis_data = {}
+        
+        # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
+        if ("feature_id" in CONFIG["standard_radar"]["tobac"]):
+            
+            if (CONFIG["verbose"]): print("=====Starting RADAR tobac Feature ID=====")
+            
+            radar_features = standard_radar_tobac_feature_id(radar_tracking_cube, CONFIG)
+        
+        if ("linking" in CONFIG["standard_radar"]["tobac"]):
+            
+            if (CONFIG["verbose"]): print("=====Starting RADAR tobac Feature Linking=====")
+            
+            radar_tracks = standard_radar_tobac_linking(radar_tracking_cube, radar_features, CONFIG)
+        
+        if ("segmentation_2d" in CONFIG["standard_radar"]["tobac"]):
+            
+            if (CONFIG["verbose"]): print("=====Starting RADAR tobac 2D Segmentation=====")
+            
+            height = CONFIG["standard_radar"]["tobac"]["segmentation_2d"]["height"] if "height" in CONFIG["standard_radar"]["tobac"]["segmentation_2d"] else None
+            
+            radar_segmentation2d = standard_radar_tobac_segmentation(radar_tracking_cube, radar_features, "2d", CONFIG, height)
+    
+        if ("segmentation_3d" in CONFIG["standard_radar"]["tobac"]):
+            
+            if (CONFIG["verbose"]): print("=====Starting RADAR tobac 3D Segmentation=====")
+            
+            radar_segmentation3d = standard_radar_tobac_segmentation(radar_tracking_cube, radar_features, "3d", CONFIG)
+
+        if ("analysis" in CONFIG["standard_radar"]["tobac"]):  
+            from CoMET.analysis.get_vars import get_var
+            
+            if (CONFIG["standard_radar"]["tobac"]["analysis"] is None): CONFIG["standard_radar"]["tobac"]["analysis"] = {}
+            
+            if (CONFIG["verbose"]): print("=====Starting RADAR tobac Analysis Calculations=====")
+            
+            UDAF_tracks = linking_to_UDAF(radar_tracks, "tobac")
+            
+            # Create analysis object
+            analysis_object = {
+                "tracking_xarray": radar_tracking_xarray,
+                "segmentation_xarray": radar_tracking_xarray,
+                "UDAF_features": feature_id_to_UDAF(radar_features, "tobac"),
+                "UDAF_linking": UDAF_tracks,
+                "UDAF_segmentation_2d": segmentation_to_UDAF(radar_segmentation2d[0], UDAF_tracks, "tobac"),
+                "UDAF_segmentation_3d": segmentation_to_UDAF(radar_segmentation3d[0], UDAF_tracks, "tobac")
+            }
+                
+            # Calcaulte each variable of interest and append to analysis data array
+            for var in CONFIG["standard_radar"]["tobac"]["analysis"].keys():
+                
+                # Add default tracking featured_id variable in place of variable if not present
+                if ("variable" not in CONFIG["standard_radar"]["tobac"]["analysis"][var.lower()]): CONFIG["standard_radar"]["tobac"]["analysis"][var.lower()]["variable"] = CONFIG["standard_radar"]["feature_tracking_var"].upper()
+                
+                radar_tobac_analysis_data[var.lower()] = (get_var(analysis_object, var, CONFIG["verbose"], **CONFIG["standard_radar"]["tobac"]["analysis"][var.lower()]))
+
+    
+        if (CONFIG["verbose"]): print("=====Converting RADAR tobac Output to CoMET-UDAF=====")
+
+        UDAF_tracks = linking_to_UDAF(radar_tracks, "tobac")
+
+        # Add all products to return dict
+        user_return_dict["standard_radar"]["tobac"] = {
+            "feature_id": radar_features,
+            "UDAF_features": feature_id_to_UDAF(radar_features, "tobac"),
+            "linking": radar_tracks,
+            "UDAF_linking": UDAF_tracks,
+            "segmentation_2d": radar_segmentation2d,
+            "UDAF_segmentation_2d": segmentation_to_UDAF(radar_segmentation2d[0], UDAF_tracks, "tobac"),
+            "segmentation_3d": radar_segmentation3d,
+            "UDAF_segmentation_3d": segmentation_to_UDAF(radar_segmentation3d[0], UDAF_tracks, "tobac"),
+            "analysis": radar_tobac_analysis_data
+            }
+        
+        if (CONFIG["verbose"]): print("=====RADAR tobac Tracking Complete=====")
+    
+    
+    # Send return dict to queue if there is a queue object passed
+    if (queue is not None):
+        queue.put(user_return_dict)
+        return
+
+    # Return dictionary
+    return (user_return_dict)
+
+
+
 """
 Inputs:
     CONFIG: User configuration file

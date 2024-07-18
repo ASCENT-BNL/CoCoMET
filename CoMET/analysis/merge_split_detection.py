@@ -197,14 +197,14 @@ def merge_split_tracking(analysis_object,
             cell2_data = frame[1].query("cell_id==@cell_set[1]")
             
             # If 3d, choose height, otherwise, use whole thing
-            if (len(variable_field.shape) == 4):
+            if (len(variable_field.shape) == 4 and analysis_object["UDAF_segmentation_3d"] is not None):
                 
                 height_index = find_nearest(analysis_object["UDAF_segmentation_3d"].altitude.values, cell_footprint_height)
                 reflectivity_data = deepcopy(variable_field[cell1_data.frame.min()]).values[height_index]
             
             else:
                 
-                reflectivity_data = deepcopy(variable_field[cell1_data.frame.min()]).values
+                reflectivity_data = deepcopy(variable_field[cell1_data.frame.min()].squeeze()).values
             
             #flood fill cell 1
             row_1 = int(np.round(cell1_data.south_north.values[0]))
