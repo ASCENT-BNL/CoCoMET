@@ -9,27 +9,32 @@ on:
 jobs:
   formatting_job:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
     
-        steps:
-          - name: Check out Git repository
-            uses: actions/checkout@v4
+    steps:
+    - name: Check out Git repository
+    uses: actions/checkout@v4
     
-          - name: Set up conda
-            uses: conda-incubator/setup-miniconda@v2
-            with:
-              miniforge-version: latest
-              miniforge-variant: mambaforge
-              channel-priority: strict
-              channels: conda-forge
-              show-channel-urls: true
-              use-only-tar-bz2: true
+    - name: Set up conda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        miniforge-version: latest
+        miniforge-variant: mambaforge
+        channel-priority: strict
+        channels: conda-forge
+        show-channel-urls: true
+        use-only-tar-bz2: true
+
+    - name: Install dependencies
+      run: |
+        mamba install --yes black
+        pip install .
+
+    - name: Check formatting
+      shell: bash -l {0}
+      run:
+        black CoMET --check --diff 
     
-          - name: Install dependencies
-            run: |
-              mamba install --yes black
-              pip install .
-    
-          - name: Check formatting
-            shell: bash -l {0}
-            run:
-              black CoMET --check --diff 
+          
