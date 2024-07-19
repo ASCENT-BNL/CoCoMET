@@ -20,19 +20,6 @@ def find_nearest(array, pivot):
     return idx
 
 
-"""
-Inputs:
-    analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d, and segmentation_xarray
-    threshold: The value which needs to be exceeded to count towards the echo top height. I.e. 15 for reflectivity.
-    verbose: Determins if output should be printed during processing or not
-    variable: The variable from the input segmentation_xarray which should be used for calculating ETH
-    cell_footprint_height: The height used to calculate the cell area to determine where to calculate ETHs
-    quantile: The percentile of calculated ETHs to return
-Outputs:
-    eth_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, eth where eth is in km
-"""
-
-
 def calculate_ETH(
     analysis_object,
     threshold,
@@ -42,6 +29,18 @@ def calculate_ETH(
     quantile=0.95,
     **args,
 ):
+    """
+    Inputs:
+        analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d, and segmentation_xarray
+        threshold: The value which needs to be exceeded to count towards the echo top height. I.e. 15 for reflectivity.
+        verbose: Determins if output should be printed during processing or not
+        variable: The variable from the input segmentation_xarray which should be used for calculating ETH
+        cell_footprint_height: The height used to calculate the cell area to determine where to calculate ETHs
+        quantile: The percentile of calculated ETHs to return
+    Outputs:
+        eth_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, eth where eth is in km
+    """
+
     import numpy as np
     import xarray as xr
     import pandas as pd
@@ -82,7 +81,6 @@ def calculate_ETH(
 
     else:
         raise Exception("!=====Missing Segmentation Input=====!")
-        return
 
     eth_info = {"frame": [], "feature_id": [], "cell_id": [], "eth": []}  # in km
 
@@ -142,17 +140,16 @@ def calculate_ETH(
     return pd.DataFrame(eth_info)
 
 
-"""
-Inputs:
-    analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d
-    verbose: Determins if output should be printed during processing or not
-    height: The height which is used to calculate the area of cells
-Outputs:
-    area_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, area where area is in km^2
-"""
-
-
 def calculate_area(analysis_object, verbose=False, height=2000, **args):
+    """
+    Inputs:
+        analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d
+        verbose: Determins if output should be printed during processing or not
+        height: The height which is used to calculate the area of cells
+    Outputs:
+        area_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, area where area is in km^2
+    """
+
     import numpy as np
     import pandas as pd
     from tqdm import tqdm
@@ -174,7 +171,6 @@ def calculate_area(analysis_object, verbose=False, height=2000, **args):
 
     else:
         raise Exception("!=====Missing Segmentation Input=====!")
-        return
 
     area_info = {"frame": [], "feature_id": [], "cell_id": [], "area": []}  # in km^2
 
@@ -227,16 +223,15 @@ def calculate_area(analysis_object, verbose=False, height=2000, **args):
     return pd.DataFrame(area_info)
 
 
-"""
-Inputs:
-    analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_3d
-    verbose: Determins if output should be printed during processing or not
-Outputs:
-    volume_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, volume where area is in km^3
-"""
-
-
 def calculate_volume(analysis_object, verbose=False, **args):
+    """
+    Inputs:
+        analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_3d
+        verbose: Determins if output should be printed during processing or not
+    Outputs:
+        volume_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, volume where area is in km^3
+    """
+
     import numpy as np
     import pandas as pd
     from tqdm import tqdm
@@ -245,7 +240,6 @@ def calculate_volume(analysis_object, verbose=False, **args):
         raise Exception(
             "!=====3D Segmentation Data is Required for Volume Calculation=====!"
         )
-        return
 
     mask = analysis_object["UDAF_segmentation_3d"].Feature_Segmentation
 

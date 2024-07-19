@@ -11,15 +11,14 @@ Created on Mon Jul  8 17:18:18 2024
 # =============================================================================
 
 
-"""
-Inputs:
-    mesonh_xarray: xarray Dataset containing default MesoNH values
-Ouputs:
-    dBZ: DataArray containing calculated reflectivity values
-"""
-
-
 def mesonh_calculate_reflectivity(mesonh_xarray):
+    """
+    Inputs:
+        mesonh_xarray: xarray Dataset containing default MesoNH values
+    Ouputs:
+        dBZ: DataArray containing calculated reflectivity values
+    """
+
     import warnings
     import numpy as np
 
@@ -86,15 +85,14 @@ def mesonh_calculate_reflectivity(mesonh_xarray):
     return dBZ.chunk(t.chunksizes)
 
 
-"""
-Inputs: 
-    mesonh_xarray:xarray Dataset containing default MesoNH values
-Outputs:
-    TB: numpy array containing brightness temperature at each point and time--same dimension as input
-"""
-
-
 def mesonh_calculate_brightness_temp(mesonh_xarray):
+    """
+    Inputs:
+        mesonh_xarray:xarray Dataset containing default MesoNH values
+    Outputs:
+        TB: numpy array containing brightness temperature at each point and time--same dimension as input
+    """
+
     import numpy as np
     from tqdm import tqdm
 
@@ -117,14 +115,12 @@ def mesonh_calculate_brightness_temp(mesonh_xarray):
     return TB
 
 
-"""
-Inputs:
-    mesonh_xarray: xarray Dataset containing default MesoNH values
-Outputs:
-    geopt: Dataarray of heights AGL in m
-"""
-
-
 def mesonh_calculate_agl_z(mesonh_xarray):
+    """
+    Inputs:
+        mesonh_xarray: xarray Dataset containing default MesoNH values
+    Outputs:
+        geopt: Dataarray of heights AGL in m
+    """
 
     return mesonh_xarray.Z[0].squeeze()

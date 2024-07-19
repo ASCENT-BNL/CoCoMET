@@ -11,16 +11,14 @@ Created on Mon Jun 24 12:34:22 2024
 # =============================================================================
 
 
-"""
-Inputs:
-    features: The output from the feature detection step of a given tracker
-    tracker: ["tobac"] The tracker used to generate the features
-Outputs:
-    UDAF_features: A geodataframe matching the format of the CoMET-UDAF feature detection specification
-"""
-
-
 def feature_id_to_UDAF(features, tracker):
+    """
+    Inputs:
+        features: The output from the feature detection step of a given tracker
+        tracker: ["tobac"] The tracker used to generate the features
+    Outputs:
+        UDAF_features: A geodataframe matching the format of the CoMET-UDAF feature detection specification
+    """
 
     if features is None:
         return None
@@ -73,20 +71,17 @@ def feature_id_to_UDAF(features, tracker):
 
         return UDAF_features
 
-    else:
-        raise Exception(f"!=====Invalid Tracker, You Entered: {tracker.lower()}=====!")
-
-
-"""
-Inputs:
-    tracks: The output from the linking/tracking step of a given tracker
-    tracker: ["tobac"] The tracker used to generate the features
-Outputs:
-    UDAF_tracks: A geodataframe matching the format of the CoMET-UDAF linking specification
-"""
+    raise Exception(f"!=====Invalid Tracker, You Entered: {tracker.lower()}=====!")
 
 
 def linking_to_UDAF(tracks, tracker):
+    """
+    Inputs:
+        tracks: The output from the linking/tracking step of a given tracker
+        tracker: ["tobac"] The tracker used to generate the features
+    Outputs:
+        UDAF_tracks: A geodataframe matching the format of the CoMET-UDAF linking specification
+    """
 
     if tracks is None:
         return None
@@ -164,21 +159,18 @@ def linking_to_UDAF(tracks, tracker):
 
         return UDAF_tracks
 
-    else:
-        raise Exception(f"!=====Invalid Tracker, You Entered: {tracker.lower()}=====!")
-
-
-"""
-Inputs:
-    segmentation: The output from the segmentation step of a given tracker
-    UDAF_tracks: UDAF standard tracking output
-    tracker: ["tobac"] The tracker used to generate the features
-Outputs:
-    UDAF_segmentation: An xarray DataArray matching the format of the CoMET-UDAF segmentation specification
-"""
+    raise Exception(f"!=====Invalid Tracker, You Entered: {tracker.lower()}=====!")
 
 
 def segmentation_to_UDAF(segmentation, UDAF_tracks, tracker):
+    """
+    Inputs:
+        segmentation: The output from the segmentation step of a given tracker
+        UDAF_tracks: UDAF standard tracking output
+        tracker: ["tobac"] The tracker used to generate the features
+    Outputs:
+        UDAF_segmentation: An xarray DataArray matching the format of the CoMET-UDAF segmentation specification
+    """
 
     if segmentation is None or UDAF_tracks is None:
         return None
@@ -350,24 +342,22 @@ def segmentation_to_UDAF(segmentation, UDAF_tracks, tracker):
                     ]
                 ]
 
-    else:
-        raise Exception(f"!=====Invalid Tracker, You Entered: {tracker.lower()}=====!")
-
-
-"""
-Inputs:
-    mask: An xarray file which is the default output from MOAAP and contains the mask information for all tracked types
-    projection_x_coords: ...
-    projection_y_coords: ...
-    convert_type: The type of tracking data to extract. Either "MCS" or "Cloud"
-Outputs:
-    return_tuple: A tuple containing the UDAF_features, UDAF_tracks, and UDAF_segmentation outputs
-"""
+    raise Exception(f"!=====Invalid Tracker, You Entered: {tracker.lower()}=====!")
 
 
 def bulk_moaap_to_UDAF(
     mask, projection_x_coords, projection_y_coords, convert_type="cloud"
 ):
+    """
+    Inputs:
+        mask: An xarray file which is the default output from MOAAP and contains the mask information for all tracked types
+        projection_x_coords: ...
+        projection_y_coords: ...
+        convert_type: The type of tracking data to extract. Either "MCS" or "Cloud"
+    Outputs:
+        return_tuple: A tuple containing the UDAF_features, UDAF_tracks, and UDAF_segmentation outputs
+    """
+
     import numpy as np
     import pandas as pd
     import xarray as xr

@@ -10,13 +10,7 @@ Created on Thu Jun 20 15:34:29 2024
 # Creates a dictionary which the CoMET analysis module can understand
 # =============================================================================
 
-
-"""
-Inputs:
-    Various outputs from different CoMET functions
-Outpus:
-    analysis_object_dict: A dictionary setup for intake into the CoMET analysis module if you wanted to run the CoMET functions independently of CoMET_start. Follows CoMET-UDAF Section 3.1. although the analysis object itself must be accessed via analysis_object_dict['obs-type']['tracker']
-"""
+# TODO: Update this to include new data types
 
 
 def create_analysis_object(
@@ -38,6 +32,12 @@ def create_analysis_object(
     goes_tobac_tracks=None,  # Optional
     goes_tobac_segmentation_2d=None,  # Optional, should be xarray NOT tuple
 ):
+    """
+    Inputs:
+        Various outputs from different CoMET functions
+    Outpus:
+        analysis_object_dict: A dictionary setup for intake into the CoMET analysis module if you wanted to run the CoMET functions independently of CoMET_start. Follows CoMET-UDAF Section 3.1. although the analysis object itself must be accessed via analysis_object_dict['obs-type']['tracker']
+    """
 
     from CoMET.tracker_output_translation_layer import (
         feature_id_to_UDAF,

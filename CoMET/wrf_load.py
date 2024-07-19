@@ -10,20 +10,18 @@ Created on Wed Jun  5 15:19:26 2024
 # Takes in a filepath containing WRF netCDF data and converts it to a netcdf dataset and/or an iris cube for use in trackers
 # =============================================================================
 
-# TODO: Add projection_x and projection_y coordinates to output xarray
-
-"""
-Inputs: 
-    filepath: glob style path to wrfout files (i.e. ./data/wrfout/wrfout_d03_*)
-    trackingVar: ["dbz","tb","wa"], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
-
-Outputs:
-    cube: iris cube containing either reflectivity, updraft velocity, or brightness temperature values
-    wrf_netcdf: xarray dataset containing merged WRF data
-"""
-
 
 def wrf_load_netcdf_iris(filepath, tracking_var, CONFIG):
+    """
+    Inputs:
+        filepath: glob style path to wrfout files (i.e. ./data/wrfout/wrfout_d03_*)
+        trackingVar: ["dbz","tb","wa"], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
+
+    Outputs:
+        cube: iris cube containing either reflectivity, updraft velocity, or brightness temperature values
+        wrf_netcdf: xarray dataset containing merged WRF data
+    """
+
     import numpy as np
     import xarray as xr
     from .wrf_calculate_products import (
@@ -117,22 +115,20 @@ def wrf_load_netcdf_iris(filepath, tracking_var, CONFIG):
         raise Exception(
             f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
         )
-        return
 
     return (cube, wrf_xarray.unify_chunks())
 
 
-"""
-Inputs:
-    filepath: path to wrfout files (i.e. ./data/wrfout/wrfout_d03_*), works with * delimintator
-    trackingVar: ["dbz","tb","wa"], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
-
-Outputs:sudo snap install outlook-for-linux --edge
-    wrf_netcdf: xarray dataset containing merged WRF data
-"""
-
-
 def wrf_load_netcdf(filepath, tracking_var, CONFIG):
+    """
+    Inputs:
+        filepath: path to wrfout files (i.e. ./data/wrfout/wrfout_d03_*), works with * delimintator
+        trackingVar: ["dbz","tb","wa"], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
+
+    Outputs:sudo snap install outlook-for-linux --edge
+        wrf_netcdf: xarray dataset containing merged WRF data
+    """
+
     import numpy as np
     import xarray as xr
     from .wrf_calculate_products import (
@@ -204,6 +200,5 @@ def wrf_load_netcdf(filepath, tracking_var, CONFIG):
         raise Exception(
             f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
         )
-        return
 
     return wrf_xarray.unify_chunks()

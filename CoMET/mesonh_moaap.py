@@ -6,14 +6,6 @@ Created on Wed Jul 17 14:14:14 2024
 @author: thahn
 """
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Jul 10 12:29:56 2024
-
-@author: thahn
-"""
-
 # =============================================================================
 # This defines the methods for running MOAAP on WRF data processed using wrf_load.py
 # =============================================================================
@@ -28,16 +20,15 @@ def find_nearest(array, pivot):
     return idx
 
 
-"""
-Inputs:
-    wrf_xarray: xarray Dataset containing WRF data calculated from wrf_load.py
-    CONFIG: User configuration file
-Outputs:
-    TBD
-"""
-
-
 def mesonh_moaap(mesonh_xarray, CONFIG):
+    """
+    Inputs:
+        wrf_xarray: xarray Dataset containing WRF data calculated from wrf_load.py
+        CONFIG: User configuration file
+    Outputs:
+        mask: Default MOAAP output mask
+    """
+
     import numpy as np
     import pandas as pd
     import xarray as xr

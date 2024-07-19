@@ -6,14 +6,6 @@ Created on Tue Jul 16 10:25:47 2024
 @author: thahn
 """
 
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jun 11 17:36:27 2024
-
-@author: thahn
-"""
-
 # =============================================================================
 # This defines the methods for running tobac on NEXRAD data processed using nexrad_load.py
 # =============================================================================
@@ -28,16 +20,15 @@ def find_nearest(array, pivot):
     return idx
 
 
-"""
-Inputs:
-    cube: iris cube containing the variable to be tracked
-    CONFIG: User configuration file
-Outputs:
-    nexrad_geopd: geodataframe containing all default tobac feature id outputs
-"""
-
-
 def multi_nexrad_tobac_feature_id(cube, CONFIG):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        CONFIG: User configuration file
+    Outputs:
+        nexrad_geopd: geodataframe containing all default tobac feature id outputs
+    """
+
     import tobac
     import geopandas as gpd
     from copy import deepcopy
@@ -56,7 +47,6 @@ def multi_nexrad_tobac_feature_id(cube, CONFIG):
             raise Exception(
                 f"""!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG["multi_nexrad"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
             )
-            return
         if (
             inCONFIG["multi_nexrad"]["tobac"]["feature_id"]["height"]
             > cube.coord("altitude").points.max()
@@ -66,7 +56,6 @@ def multi_nexrad_tobac_feature_id(cube, CONFIG):
             raise Exception(
                 f"""!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG["multi_nexrad"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
             )
-            return
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
         height_index = find_nearest(
@@ -102,17 +91,16 @@ def multi_nexrad_tobac_feature_id(cube, CONFIG):
     return nexrad_geopd
 
 
-"""
-Inputs:
-    cube: iris cube containing the variable to be tracked
-    radar_features: tobac radar features from nexrad_tobac_feature_id output
-    CONFIG: User configuration file
-Outputs:
-    nexrad_geopd_tracks: geodataframe containing all default tobac feature id outputs
-"""
-
-
 def multi_nexrad_tobac_linking(cube, radar_features, CONFIG):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        radar_features: tobac radar features from nexrad_tobac_feature_id output
+        CONFIG: User configuration file
+    Outputs:
+        nexrad_geopd_tracks: geodataframe containing all default tobac feature id outputs
+    """
+
     import tobac
     import numpy as np
     import geopandas as gpd
@@ -149,21 +137,20 @@ def multi_nexrad_tobac_linking(cube, radar_features, CONFIG):
     return nexrad_geopd_tracks
 
 
-"""
-Inputs:
-    cube: iris cube containing the variable to be tracked
-    radar_features: tobac radar features from nexrad_tobac_feature_id output
-    segmentation_type: ["2D", "3D"], whether to perform 2d segmentation or 3d segmentation
-    CONFIG: User configuration file
-    segmentation_height: height, in meters, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var != tb
-Outputs:
-    (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
-"""
-
-
 def multi_nexrad_tobac_segmentation(
     cube, radar_features, segmentation_type, CONFIG, segmentation_height=None
 ):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        radar_features: tobac radar features from nexrad_tobac_feature_id output
+        segmentation_type: ["2D", "3D"], whether to perform 2d segmentation or 3d segmentation
+        CONFIG: User configuration file
+        segmentation_height: height, in meters, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var != tb
+    Outputs:
+        (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
+    """
+
     import tobac
     import xarray as xr
     from copy import deepcopy
@@ -173,7 +160,6 @@ def multi_nexrad_tobac_segmentation(
         raise Exception(
             f"!=====Invalid Tracking Variable. Your Cube Has: {cube.name().lower()}=====!"
         )
-        return
 
     inCONFIG = deepcopy(CONFIG)
 
@@ -194,7 +180,6 @@ def multi_nexrad_tobac_segmentation(
             raise Exception(
                 f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
             )
-            return
         if (
             segmentation_height > cube.coord("altitude").points.max()
             or segmentation_height < cube.coord("altitude").points.min()
@@ -202,7 +187,6 @@ def multi_nexrad_tobac_segmentation(
             raise Exception(
                 f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
             )
-            return
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
         height_index = find_nearest(cube.coord("altitude").points, segmentation_height)
@@ -264,4 +248,3 @@ def multi_nexrad_tobac_segmentation(
         raise Exception(
             f"!=====Invalid Segmentation Type. You Entered: {segmentation_type.lower()}=====!"
         )
-        return

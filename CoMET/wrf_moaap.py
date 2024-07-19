@@ -20,16 +20,15 @@ def find_nearest(array, pivot):
     return idx
 
 
-"""
-Inputs:
-    wrf_xarray: xarray Dataset containing WRF data calculated from wrf_load.py
-    CONFIG: User configuration file
-Outputs:
-    mask_file: The xarray object containing the default MOAAP outputs
-"""
-
-
 def wrf_moaap(wrf_xarray, CONFIG):
+    """
+    Inputs:
+        wrf_xarray: xarray Dataset containing WRF data calculated from wrf_load.py
+        CONFIG: User configuration file
+    Outputs:
+        mask_file: The xarray object containing the default MOAAP outputs
+    """
+
     import numpy as np
     import pandas as pd
     import xarray as xr

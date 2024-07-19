@@ -16,7 +16,7 @@ jobs:
   build:
     name: ${{ matrix.os }}-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}-latest
-    if: github.repository == "travis-j-hahn/CoMET"
+    if: github.repository == 'travis-j-hahn/CoMET'
     defaults:
       run:
         shell: bash -l {0}

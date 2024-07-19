@@ -12,15 +12,14 @@ Created on Mon Jun 10 14:55:16 2024
 # TODO: Create CoMET-UDAF Specification for return object
 
 
-"""
-Inputs:
-    path_to_config: Path to a config.yml file containing all details of the CoMET run. See boilerplate.yml for how the file should be setup
-    manual_mode: [True, False] Whether CoMET should run all functions idenpendetly or should just return CONFIG for user to run functions independently 
-    CONFIG: Optional to just pass a config dict object instead of filepath
-"""
-
-
 def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
+    """
+    Inputs:
+        path_to_config: Path to a config.yml file containing all details of the CoMET run. See boilerplate.yml for how the file should be setup
+        manual_mode: [True, False] Whether CoMET should run all functions idenpendetly or should just return CONFIG for user to run functions independently
+        CONFIG: Optional to just pass a config dict object instead of filepath
+    """
+
     import time
 
     # Load CONFIG if not present
@@ -105,15 +104,14 @@ def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):
     )
 
 
-"""
-Inputs:
-    CONFIG: User defined configuration data
-Outputs:
-    return_dict: Dictionary designed according to the CoMET-UDAF standard
-"""
-
-
 def CoMET_start_multi(CONFIG):
+    """
+    Inputs:
+        CONFIG: User defined configuration data
+    Outputs:
+        return_dict: Dictionary designed according to the CoMET-UDAF standard
+    """
+
     import time
     import multiprocessing
 
@@ -145,7 +143,6 @@ def CoMET_start_multi(CONFIG):
                 raise Exception(
                     "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
                 )
-                return
 
             # Call run wrf function to handle all wrf tasks
             wrf_process = multiprocessing.Process(target=run_wrf, args=(CONFIG, queue))
@@ -165,7 +162,6 @@ def CoMET_start_multi(CONFIG):
                 raise Exception(
                     "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
                 )
-                return
 
             # Call run MesoNH function to handle all MesoNH tasks
             mesonh_process = multiprocessing.Process(
@@ -187,7 +183,6 @@ def CoMET_start_multi(CONFIG):
                 raise Exception(
                     "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
                 )
-                return
 
             # Call run goes function to handle all goes tasks
             goes_process = multiprocessing.Process(
@@ -209,7 +204,6 @@ def CoMET_start_multi(CONFIG):
                 raise Exception(
                     "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
                 )
-                return
 
             # If gridding is enabled, make sure doing so will not exceed the max number of cores and adjust the CONFIG values accordingly
             if CONFIG["max_cores"] is not None and "gridding" in CONFIG["nexrad"]:
@@ -219,7 +213,6 @@ def CoMET_start_multi(CONFIG):
                     raise Exception(
                         "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
                     )
-                    return
 
             # Call run nexrad function to handle all nexrad tasks
             nexrad_process = multiprocessing.Process(
@@ -241,7 +234,6 @@ def CoMET_start_multi(CONFIG):
                 raise Exception(
                     "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
                 )
-                return
 
             # If gridding is enabled, make sure doing so will not exceed the max number of cores and adjust the CONFIG values accordingly
             if CONFIG["max_cores"] is not None and "gridding" in CONFIG["multi_nexrad"]:
@@ -251,7 +243,6 @@ def CoMET_start_multi(CONFIG):
                     raise Exception(
                         "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
                     )
-                    return
 
             # Call run nexrad function to handle all nexrad tasks
             multi_nexrad_process = multiprocessing.Process(
@@ -273,7 +264,6 @@ def CoMET_start_multi(CONFIG):
                 raise Exception(
                     "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
                 )
-                return
 
             # Call run goes function to handle all goes tasks
             radar_process = multiprocessing.Process(
@@ -310,21 +300,20 @@ def CoMET_start_multi(CONFIG):
         return return_dict
 
 
-"""
-Inputs:
-    path_to_config: Path to a config.yml file containing all details of the CoMET run. See boilerplate.yml for how the file should be setup
-Outputs:
-    CONFIG: dictionary object containing all user-defined parameters
-"""
-
-
 def CoMET_load(path_to_config):
+    """
+    Inputs:
+        path_to_config: Path to a config.yml file containing all details of the CoMET run. See boilerplate.yml for how the file should be setup
+    Outputs:
+        CONFIG: dictionary object containing all user-defined parameters
+    """
+
     import ast
     import yaml
     import numpy as np
 
     # Open and read config file
-    with open(path_to_config, "r") as f:
+    with open(path_to_config, "r", encoding="utf-8") as f:
         CONFIG = yaml.safe_load(f)
 
     # Go through each potential option and determine which functions need to run
@@ -396,15 +385,16 @@ def CoMET_load(path_to_config):
 # =============================================================================
 # This section is for running individual data types
 # =============================================================================
-"""
-Inputs:
-    CONFIG: User configuration file
-Outputs:
-    user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
-"""
 
 
 def run_wrf(CONFIG, queue=None):
+    """
+    Inputs:
+        CONFIG: User configuration file
+    Outputs:
+        user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
+    """
+
     from .tracker_output_translation_layer import (
         feature_id_to_UDAF,
         linking_to_UDAF,
@@ -643,21 +633,20 @@ def run_wrf(CONFIG, queue=None):
     # Send return dict to queue if there is a queue object passed
     if queue is not None:
         queue.put(user_return_dict)
-        return
+        return None
 
     # Return dictionary
     return user_return_dict
 
 
-"""
-Inputs:
-    CONFIG: User configuration file
-Outputs:
-    user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
-"""
-
-
 def run_mesonh(CONFIG, queue=None):
+    """
+    Inputs:
+        CONFIG: User configuration file
+    Outputs:
+        user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
+    """
+
     from .tracker_output_translation_layer import (
         feature_id_to_UDAF,
         linking_to_UDAF,
@@ -902,21 +891,20 @@ def run_mesonh(CONFIG, queue=None):
     # Send return dict to queue if there is a queue object passed
     if queue is not None:
         queue.put(user_return_dict)
-        return
+        return None
 
     # Return dictionary
     return user_return_dict
 
 
-"""
-Inputs:
-    CONFIG: User configuration file
-Outputs:
-    user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
-"""
-
-
 def run_nexrad(CONFIG, queue=None):
+    """
+    Inputs:
+        CONFIG: User configuration file
+    Outputs:
+        user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
+    """
+
     from .tracker_output_translation_layer import (
         feature_id_to_UDAF,
         linking_to_UDAF,
@@ -1080,21 +1068,20 @@ def run_nexrad(CONFIG, queue=None):
     # Send return dict to queue if there is a queue object passed
     if queue is not None:
         queue.put(user_return_dict)
-        return
+        return None
 
     # Return dictionary
     return user_return_dict
 
 
-"""
-Inputs:
-    CONFIG: User configuration file
-Outputs:
-    user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
-"""
-
-
 def run_multi_nexrad(CONFIG, queue=None):
+    """
+    Inputs:
+        CONFIG: User configuration file
+    Outputs:
+        user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
+    """
+
     from .tracker_output_translation_layer import (
         feature_id_to_UDAF,
         linking_to_UDAF,
@@ -1267,21 +1254,20 @@ def run_multi_nexrad(CONFIG, queue=None):
     # Send return dict to queue if there is a queue object passed
     if queue is not None:
         queue.put(user_return_dict)
-        return
+        return None
 
     # Return dictionary
     return user_return_dict
 
 
-"""
-Inputs:
-    CONFIG: User configuration file
-Outputs:
-    user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
-"""
-
-
 def run_standard_radar(CONFIG, queue=None):
+    """
+    Inputs:
+        CONFIG: User configuration file
+    Outputs:
+        user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
+    """
+
     from .tracker_output_translation_layer import (
         feature_id_to_UDAF,
         linking_to_UDAF,
@@ -1437,21 +1423,20 @@ def run_standard_radar(CONFIG, queue=None):
     # Send return dict to queue if there is a queue object passed
     if queue is not None:
         queue.put(user_return_dict)
-        return
+        return None
 
     # Return dictionary
     return user_return_dict
 
 
-"""
-Inputs:
-    CONFIG: User configuration file
-Outputs:
-    user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
-"""
-
-
 def run_goes(CONFIG, queue=None):
+    """
+    Inputs:
+        CONFIG: User configuration file
+    Outputs:
+        user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
+    """
+
     from .tracker_output_translation_layer import (
         feature_id_to_UDAF,
         linking_to_UDAF,
@@ -1577,7 +1562,7 @@ def run_goes(CONFIG, queue=None):
     # Send return dict to queue if there is a queue object passed
     if queue is not None:
         queue.put(user_return_dict)
-        return
+        return None
 
     # Return dictionary
     return user_return_dict

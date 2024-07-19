@@ -11,16 +11,15 @@ Created on Thu Jun 13 16:05:16 2024
 # =============================================================================
 
 
-"""
-Inputs:
-    cube: iris cube containing the variable to be tracked
-    CONFIG: User configuration file
-Outputs:
-    goes_geopd: geodataframe containing all default tobac feature id outputs
-"""
-
-
 def goes_tobac_feature_id(cube, CONFIG):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        CONFIG: User configuration file
+    Outputs:
+        goes_geopd: geodataframe containing all default tobac feature id outputs
+    """
+
     import tobac
     import geopandas as gpd
 
@@ -48,17 +47,16 @@ def goes_tobac_feature_id(cube, CONFIG):
     return goes_geopd
 
 
-"""
-Inputs:
-    cube: iris cube containing the variable to be tracked
-    radar_features: tobac radar features from goes_tobac_feature_id output
-    CONFIG: User configuration file
-Outputs:
-    goes_geopd_tracks: geodataframe containing all default tobac feature id outputs
-"""
-
-
 def goes_tobac_linking(cube, radar_features, CONFIG):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        radar_features: tobac radar features from goes_tobac_feature_id output
+        CONFIG: User configuration file
+    Outputs:
+        goes_geopd_tracks: geodataframe containing all default tobac feature id outputs
+    """
+
     import tobac
     import numpy as np
     import geopandas as gpd
@@ -91,17 +89,16 @@ def goes_tobac_linking(cube, radar_features, CONFIG):
     return goes_geopd_tracks
 
 
-"""
-Inputs:
-    cube: iris cube containing the variable to be tracked
-    radar_features: tobac radar features from goes_tobac_feature_id output
-    CONFIG: User configuration file
-Outputs:
-    (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
-"""
-
-
 def goes_tobac_segmentation(cube, radar_features, CONFIG):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        radar_features: tobac radar features from goes_tobac_feature_id output
+        CONFIG: User configuration file
+    Outputs:
+        (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
+    """
+
     import tobac
     import xarray as xr
 
@@ -110,7 +107,6 @@ def goes_tobac_segmentation(cube, radar_features, CONFIG):
         raise Exception(
             f"!=====Invalid Tracking Variable. Your Cube Has: {cube.name().lower()}=====!"
         )
-        return
 
     # Get horozontal spacings in km then convert to m
     res = float(cube.attributes["spatial_resolution"].split("km")[0]) * 1000

@@ -12,13 +12,12 @@ Created on Thur Jun 13 11:33:16 2024
 
 
 # Used to calculate lat and lon values for GOES data which only has proj_x and proj_y values
-"""
-Inputs:
-    ds: xarray Dataset of the GOES data
-"""
-
-
 def calc_latlon(ds):
+    """
+    Inputs:
+        ds: xarray Dataset of the GOES data
+    """
+
     import numpy as np
 
     # The math for this function was taken from
@@ -59,18 +58,17 @@ def calc_latlon(ds):
     return ds
 
 
-"""
-Inputs:
-    path_to_files: Glob path to input files, either archival or grided netcdf--i.e. "/data/usr/KVNX*_V06.ar2v"
-    tracking_var: ['tb'], variable which is going to be used for tracking--brightness temperature.
-    CONFIG: User configuration file
-Outputs:
-    cube: iris cube continaing birhtness temperature ready for tobac tracking
-    goes_xarray: Xarray dataset containing GOES brightness temperature data
-"""
-
-
 def goes_load_netcdf_iris(path_to_files, tracking_var, CONFIG):
+    """
+    Inputs:
+        path_to_files: Glob path to input files, either archival or grided netcdf--i.e. "/data/usr/KVNX*_V06.ar2v"
+        tracking_var: ['tb'], variable which is going to be used for tracking--brightness temperature.
+        CONFIG: User configuration file
+    Outputs:
+        cube: iris cube continaing birhtness temperature ready for tobac tracking
+        goes_xarray: Xarray dataset containing GOES brightness temperature data
+    """
+
     import warnings
     import numpy as np
     import xarray as xr
@@ -116,7 +114,6 @@ def goes_load_netcdf_iris(path_to_files, tracking_var, CONFIG):
 
         else:
             raise Exception('!=====CONFIG Missing "goes" Field=====!')
-            return
 
         # Replace time dimension with minutes since first time and add other x y z coords
         first_time = goes_xarray.t.values[0]
@@ -157,24 +154,21 @@ def goes_load_netcdf_iris(path_to_files, tracking_var, CONFIG):
 
         return (goes_xarray.to_iris(), goes_xarray)
 
-    else:
-        raise Exception(
-            f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
-        )
-        return
-
-
-"""
-Inputs:
-    path_to_files: Glob path to input files, either archival or grided netcdf--i.e. "/data/usr/KVNX*_V06.ar2v"
-    tracking_var: ['tb'], variable which is going to be used for tracking--brightness temperature.
-    CONFIG: User configuration file
-Outputs:
-    goes_xarray: Xarray dataset containing GOES brightness temperature data
-"""
+    raise Exception(
+        f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
+    )
 
 
 def goes_load_netcdf(path_to_files, tracking_var, CONFIG):
+    """
+    Inputs:
+        path_to_files: Glob path to input files, either archival or grided netcdf--i.e. "/data/usr/KVNX*_V06.ar2v"
+        tracking_var: ['tb'], variable which is going to be used for tracking--brightness temperature.
+        CONFIG: User configuration file
+    Outputs:
+        goes_xarray: Xarray dataset containing GOES brightness temperature data
+    """
+
     import warnings
     import numpy as np
     import xarray as xr
@@ -220,7 +214,6 @@ def goes_load_netcdf(path_to_files, tracking_var, CONFIG):
 
         else:
             raise Exception('!=====CONFIG Missing "goes" Field=====!')
-            return
 
         # Replace time dimension with minutes since first time and add other x y z coords
         first_time = goes_xarray.t.values[0]
@@ -261,8 +254,6 @@ def goes_load_netcdf(path_to_files, tracking_var, CONFIG):
 
         return goes_xarray
 
-    else:
-        raise Exception(
-            f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
-        )
-        return
+    raise Exception(
+        f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
+    )

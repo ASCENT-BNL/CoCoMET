@@ -28,16 +28,15 @@ def find_nearest(array, pivot):
     return idx
 
 
-"""
-Inputs:
-    cube: iris cube containing the variable to be tracked
-    CONFIG: User configuration file
-Outputs:
-    radar_geopd: geodataframe containing all default tobac feature id outputs
-"""
-
-
 def standard_radar_tobac_feature_id(cube, CONFIG):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        CONFIG: User configuration file
+    Outputs:
+        radar_geopd: geodataframe containing all default tobac feature id outputs
+    """
+
     import tobac
     import geopandas as gpd
     from copy import deepcopy
@@ -56,7 +55,6 @@ def standard_radar_tobac_feature_id(cube, CONFIG):
             raise Exception(
                 f"""!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
             )
-            return
         if (
             inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"]
             > cube.coord("altitude").points.max()
@@ -66,7 +64,6 @@ def standard_radar_tobac_feature_id(cube, CONFIG):
             raise Exception(
                 f"""!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
             )
-            return
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
         height_index = find_nearest(
@@ -111,17 +108,16 @@ def standard_radar_tobac_feature_id(cube, CONFIG):
     return radar_geopd
 
 
-"""
-Inputs:
-    cube: iris cube containing the variable to be tracked
-    radar_features: tobac radar features from standard_radar_tobac_feature_id output
-    CONFIG: User configuration file
-Outputs:
-    radar_geopd_tracks: geodataframe containing all default tobac feature id outputs
-"""
-
-
 def standard_radar_tobac_linking(cube, radar_features, CONFIG):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        radar_features: tobac radar features from standard_radar_tobac_feature_id output
+        CONFIG: User configuration file
+    Outputs:
+        radar_geopd_tracks: geodataframe containing all default tobac feature id outputs
+    """
+
     import tobac
     import numpy as np
     import geopandas as gpd
@@ -171,21 +167,20 @@ def standard_radar_tobac_linking(cube, radar_features, CONFIG):
     return radar_geopd_tracks
 
 
-"""
-Inputs:
-    cube: iris cube containing the variable to be tracked
-    radar_features: tobac radar features from standard_radar_tobac_feature_id output
-    segmentation_type: ["2D", "3D"], whether to perform 2d segmentation or 3d segmentation
-    CONFIG: User configuration file
-    segmentation_height: height, in meters, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var != tb
-Outputs:
-    (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
-"""
-
-
 def standard_radar_tobac_segmentation(
     cube, radar_features, segmentation_type, CONFIG, segmentation_height=None
 ):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        radar_features: tobac radar features from standard_radar_tobac_feature_id output
+        segmentation_type: ["2D", "3D"], whether to perform 2d segmentation or 3d segmentation
+        CONFIG: User configuration file
+        segmentation_height: height, in meters, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var != tb
+    Outputs:
+        (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
+    """
+
     import tobac
     import xarray as xr
     from copy import deepcopy
@@ -195,7 +190,6 @@ def standard_radar_tobac_segmentation(
         raise Exception(
             f"!=====Invalid Tracking Variable. Your Cube Has: {cube.name().lower()}=====!"
         )
-        return
 
     inCONFIG = deepcopy(CONFIG)
 
@@ -212,7 +206,6 @@ def standard_radar_tobac_segmentation(
             raise Exception(
                 f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
             )
-            return
 
         if segmentation_height is not None and cube.coord("altitude").shape[0] > 1:
 
@@ -223,7 +216,6 @@ def standard_radar_tobac_segmentation(
                 raise Exception(
                     f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
                 )
-                return
 
         elif segmentation_height is None and cube.coord("altitude").shape[0] == 1:
 
@@ -233,7 +225,6 @@ def standard_radar_tobac_segmentation(
             raise Exception(
                 f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
             )
-            return
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
         height_index = find_nearest(cube.coord("altitude").points, segmentation_height)
@@ -266,13 +257,12 @@ def standard_radar_tobac_segmentation(
 
         return (outXarray, segment_features)
 
-    elif segmentation_type.lower() == "3d":
+    if segmentation_type.lower() == "3d":
 
         if cube.coord("altitude").shape[0] == 1:
             raise Exception(
                 "!=====Invalid Segmentation Type. Only One Altitude Present=====!"
             )
-            return
 
         # Similarly, perform 3d segmentation then return products
         segment_cube, segment_features = tobac.segmentation_3D(
@@ -301,4 +291,3 @@ def standard_radar_tobac_segmentation(
         raise Exception(
             f"!=====Invalid Segmentation Type. You Entered: {segmentation_type.lower()}=====!"
         )
-        return

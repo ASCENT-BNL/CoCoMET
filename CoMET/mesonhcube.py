@@ -52,7 +52,7 @@ def load(mesonh_xarray, variable, filename):
 
     dy, dx = guess_horizontal_spacing(mesonh_xarray, filename)
 
-    for dim, dimension in enumerate(variable_dimensions):
+    for dim in range(len(variable_dimensions)):
         if variable_dimensions[dim] == "x":
             west_east = make_westeast_coord(dx, mesonh_xarray.x.size)
             cube.add_dim_coord(west_east, dim)
@@ -127,7 +127,7 @@ def guess_horizontal_spacing(mesonh_xarray, filename):
 
         return (dis_value, dis_value)
 
-    except:
+    except ValueError:
         print(
             "!=====Non-Default MesoNH Filename Found, Estimating Distance Instead=====!"
         )
@@ -187,9 +187,9 @@ def make_coord_system(attributes):
         TRUELAT1 = attributes["TRUELAT1"]
         TRUELAT2 = attributes["TRUELAT2"]
         MOAD_CEN_LAT = attributes["MOAD_CEN_LAT"]
-        STAND_LON = attributes["STAND_LON"]
-        POLE_LAT = attributes["POLE_LAT"]
-        POLE_LON = attributes["POLE_LON"]
+        # STAND_LON = attributes["STAND_LON"]
+        # POLE_LAT = attributes["POLE_LAT"]
+        # POLE_LON = attributes["POLE_LON"]
         coord_system = coord_systems.LambertConformal(
             central_lat=MOAD_CEN_LAT,
             central_lon=CEN_LON,

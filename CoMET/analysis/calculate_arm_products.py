@@ -20,18 +20,17 @@ def find_nearest(array, pivot):
     return idx
 
 
-"""
-Inputs:
-    analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks
-    path_to_files: A glob-like path to the VDISQUANTS ARM product output
-    verbose: Determins if output should be printed during processing or not
-Outputs:
-    output_data: An xarray Dataset with the following: frame, tracking_time, vdisquants_time, time_delta, closest_feature_id (km), rain_rate (mm/hr), total_droplet_concentration (1/m^3),
-            sband_estimated_reflectivity (dBZ), cband_estimated_reflectivity (dBZ), xband_estimated_reflectivity (dBZ)
-"""
-
-
 def calculate_arm_vdisquants(analysis_object, path_to_files, verbose=False, **args):
+    """
+    Inputs:
+        analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks
+        path_to_files: A glob-like path to the VDISQUANTS ARM product output
+        verbose: Determins if output should be printed during processing or not
+    Outputs:
+        output_data: An xarray Dataset with the following: frame, tracking_time, vdisquants_time, time_delta, closest_feature_id (km), rain_rate (mm/hr), total_droplet_concentration (1/m^3),
+                sband_estimated_reflectivity (dBZ), cband_estimated_reflectivity (dBZ), xband_estimated_reflectivity (dBZ)
+    """
+
     import numpy as np
     import xarray as xr
     from tqdm import tqdm
@@ -153,18 +152,17 @@ def calculate_arm_vdisquants(analysis_object, path_to_files, verbose=False, **ar
     return output_data
 
 
-"""
-Inputs:
-    analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks
-    path_to_files: A glob-like path to the VDISQUANTS ARM product output
-    verbose: Determins if output should be printed during processing or not
-Outputs:
-    output_data: An xarray Dataset with the following: frame, tracking_time, vdisquants_time, height (m above MSL), time_delta, closest_feature_id (km), temperature (C), relative_humidity (%),
-                                                        barometric_pressure (hPA), wind_speed (m/s), wind_direction (degrees), northward_wind (m/s), eastward_wind (m/s)
-"""
-
-
 def calculate_arm_interpsonde(analysis_object, path_to_files, verbose=False, **args):
+    """
+    Inputs:
+        analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks
+        path_to_files: A glob-like path to the VDISQUANTS ARM product output
+        verbose: Determins if output should be printed during processing or not
+    Outputs:
+        output_data: An xarray Dataset with the following: frame, tracking_time, vdisquants_time, height (m above MSL), time_delta, closest_feature_id (km), temperature (C), relative_humidity (%),
+                                                            barometric_pressure (hPA), wind_speed (m/s), wind_direction (degrees), northward_wind (m/s), eastward_wind (m/s)
+    """
+
     import numpy as np
     import xarray as xr
     from tqdm import tqdm

@@ -10,20 +10,18 @@ Created on Fri Jun 21 18:01:16 2024
 # Takes in a filepath containing WRF netCDF data and converts it to a netcdf dataset and/or an iris cube for use in trackers
 # =============================================================================
 
-# TODO: Add projection_x and projection_y coordinates to output xarray
-
-"""
-This functions attempts to find the horizontal spacing of MesoNH data
-Inputs:
-    mesonh_xarray: Standard mesonh xarray file
-    filename: The name of a mesonh input file
-Ouputs:
-    dx: Estimated x spacing
-    dy: Estimated y spacing
-"""
-
 
 def guess_horizontal_spacing(mesonh_xarray, filename):
+    """
+    This functions attempts to find the horizontal spacing of MesoNH data
+    Inputs:
+        mesonh_xarray: Standard mesonh xarray file
+        filename: The name of a mesonh input file
+    Ouputs:
+        dx: Estimated x spacing
+        dy: Estimated y spacing
+    """
+
     try:
 
         # Try to guess dimension from file name
@@ -40,7 +38,7 @@ def guess_horizontal_spacing(mesonh_xarray, filename):
 
         return (dis_value, dis_value)
 
-    except:
+    except ValueError:
         print(
             "!=====Non-Default MesoNH Filename Found, Estimating Distance Instead=====!"
         )
@@ -70,18 +68,17 @@ def guess_horizontal_spacing(mesonh_xarray, filename):
         return (y_dis, x_dis)
 
 
-"""
-Inputs: 
-    filepath: glob style path to MesoNH files (i.e. ./data/MesoNH/500m*)
-    trackingVar: ["dbz","tb","wa"], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
-
-Outputs:
-    cube: iris cube containing either reflectivity, updraft velocity, or brightness temperature values
-    mesonh_netcdf: xarray dataset containing merged MesoNH data
-"""
-
-
 def mesonh_load_netcdf_iris(filepath, tracking_var, CONFIG):
+    """
+    Inputs:
+        filepath: glob style path to MesoNH files (i.e. ./data/MesoNH/500m*)
+        trackingVar: ["dbz","tb","wa"], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
+
+    Outputs:
+        cube: iris cube containing either reflectivity, updraft velocity, or brightness temperature values
+        mesonh_netcdf: xarray dataset containing merged MesoNH data
+    """
+
     import os
     import glob
     import numpy as np
@@ -171,22 +168,20 @@ def mesonh_load_netcdf_iris(filepath, tracking_var, CONFIG):
         raise Exception(
             f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
         )
-        return
 
     return (cube, mesonh_xarray.unify_chunks())
 
 
-"""
-Inputs: 
-    filepath: glob style path to MesoNH files (i.e. ./data/MesoNH/500m*)
-    trackingVar: ["dbz","tb","wa"], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
-
-Outputs:
-    mesonh_netcdf: xarray dataset containing merged MesoNH data
-"""
-
-
 def mesonh_load_netcdf(filepath, tracking_var, CONFIG):
+    """
+    Inputs:
+        filepath: glob style path to MesoNH files (i.e. ./data/MesoNH/500m*)
+        trackingVar: ["dbz","tb","wa"], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
+
+    Outputs:
+        mesonh_netcdf: xarray dataset containing merged MesoNH data
+    """
+
     import os
     import glob
     import numpy as np
@@ -270,6 +265,5 @@ def mesonh_load_netcdf(filepath, tracking_var, CONFIG):
         raise Exception(
             f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
         )
-        return
 
     return mesonh_xarray.unify_chunks()

@@ -20,14 +20,6 @@ def find_nearest(array, pivot):
     return idx
 
 
-"""
-Inputs:
-    TBD
-Outputs:
-    TBD
-"""
-
-
 def merge_split_tracking(
     analysis_object,
     variable,
@@ -42,6 +34,12 @@ def merge_split_tracking(
     steps_forward_back=2,  # Should be >= memory for tobac
     **args,
 ):
+    """
+    Inputs:
+        TBD
+    Outputs:
+        TBD
+    """
 
     import numpy as np
     import pandas as pd
@@ -89,7 +87,6 @@ def merge_split_tracking(
 
     else:
         raise Exception("!=====Missing Segmentation Input=====!")
-        return
 
     # If we care about tracking lower values such as brightness temperature (i.e. we want to flood fill stuff less than a threshold), we need to invert the data so we can use the same algorithm. Will also invert background value
     if invert:
