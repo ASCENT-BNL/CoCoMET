@@ -9,7 +9,7 @@ Created on Mon Jun 10 14:55:16 2024
 # =============================================================================
 # This is the interface layer between all of CoMET"s backend functionality and the user. A sort of parser for a configuration input file.
 # =============================================================================
-# TODO: Create CoMET-UDAF Specification for return object
+# TODO: Create CoMET-UDAF Specification for return object, Update strings to be proper doc strings (type """ then press enter at top of function)
 
 
 def CoMET_start(path_to_config, manual_mode=False, CONFIG=None):

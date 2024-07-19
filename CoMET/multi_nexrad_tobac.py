@@ -105,6 +105,9 @@ def multi_nexrad_tobac_linking(cube, radar_features, CONFIG):
     import numpy as np
     import geopandas as gpd
 
+    if radar_features is None:
+        return None
+
     dxy = tobac.get_spacings(cube)[0]
 
     # Get time spacing
@@ -154,6 +157,9 @@ def multi_nexrad_tobac_segmentation(
     import tobac
     import xarray as xr
     from copy import deepcopy
+
+    if radar_features is None:
+        return None
 
     # Check tracking var
     if cube.name().lower() != "equivalent_reflectivity_factor":

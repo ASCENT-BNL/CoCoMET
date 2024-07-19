@@ -696,7 +696,7 @@ from netCDF4 import Dataset
 import glob
 import os
 from pdb import set_trace as stop
-from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage import gaussian_filter
 from scipy.ndimage import median_filter
 from scipy.ndimage import label
 from matplotlib import cm
