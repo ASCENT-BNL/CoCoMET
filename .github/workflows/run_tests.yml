@@ -31,7 +31,7 @@ jobs:
 
       # Install micromamba and dependencies
       - name: Setup Conda Environment
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba
         with:
           environment-file: environment.yml
           activate-environment: CoMET-dev
