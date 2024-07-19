@@ -15,7 +15,7 @@ test_radar = test_radar.assign_coords()
 first_time = test_radar.time.values[0]
 test_radar = test_radar.assign_coords(time=(test_radar.time.values),
                                             south_north = ("y0", np.arange(test_radar.shape[3])), west_east = ("x0", np.arange(test_radar.shape[2])),
-                                            projection_x_coordinate = ("x0", test_radar.projection_x_coordinate[0].values * 1000), projection_y_coordinate = ("y0", test_radar.projection_y_coordinate[0].values * 1000),
+                                            projection_x_coordinate = ("x0", test_radar.projection_x_coordinate[0].values * 2000), projection_y_coordinate = ("y0", test_radar.projection_y_coordinate[0].values * 2000),
                                             x = ("x0",np.arange(test_radar.shape[2])), y = ("y0", np.arange(test_radar.shape[3])),
                                             model_level_number = ("z", np.arange(test_radar.shape[1])), altitude = ("z", [2000]),z=("z",[2000]),
                                             lat = (["x0", "y0"], test_radar.latitude[0].values), lon = (["x0", "y0"], test_radar.longitude[0].values))

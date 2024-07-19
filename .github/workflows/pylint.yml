@@ -1,13 +1,13 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# This workflow will install Python dependencies, run tests and lint with python version defined by the requirements
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: Linting
+name: pylint_linting
 
 on:
   push:
     branches: [ "master", "dev" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "dev" ]
 
 jobs:
   build:
@@ -15,10 +15,12 @@ jobs:
     defaults:
       run:
         shell: bash -l {0}
+    
     steps:
-    - name: Check out Git repository
+      - name: Check out Git repository
         uses: actions/checkout@v4
-    - name: Set up conda
+    
+      - name: Set up conda
         uses: conda-incubator/setup-miniconda@v2
         with:
           miniforge-version: latest
@@ -27,11 +29,13 @@ jobs:
           channels: conda-forge
           show-channel-urls: true
           use-only-tar-bz2: true
-    - name: Install dependencies
-      run: |
+    
+      - name: Install dependencies
+        run: |
           mamba install --yes pylint
           pip install .
-    - name: Run pylint
+
+      - name: Run pylint
         run: |
           pylint CoMET --disable=C --exit-zero
         id: main_score

@@ -24,11 +24,20 @@ Valid Variables:
     "area",
     "volume"
 """
+
+
 def get_var(analysis_object, var, verbose=False, **args):
     from .merge_split_detection import merge_split_tracking
-    from .calculate_arm_products import calculate_arm_vdisquants, calculate_arm_interpsonde
-    from .calculate_bulk_cell_statistics import calculate_ETH, calculate_area, calculate_volume
-    
+    from .calculate_arm_products import (
+        calculate_arm_vdisquants,
+        calculate_arm_interpsonde,
+    )
+    from .calculate_bulk_cell_statistics import (
+        calculate_ETH,
+        calculate_area,
+        calculate_volume,
+    )
+
     # Map the correct functions to the proper variables. This is a list of all the calculatable variables as well.
     variable_call_mechanism = {
         "eth": calculate_ETH,
@@ -36,13 +45,17 @@ def get_var(analysis_object, var, verbose=False, **args):
         "volume": calculate_volume,
         "merge_split": merge_split_tracking,
         "vdisquants": calculate_arm_vdisquants,
-        "interpsonde": calculate_arm_interpsonde
+        "interpsonde": calculate_arm_interpsonde,
     }
-    
+
     # Check for valid variables
-    if (var.lower() not in variable_call_mechanism):
-        raise Exception(f"!=====Invalid Variable Requested. You Entered: {var.lower()}=====!")
+    if var.lower() not in variable_call_mechanism:
+        raise Exception(
+            f"!=====Invalid Variable Requested. You Entered: {var.lower()}=====!"
+        )
         return
-    
+
     # Call the proper function and return its output
-    return (variable_call_mechanism[var.lower()](analysis_object=analysis_object, verbose=verbose, **args))
+    return variable_call_mechanism[var.lower()](
+        analysis_object=analysis_object, verbose=verbose, **args
+    )
