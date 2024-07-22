@@ -102,11 +102,15 @@ def multi_nexrad_tobac_linking(cube, radar_features, CONFIG):
     """
 
     import tobac
+    import logging
     import numpy as np
     import geopandas as gpd
 
     if radar_features is None:
         return None
+
+    # Mute tobac logging output
+    logging.getLogger("trackpy").setLevel(level=logging.ERROR)
 
     dxy = tobac.get_spacings(cube)[0]
 
@@ -159,7 +163,7 @@ def multi_nexrad_tobac_segmentation(
     from copy import deepcopy
 
     if radar_features is None:
-        return None
+        return (None, None)
 
     # Check tracking var
     if cube.name().lower() != "equivalent_reflectivity_factor":

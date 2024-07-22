@@ -48,6 +48,7 @@ jobs:
       - name: Install CoMET
         shell: bash -l {0}
         run: |
+          mamba install --yes pytest
           python -m pip install -e . --no-deps --force-reinstall
 
       - name: Run Tests

@@ -176,8 +176,8 @@ def calculate_area(analysis_object, verbose=False, height=2000, **args):
 
     # We first calculate the area of each individual cell
     # First get the size of each dimension
-    x_dim_sizes = np.diff(mask.projection_x_coordinate)
-    y_dim_sizes = np.diff(mask.projection_y_coordinate)
+    x_dim_sizes = np.abs(np.diff(mask.projection_x_coordinate))
+    y_dim_sizes = np.abs(np.diff(mask.projection_y_coordinate))
 
     # These are one cell too small due to how diff works, so infer last cell size using the same cell size as the previous cell
     # x_dim_sizes.append(x_dim_sizes[-1])

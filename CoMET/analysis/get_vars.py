@@ -58,5 +58,7 @@ def get_var(analysis_object, var, verbose=False, **args):
 
     # Call the proper function and return its output
     return variable_call_mechanism[var.lower()](
-        analysis_object=analysis_object, verbose=verbose, **args
+        analysis_object=analysis_object.return_analysis_dictionary(),
+        verbose=verbose,
+        **args,
     )

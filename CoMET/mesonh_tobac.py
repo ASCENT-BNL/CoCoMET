@@ -106,10 +106,14 @@ Outputs:
 
 def mesonh_tobac_linking(cube, radar_features, CONFIG):
     import tobac
+    import logging
     import geopandas as gpd
 
     if radar_features is None:
         return None
+
+    # Mute tobac logging output
+    logging.getLogger("trackpy").setLevel(level=logging.ERROR)
 
     dxy, dt = tobac.get_spacings(cube)
 
@@ -155,7 +159,7 @@ def mesonh_tobac_segmentation(
     from copy import deepcopy
 
     if radar_features is None:
-        return None
+        return (None, None)
 
     # Enforce 2D tracking only for brightness temperature tracking
     if cube.name().lower() == "tb" and not segmentation_type.lower() == "2d":

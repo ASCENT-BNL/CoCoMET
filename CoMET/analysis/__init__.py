@@ -6,5 +6,5 @@ Created on Thu Jun 20 15:35:32 2024
 @author: thahn
 """
 
-from .get_vars import *
-from .create_analysis_object import *
+from .get_vars import get_var
+from .analysis_object import Analysis_Object

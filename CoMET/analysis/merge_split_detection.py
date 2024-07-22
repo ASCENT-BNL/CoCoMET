@@ -23,7 +23,7 @@ def find_nearest(array, pivot):
 def merge_split_tracking(
     analysis_object,
     variable,
-    invert=False,  # For fields where we care about
+    invert=False,  # For fields where we care about tracking mins
     verbose=False,
     cell_footprint_height=2000,  # m
     touching_threshold=0.20,
@@ -91,8 +91,8 @@ def merge_split_tracking(
     # If we care about tracking lower values such as brightness temperature (i.e. we want to flood fill stuff less than a threshold), we need to invert the data so we can use the same algorithm. Will also invert background value
     if invert:
 
-        variable_field = 1 / variable_field
-        flood_background = 1 / flood_background
+        variable_field = -1 * variable_field
+        flood_background = -1 * flood_background
 
     output_frame_list_merge = []
     output_init_cells_merge = []

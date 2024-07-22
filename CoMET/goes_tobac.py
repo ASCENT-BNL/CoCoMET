@@ -58,11 +58,15 @@ def goes_tobac_linking(cube, radar_features, CONFIG):
     """
 
     import tobac
+    import logging
     import numpy as np
     import geopandas as gpd
 
     if radar_features is None:
         return None
+
+    # Mute tobac logging output
+    logging.getLogger("trackpy").setLevel(level=logging.ERROR)
 
     # Get horozontal spacings in km then convert to m
     res = float(cube.attributes["spatial_resolution"].split("km")[0]) * 1000
@@ -106,7 +110,7 @@ def goes_tobac_segmentation(cube, radar_features, CONFIG):
     import xarray as xr
 
     if radar_features is None:
-        return None
+        return (None, None)
 
     # Check tracking var
     if cube.name().lower() != "toa_brightness_temperature":
