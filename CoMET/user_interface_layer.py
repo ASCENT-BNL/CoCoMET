@@ -33,7 +33,7 @@ def CoMET_start(path_to_config=None, manual_mode=False, CONFIG=None):
     # If parallelization is True, run the multiprocessing version instead
     if CONFIG["parallel_processing"]:
         import os
-        
+
         if CONFIG["max_cores"] is not None:
             os.environ["OMP_NUM_THREADS"] = str(
                 CONFIG["max_cores"] * 2
@@ -533,9 +533,9 @@ def run_wrf(CONFIG, queue=None):
 
                 # Add default tracking featured_id variable in place of variable if not present
                 if "variable" not in CONFIG["wrf"]["tobac"]["analysis"][var]:
-                    CONFIG["wrf"]["tobac"]["analysis"][var]["variable"] = (
-                        CONFIG["wrf"]["feature_tracking_var"].upper()
-                    )
+                    CONFIG["wrf"]["tobac"]["analysis"][var]["variable"] = CONFIG["wrf"][
+                        "feature_tracking_var"
+                    ].upper()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -617,9 +617,9 @@ def run_wrf(CONFIG, queue=None):
 
                 # Add default tracking featured_id variable in place of variable if not present
                 if "variable" not in CONFIG["wrf"]["moaap"]["analysis"][var]:
-                    CONFIG["wrf"]["moaap"]["analysis"][var]["variable"] = (
-                        CONFIG["wrf"]["feature_tracking_var"].upper()
-                    )
+                    CONFIG["wrf"]["moaap"]["analysis"][var]["variable"] = CONFIG["wrf"][
+                        "feature_tracking_var"
+                    ].upper()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -788,9 +788,9 @@ def run_mesonh(CONFIG, queue=None):
 
                 # Add default tracking featured_id variable in place of variable if not present
                 if "variable" not in CONFIG["mesonh"]["tobac"]["analysis"][var]:
-                    CONFIG["mesonh"]["tobac"]["analysis"][var]["variable"] = (
-                        CONFIG["mesonh"]["feature_tracking_var"].lower()
-                    )
+                    CONFIG["mesonh"]["tobac"]["analysis"][var]["variable"] = CONFIG[
+                        "mesonh"
+                    ]["feature_tracking_var"].lower()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -872,9 +872,9 @@ def run_mesonh(CONFIG, queue=None):
 
                 # Add default tracking featured_id variable in place of variable if not present
                 if "variable" not in CONFIG["mesonh"]["moaap"]["analysis"][var]:
-                    CONFIG["mesonh"]["moaap"]["analysis"][var]["variable"] = (
-                        CONFIG["mesonh"]["feature_tracking_var"].lower()
-                    )
+                    CONFIG["mesonh"]["moaap"]["analysis"][var]["variable"] = CONFIG[
+                        "mesonh"
+                    ]["feature_tracking_var"].lower()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -1043,9 +1043,9 @@ def run_nexrad(CONFIG, queue=None):
 
                 # Add default tracking featured_id variable in place of variable if not present
                 if "variable" not in CONFIG["nexrad"]["tobac"]["analysis"][var]:
-                    CONFIG["nexrad"]["tobac"]["analysis"][var]["variable"] = (
-                        CONFIG["nexrad"]["feature_tracking_var"].upper()
-                    )
+                    CONFIG["nexrad"]["tobac"]["analysis"][var]["variable"] = CONFIG[
+                        "nexrad"
+                    ]["feature_tracking_var"].upper()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -1227,13 +1227,10 @@ def run_multi_nexrad(CONFIG, queue=None):
             for var in CONFIG["multi_nexrad"]["tobac"]["analysis"].keys():
 
                 # Add default tracking featured_id variable in place of variable if not present
-                if (
-                    "variable"
-                    not in CONFIG["multi_nexrad"]["tobac"]["analysis"][var]
-                ):
-                    CONFIG["multi_nexrad"]["tobac"]["analysis"][var][
-                        "variable"
-                    ] = CONFIG["multi_nexrad"]["feature_tracking_var"].upper()
+                if "variable" not in CONFIG["multi_nexrad"]["tobac"]["analysis"][var]:
+                    CONFIG["multi_nexrad"]["tobac"]["analysis"][var]["variable"] = (
+                        CONFIG["multi_nexrad"]["feature_tracking_var"].upper()
+                    )
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -1398,13 +1395,10 @@ def run_standard_radar(CONFIG, queue=None):
             for var in CONFIG["standard_radar"]["tobac"]["analysis"].keys():
 
                 # Add default tracking featured_id variable in place of variable if not present
-                if (
-                    "variable"
-                    not in CONFIG["standard_radar"]["tobac"]["analysis"][var]
-                ):
-                    CONFIG["standard_radar"]["tobac"]["analysis"][var][
-                        "variable"
-                    ] = CONFIG["standard_radar"]["feature_tracking_var"].upper()
+                if "variable" not in CONFIG["standard_radar"]["tobac"]["analysis"][var]:
+                    CONFIG["standard_radar"]["tobac"]["analysis"][var]["variable"] = (
+                        CONFIG["standard_radar"]["feature_tracking_var"].upper()
+                    )
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -1547,9 +1541,9 @@ def run_goes(CONFIG, queue=None):
 
                 # Add default tracking featured_id variable in place of variable if not present
                 if "variable" not in CONFIG["goes"]["tobac"]["analysis"][var]:
-                    CONFIG["goes"]["tobac"]["analysis"][var]["variable"] = (
-                        CONFIG["goes"]["feature_tracking_var"].upper()
-                    )
+                    CONFIG["goes"]["tobac"]["analysis"][var]["variable"] = CONFIG[
+                        "goes"
+                    ]["feature_tracking_var"].upper()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]

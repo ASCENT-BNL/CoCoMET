@@ -22,7 +22,7 @@ def find_nearest(array, pivot):
 
 def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
     """
-    
+
 
     Parameters
     ----------
@@ -39,20 +39,21 @@ def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
         An xarray Dataset with the following: frame, tracking_time, vdisquants_time, time_delta, closest_feature_id (km), variable_names list
 
     """
-    
+
     import numpy as np
     import xarray as xr
     from tqdm import tqdm
     from vincenty import vincenty
 
     # Ensure input is a list
-    if (type(variable_names) != list): variable_names = [variable_names]
-    
+    if type(variable_names) != list:
+        variable_names = [variable_names]
+
     # Open vap product
     vap = xr.open_mfdataset(
         path_to_files, coords="all", concat_dim="time", combine="nested"
     )
-    
+
     vap_info = {
         "frame": [],
         "tracking_time": [],
@@ -62,14 +63,14 @@ def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
         "closest_cell_id": [],
         "distance_to_closest_feature": [],
     }
-    
+
     for var in variable_names:
         vap_info[var] = []
 
     frame_groups = analysis_object["UDAF_linking"].groupby("frame")
 
     # If 1D input data, don't use heights
-    if (len(vap.dims) == 1):
+    if len(vap.dims) == 1:
 
         # Loop over frames
         for ii, frame in tqdm(
@@ -77,21 +78,21 @@ def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
             desc="=====Extracting ARM Data=====",
             total=frame_groups.ngroups,
         ):
-    
+
             # Get VAP at current time step
             time_idx = find_nearest(vap.time.values, frame[1].time.values[0])
             time_delta = abs(vap.time.values[time_idx] - frame[1].time.values[0])
-    
+
             # Get the position of the device
             lat_pos = vap.lat.values[time_idx]
             lon_pos = vap.lon.values[time_idx]
-    
+
             feature_id = []
             cell_distance = []
-    
+
             # Loop over features
             for feature in frame[1].groupby("feature_id"):
-    
+
                 # Get distance from each feature to the device
                 dis_to_vdis = vincenty(
                     (lat_pos, lon_pos),
@@ -99,12 +100,12 @@ def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
                 )
                 cell_distance.append(dis_to_vdis)
                 feature_id.append(feature[0])
-    
+
             closest_feature_id = feature_id[
                 np.where(cell_distance == np.nanmin(cell_distance))[0][0]
             ]
             closest_feature = frame[1].query("feature_id==@closest_feature_id")
-    
+
             vap_info["frame"].append(frame[0])
             vap_info["tracking_time"].append(frame[1].time.values[0])
             vap_info["vdisquants_time"].append(vap.time.values[time_idx])
@@ -112,21 +113,20 @@ def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
             vap_info["closest_feature_id"].append(closest_feature.feature_id.values[0])
             vap_info["closest_cell_id"].append(closest_feature.cell_id.values[0])
             vap_info["distance_to_closest_feature"].append(np.nanmin(cell_distance))
-            
+
             for var in variable_names:
                 vap_info[var].append(vap[var].values[time_idx])
 
-
         data_vars = {
-            "time_delta":("time", vap_info["time_delta"]),
-            "closest_feature_id":("time", vap_info["closest_feature_id"]),
-            "closest_cell_id":("time", vap_info["closest_cell_id"]),
-            "distance_to_closest_feature":(
+            "time_delta": ("time", vap_info["time_delta"]),
+            "closest_feature_id": ("time", vap_info["closest_feature_id"]),
+            "closest_cell_id": ("time", vap_info["closest_cell_id"]),
+            "distance_to_closest_feature": (
                 "time",
                 vap_info["distance_to_closest_feature"],
             ),
         }
-        
+
         for var in variable_names:
             data_vars[var] = ("time", vap_info[var])
 
@@ -138,12 +138,13 @@ def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
                 vdisquants_time=("time", vap_info["vdisquants_time"]),
             ),
             data_vars=data_vars,
-            attrs=dict(description=f"ARM Data {vap.input_datastreams}, Variables: {variable_names}"),
+            attrs=dict(
+                description=f"ARM Data {vap.input_datastreams}, Variables: {variable_names}"
+            ),
         )
-    
+
         return output_data
-    
-    
+
     # If 2D data, add heights
     # Loop over frames
     for ii, frame in tqdm(
@@ -186,21 +187,20 @@ def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
         vap_info["closest_feature_id"].append(closest_feature.feature_id.values[0])
         vap_info["closest_cell_id"].append(closest_feature.cell_id.values[0])
         vap_info["distance_to_closest_feature"].append(np.nanmin(cell_distance))
-        
-        for var in variable_names:
-            vap_info[var].append(vap[var].values[time_idx,:])
 
+        for var in variable_names:
+            vap_info[var].append(vap[var].values[time_idx, :])
 
     data_vars = {
-        "time_delta":("time", vap_info["time_delta"]),
-        "closest_feature_id":("time", vap_info["closest_feature_id"]),
-        "closest_cell_id":("time", vap_info["closest_cell_id"]),
-        "distance_to_closest_feature":(
+        "time_delta": ("time", vap_info["time_delta"]),
+        "closest_feature_id": ("time", vap_info["closest_feature_id"]),
+        "closest_cell_id": ("time", vap_info["closest_cell_id"]),
+        "distance_to_closest_feature": (
             "time",
             vap_info["distance_to_closest_feature"],
         ),
     }
-    
+
     for var in variable_names:
         data_vars[var] = (["time", "height"], vap_info[var])
 
@@ -210,10 +210,12 @@ def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
             frame=("time", vap_info["frame"]),
             tracking_time=("time", vap_info["tracking_time"]),
             vdisquants_time=("time", vap_info["vdisquants_time"]),
-            height=((vap.height.values) * 1000 - vap.alt.values.min())
+            height=((vap.height.values) * 1000 - vap.alt.values.min()),
         ),
         data_vars=data_vars,
-        attrs=dict(description=f"ARM Data {vap.input_datastreams}, Variables: {variable_names}"),
+        attrs=dict(
+            description=f"ARM Data {vap.input_datastreams}, Variables: {variable_names}"
+        ),
     )
 
     return output_data
@@ -221,7 +223,7 @@ def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
 
 def calculate_arm_interpsonde(analysis_object, path_to_files, **args):
     """
-    
+
 
     Parameters
     ----------
@@ -240,7 +242,7 @@ def calculate_arm_interpsonde(analysis_object, path_to_files, **args):
     sonde_output_init_data : xarray.core.dataset.Dataset
         An xarray Dataset with the following: sonde_time, ...
     """
-    
+
     import numpy as np
     import xarray as xr
     from tqdm import tqdm
