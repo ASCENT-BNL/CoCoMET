@@ -20,27 +20,39 @@ def find_nearest(array, pivot):
     return idx
 
 
-def calculate_arm_vdisquants(analysis_object, path_to_files, verbose=False, **args):
+def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
     """
-    Inputs:
-        analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks
-        path_to_files: A glob-like path to the VDISQUANTS ARM product output
-        verbose: Determins if output should be printed during processing or not
-    Outputs:
-        output_data: An xarray Dataset with the following: frame, tracking_time, vdisquants_time, time_delta, closest_feature_id (km), rain_rate (mm/hr), total_droplet_concentration (1/m^3),
-                sband_estimated_reflectivity (dBZ), cband_estimated_reflectivity (dBZ), xband_estimated_reflectivity (dBZ)
-    """
+    
 
+    Parameters
+    ----------
+    analysis_object : dict
+        A CoMET-UDAF standard analysis object containing at least UDAF_tracks.
+    path_to_files : string
+        A glob-like path to the VDISQUANTS ARM product output.
+    variable_name : list of strings
+        Case sensitive name of variable you want to extract from the ARM data
+
+    Returns
+    -------
+    output_data : xarray.core.dataset.Dataset
+        An xarray Dataset with the following: frame, tracking_time, vdisquants_time, time_delta, closest_feature_id (km), variable_names list
+
+    """
+    
     import numpy as np
     import xarray as xr
     from tqdm import tqdm
     from vincenty import vincenty
 
-    # Open video disdrometer product
+    # Ensure input is a list
+    if (type(variable_names) != list): variable_names = [variable_names]
+    
+    # Open vap product
     vap = xr.open_mfdataset(
         path_to_files, coords="all", concat_dim="time", combine="nested"
     )
-
+    
     vap_info = {
         "frame": [],
         "tracking_time": [],
@@ -49,19 +61,94 @@ def calculate_arm_vdisquants(analysis_object, path_to_files, verbose=False, **ar
         "closest_feature_id": [],
         "closest_cell_id": [],
         "distance_to_closest_feature": [],
-        "rain_rate": [],
-        "total_droplet_concentration": [],
-        "sband_estimated_reflectivity": [],
-        "cband_estimated_reflectivity": [],
-        "xband_estimated_reflectivity": [],
     }
+    
+    for var in variable_names:
+        vap_info[var] = []
 
     frame_groups = analysis_object["UDAF_linking"].groupby("frame")
 
+    # If 1D input data, don't use heights
+    if (len(vap.dims) == 1):
+
+        # Loop over frames
+        for ii, frame in tqdm(
+            enumerate(frame_groups),
+            desc="=====Extracting ARM Data=====",
+            total=frame_groups.ngroups,
+        ):
+    
+            # Get VAP at current time step
+            time_idx = find_nearest(vap.time.values, frame[1].time.values[0])
+            time_delta = abs(vap.time.values[time_idx] - frame[1].time.values[0])
+    
+            # Get the position of the device
+            lat_pos = vap.lat.values[time_idx]
+            lon_pos = vap.lon.values[time_idx]
+    
+            feature_id = []
+            cell_distance = []
+    
+            # Loop over features
+            for feature in frame[1].groupby("feature_id"):
+    
+                # Get distance from each feature to the device
+                dis_to_vdis = vincenty(
+                    (lat_pos, lon_pos),
+                    (feature[1].latitude.values, feature[1].longitude.values),
+                )
+                cell_distance.append(dis_to_vdis)
+                feature_id.append(feature[0])
+    
+            closest_feature_id = feature_id[
+                np.where(cell_distance == np.nanmin(cell_distance))[0][0]
+            ]
+            closest_feature = frame[1].query("feature_id==@closest_feature_id")
+    
+            vap_info["frame"].append(frame[0])
+            vap_info["tracking_time"].append(frame[1].time.values[0])
+            vap_info["vdisquants_time"].append(vap.time.values[time_idx])
+            vap_info["time_delta"].append(time_delta)
+            vap_info["closest_feature_id"].append(closest_feature.feature_id.values[0])
+            vap_info["closest_cell_id"].append(closest_feature.cell_id.values[0])
+            vap_info["distance_to_closest_feature"].append(np.nanmin(cell_distance))
+            
+            for var in variable_names:
+                vap_info[var].append(vap[var].values[time_idx])
+
+
+        data_vars = {
+            "time_delta":("time", vap_info["time_delta"]),
+            "closest_feature_id":("time", vap_info["closest_feature_id"]),
+            "closest_cell_id":("time", vap_info["closest_cell_id"]),
+            "distance_to_closest_feature":(
+                "time",
+                vap_info["distance_to_closest_feature"],
+            ),
+        }
+        
+        for var in variable_names:
+            data_vars[var] = ("time", vap_info[var])
+
+        # Create output Dataset
+        output_data = xr.Dataset(
+            coords=dict(
+                frame=("time", vap_info["frame"]),
+                tracking_time=("time", vap_info["tracking_time"]),
+                vdisquants_time=("time", vap_info["vdisquants_time"]),
+            ),
+            data_vars=data_vars,
+            attrs=dict(description=f"ARM Data {vap.input_datastreams}, Variables: {variable_names}"),
+        )
+    
+        return output_data
+    
+    
+    # If 2D data, add heights
     # Loop over frames
     for ii, frame in tqdm(
         enumerate(frame_groups),
-        desc="=====Calculating VIDSQUANTS Data=====",
+        desc="=====Extracting ARM Data=====",
         total=frame_groups.ngroups,
     ):
 
@@ -69,7 +156,7 @@ def calculate_arm_vdisquants(analysis_object, path_to_files, verbose=False, **ar
         time_idx = find_nearest(vap.time.values, frame[1].time.values[0])
         time_delta = abs(vap.time.values[time_idx] - frame[1].time.values[0])
 
-        # Get the position of the video disdrometer
+        # Get the position of the device
         lat_pos = vap.lat.values[time_idx]
         lon_pos = vap.lon.values[time_idx]
 
@@ -79,7 +166,7 @@ def calculate_arm_vdisquants(analysis_object, path_to_files, verbose=False, **ar
         # Loop over features
         for feature in frame[1].groupby("feature_id"):
 
-            # Get distance from each feature to the video disdrometer
+            # Get distance from each feature to the device
             dis_to_vdis = vincenty(
                 (lat_pos, lon_pos),
                 (feature[1].latitude.values, feature[1].longitude.values),
@@ -99,19 +186,23 @@ def calculate_arm_vdisquants(analysis_object, path_to_files, verbose=False, **ar
         vap_info["closest_feature_id"].append(closest_feature.feature_id.values[0])
         vap_info["closest_cell_id"].append(closest_feature.cell_id.values[0])
         vap_info["distance_to_closest_feature"].append(np.nanmin(cell_distance))
-        vap_info["rain_rate"].append(vap.rain_rate.values[time_idx])
-        vap_info["total_droplet_concentration"].append(
-            vap.total_droplet_concentration.values[time_idx]
-        )
-        vap_info["sband_estimated_reflectivity"].append(
-            vap.reflectivity_factor_sband20c.values[time_idx]
-        )
-        vap_info["cband_estimated_reflectivity"].append(
-            vap.reflectivity_factor_cband20c.values[time_idx]
-        )
-        vap_info["xband_estimated_reflectivity"].append(
-            vap.reflectivity_factor_xband20c.values[time_idx]
-        )
+        
+        for var in variable_names:
+            vap_info[var].append(vap[var].values[time_idx,:])
+
+
+    data_vars = {
+        "time_delta":("time", vap_info["time_delta"]),
+        "closest_feature_id":("time", vap_info["closest_feature_id"]),
+        "closest_cell_id":("time", vap_info["closest_cell_id"]),
+        "distance_to_closest_feature":(
+            "time",
+            vap_info["distance_to_closest_feature"],
+        ),
+    }
+    
+    for var in variable_names:
+        data_vars[var] = (["time", "height"], vap_info[var])
 
     # Create output Dataset
     output_data = xr.Dataset(
@@ -119,50 +210,37 @@ def calculate_arm_vdisquants(analysis_object, path_to_files, verbose=False, **ar
             frame=("time", vap_info["frame"]),
             tracking_time=("time", vap_info["tracking_time"]),
             vdisquants_time=("time", vap_info["vdisquants_time"]),
+            height=((vap.height.values) * 1000 - vap.alt.values.min())
         ),
-        data_vars=dict(
-            time_delta=("time", vap_info["time_delta"]),
-            closest_feature_id=("time", vap_info["closest_feature_id"]),
-            closest_cell_id=("time", vap_info["closest_cell_id"]),
-            distance_to_closest_feature=(
-                "time",
-                vap_info["distance_to_closest_feature"],
-            ),
-            rain_rate=("time", vap_info["rain_rate"]),
-            total_droplet_concentration=(
-                "time",
-                vap_info["total_droplet_concentration"],
-            ),
-            sband_estimated_reflectivity=(
-                "time",
-                vap_info["sband_estimated_reflectivity"],
-            ),
-            cband_estimated_reflectivity=(
-                "time",
-                vap_info["cband_estimated_reflectivity"],
-            ),
-            xband_estimated_reflectivity=(
-                "time",
-                vap_info["xband_estimated_reflectivity"],
-            ),
-        ),
-        attrs=dict(description="Tracking Linked VDISQUANTS Data"),
+        data_vars=data_vars,
+        attrs=dict(description=f"ARM Data {vap.input_datastreams}, Variables: {variable_names}"),
     )
 
     return output_data
 
 
-def calculate_arm_interpsonde(analysis_object, path_to_files, verbose=False, **args):
+def calculate_arm_interpsonde(analysis_object, path_to_files, **args):
     """
-    Inputs:
-        analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks
-        path_to_files: A glob-like path to the VDISQUANTS ARM product output
-        verbose: Determins if output should be printed during processing or not
-    Outputs:
-        output_data: An xarray Dataset with the following: frame, tracking_time, vdisquants_time, height (m above MSL), time_delta, closest_feature_id (km), temperature (C), relative_humidity (%),
-                                                            barometric_pressure (hPA), wind_speed (m/s), wind_direction (degrees), northward_wind (m/s), eastward_wind (m/s)
-    """
+    
 
+    Parameters
+    ----------
+    analysis_object : dict
+        A CoMET-UDAF standard analysis object containing at least UDAF_tracks.
+    path_to_files : string
+        A glob-like path to the VDISQUANTS ARM product output.
+    **args : dict, optional
+        Parameters to pass to the calculations of convective initation properties.
+
+    Returns
+    -------
+    sonde_output_data : xarray.core.dataset.Dataset
+        An xarray Dataset with the following: frame, tracking_time, vdisquants_time, height (m AGL), time_delta, closest_feature_id (km), temperature (C), relative_humidity (%),
+                                                            barometric_pressure (hPA), wind_speed (m/s), wind_direction (degrees), northward_wind (m/s), eastward_wind (m/s).
+    sonde_output_init_data : xarray.core.dataset.Dataset
+        An xarray Dataset with the following: sonde_time, ...
+    """
+    
     import numpy as np
     import xarray as xr
     from tqdm import tqdm

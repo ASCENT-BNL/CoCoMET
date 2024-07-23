@@ -33,10 +33,11 @@ def CoMET_start(path_to_config=None, manual_mode=False, CONFIG=None):
     # If parallelization is True, run the multiprocessing version instead
     if CONFIG["parallel_processing"]:
         import os
-
-        os.environ["OMP_NUM_THREADS"] = str(
-            CONFIG["max_cores"] * 2
-        )  # Take advantage of hyper threading
+        
+        if CONFIG["max_cores"] is not None:
+            os.environ["OMP_NUM_THREADS"] = str(
+                CONFIG["max_cores"] * 2
+            )  # Take advantage of hyper threading
 
         # Return CoMET multi processes output which should be a dictionary
         multi_output = CoMET_start_multi(CONFIG)
@@ -519,7 +520,7 @@ def run_wrf(CONFIG, queue=None):
         )
 
         if "analysis" in CONFIG["wrf"]["tobac"]:
-            from CoMET.analysis.get_vars import get_var
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["wrf"]["tobac"]["analysis"] is None:
                 CONFIG["wrf"]["tobac"]["analysis"] = {}
@@ -531,19 +532,18 @@ def run_wrf(CONFIG, queue=None):
             for var in CONFIG["wrf"]["tobac"]["analysis"].keys():
 
                 # Add default tracking featured_id variable in place of variable if not present
-                if "variable" not in CONFIG["wrf"]["tobac"]["analysis"][var.lower()]:
-                    CONFIG["wrf"]["tobac"]["analysis"][var.lower()]["variable"] = (
+                if "variable" not in CONFIG["wrf"]["tobac"]["analysis"][var]:
+                    CONFIG["wrf"]["tobac"]["analysis"][var]["variable"] = (
                         CONFIG["wrf"]["feature_tracking_var"].upper()
                     )
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
 
-                wrf_tobac_analysis_data[var.lower()] = get_var(
+                wrf_tobac_analysis_data[var] = calc_var(
                     analysis_object,
                     proper_var_name,
-                    CONFIG["verbose"],
-                    **CONFIG["wrf"]["tobac"]["analysis"][var.lower()],
+                    **CONFIG["wrf"]["tobac"]["analysis"][var],
                 )
 
         if CONFIG["verbose"]:
@@ -601,7 +601,7 @@ def run_wrf(CONFIG, queue=None):
 
         # Run analysis on MOAAP output
         if "analysis" in CONFIG["wrf"]["moaap"]:
-            from CoMET.analysis.get_vars import get_var
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["wrf"]["moaap"]["analysis"] is None:
                 CONFIG["wrf"]["moaap"]["analysis"] = {}
@@ -616,19 +616,18 @@ def run_wrf(CONFIG, queue=None):
                     continue
 
                 # Add default tracking featured_id variable in place of variable if not present
-                if "variable" not in CONFIG["wrf"]["moaap"]["analysis"][var.lower()]:
-                    CONFIG["wrf"]["moaap"]["analysis"][var.lower()]["variable"] = (
+                if "variable" not in CONFIG["wrf"]["moaap"]["analysis"][var]:
+                    CONFIG["wrf"]["moaap"]["analysis"][var]["variable"] = (
                         CONFIG["wrf"]["feature_tracking_var"].upper()
                     )
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
 
-                wrf_moaap_analysis_data[var.lower()] = get_var(
+                wrf_moaap_analysis_data[var] = calc_var(
                     analysis_object,
                     proper_var_name,
-                    CONFIG["verbose"],
-                    **CONFIG["wrf"]["moaap"]["analysis"][var.lower()],
+                    **CONFIG["wrf"]["moaap"]["analysis"][var],
                 )
 
         user_return_dict["wrf"]["moaap"] = {
@@ -776,7 +775,7 @@ def run_mesonh(CONFIG, queue=None):
         )
 
         if "analysis" in CONFIG["mesonh"]["tobac"]:
-            from CoMET.analysis.get_vars import get_var
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["mesonh"]["tobac"]["analysis"] is None:
                 CONFIG["mesonh"]["tobac"]["analysis"] = {}
@@ -788,19 +787,18 @@ def run_mesonh(CONFIG, queue=None):
             for var in CONFIG["mesonh"]["tobac"]["analysis"].keys():
 
                 # Add default tracking featured_id variable in place of variable if not present
-                if "variable" not in CONFIG["mesonh"]["tobac"]["analysis"][var.lower()]:
-                    CONFIG["mesonh"]["tobac"]["analysis"][var.lower()]["variable"] = (
-                        CONFIG["mesonh"]["feature_tracking_var"].upper()
+                if "variable" not in CONFIG["mesonh"]["tobac"]["analysis"][var]:
+                    CONFIG["mesonh"]["tobac"]["analysis"][var]["variable"] = (
+                        CONFIG["mesonh"]["feature_tracking_var"].lower()
                     )
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
 
-                mesonh_tobac_analysis_data[var.lower()] = get_var(
+                mesonh_tobac_analysis_data[var] = calc_var(
                     analysis_object,
                     proper_var_name,
-                    CONFIG["verbose"],
-                    **CONFIG["mesonh"]["tobac"]["analysis"][var.lower()],
+                    **CONFIG["mesonh"]["tobac"]["analysis"][var],
                 )
 
         if CONFIG["verbose"]:
@@ -858,7 +856,7 @@ def run_mesonh(CONFIG, queue=None):
 
         # Run analysis on MOAAP output
         if "analysis" in CONFIG["mesonh"]["moaap"]:
-            from CoMET.analysis.get_vars import get_var
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["mesonh"]["moaap"]["analysis"] is None:
                 CONFIG["mesonh"]["moaap"]["analysis"] = {}
@@ -873,19 +871,18 @@ def run_mesonh(CONFIG, queue=None):
                     continue
 
                 # Add default tracking featured_id variable in place of variable if not present
-                if "variable" not in CONFIG["mesonh"]["moaap"]["analysis"][var.lower()]:
-                    CONFIG["mesonh"]["moaap"]["analysis"][var.lower()]["variable"] = (
-                        CONFIG["mesonh"]["feature_tracking_var"].upper()
+                if "variable" not in CONFIG["mesonh"]["moaap"]["analysis"][var]:
+                    CONFIG["mesonh"]["moaap"]["analysis"][var]["variable"] = (
+                        CONFIG["mesonh"]["feature_tracking_var"].lower()
                     )
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
 
-                messonh_moaap_analysis_data[var.lower()] = get_var(
+                messonh_moaap_analysis_data[var] = calc_var(
                     analysis_object,
                     proper_var_name,
-                    CONFIG["verbose"],
-                    **CONFIG["mesonh"]["moaap"]["analysis"][var.lower()],
+                    **CONFIG["mesonh"]["moaap"]["analysis"][var],
                 )
 
         user_return_dict["mesonh"]["moaap"] = {
@@ -1033,7 +1030,7 @@ def run_nexrad(CONFIG, queue=None):
         )
 
         if "analysis" in CONFIG["nexrad"]["tobac"]:
-            from CoMET.analysis.get_vars import get_var
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["nexrad"]["tobac"]["analysis"] is None:
                 CONFIG["nexrad"]["tobac"]["analysis"] = {}
@@ -1045,19 +1042,18 @@ def run_nexrad(CONFIG, queue=None):
             for var in CONFIG["nexrad"]["tobac"]["analysis"].keys():
 
                 # Add default tracking featured_id variable in place of variable if not present
-                if "variable" not in CONFIG["nexrad"]["tobac"]["analysis"][var.lower()]:
-                    CONFIG["nexrad"]["tobac"]["analysis"][var.lower()]["variable"] = (
+                if "variable" not in CONFIG["nexrad"]["tobac"]["analysis"][var]:
+                    CONFIG["nexrad"]["tobac"]["analysis"][var]["variable"] = (
                         CONFIG["nexrad"]["feature_tracking_var"].upper()
                     )
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
 
-                nexrad_tobac_analysis_data[var.lower()] = get_var(
+                nexrad_tobac_analysis_data[var] = calc_var(
                     analysis_object,
                     proper_var_name,
-                    CONFIG["verbose"],
-                    **CONFIG["nexrad"]["tobac"]["analysis"][var.lower()],
+                    **CONFIG["nexrad"]["tobac"]["analysis"][var],
                 )
 
         if CONFIG["verbose"]:
@@ -1219,7 +1215,7 @@ def run_multi_nexrad(CONFIG, queue=None):
         )
 
         if "analysis" in CONFIG["multi_nexrad"]["tobac"]:
-            from CoMET.analysis.get_vars import get_var
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["multi_nexrad"]["tobac"]["analysis"] is None:
                 CONFIG["multi_nexrad"]["tobac"]["analysis"] = {}
@@ -1233,20 +1229,19 @@ def run_multi_nexrad(CONFIG, queue=None):
                 # Add default tracking featured_id variable in place of variable if not present
                 if (
                     "variable"
-                    not in CONFIG["multi_nexrad"]["tobac"]["analysis"][var.lower()]
+                    not in CONFIG["multi_nexrad"]["tobac"]["analysis"][var]
                 ):
-                    CONFIG["multi_nexrad"]["tobac"]["analysis"][var.lower()][
+                    CONFIG["multi_nexrad"]["tobac"]["analysis"][var][
                         "variable"
                     ] = CONFIG["multi_nexrad"]["feature_tracking_var"].upper()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
 
-                multi_nexrad_tobac_analysis_data[var.lower()] = get_var(
+                multi_nexrad_tobac_analysis_data[var] = calc_var(
                     analysis_object,
                     proper_var_name,
-                    CONFIG["verbose"],
-                    **CONFIG["multi_nexrad"]["tobac"]["analysis"][var.lower()],
+                    **CONFIG["multi_nexrad"]["tobac"]["analysis"][var],
                 )
 
         if CONFIG["verbose"]:
@@ -1391,7 +1386,7 @@ def run_standard_radar(CONFIG, queue=None):
         )
 
         if "analysis" in CONFIG["standard_radar"]["tobac"]:
-            from CoMET.analysis.get_vars import get_var
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["standard_radar"]["tobac"]["analysis"] is None:
                 CONFIG["standard_radar"]["tobac"]["analysis"] = {}
@@ -1405,20 +1400,19 @@ def run_standard_radar(CONFIG, queue=None):
                 # Add default tracking featured_id variable in place of variable if not present
                 if (
                     "variable"
-                    not in CONFIG["standard_radar"]["tobac"]["analysis"][var.lower()]
+                    not in CONFIG["standard_radar"]["tobac"]["analysis"][var]
                 ):
-                    CONFIG["standard_radar"]["tobac"]["analysis"][var.lower()][
+                    CONFIG["standard_radar"]["tobac"]["analysis"][var][
                         "variable"
                     ] = CONFIG["standard_radar"]["feature_tracking_var"].upper()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
 
-                radar_tobac_analysis_data[var.lower()] = get_var(
+                radar_tobac_analysis_data[var] = calc_var(
                     analysis_object,
                     proper_var_name,
-                    CONFIG["verbose"],
-                    **CONFIG["standard_radar"]["tobac"]["analysis"][var.lower()],
+                    **CONFIG["standard_radar"]["tobac"]["analysis"][var],
                 )
 
         if CONFIG["verbose"]:
@@ -1540,7 +1534,7 @@ def run_goes(CONFIG, queue=None):
         )
 
         if "analysis" in CONFIG["goes"]["tobac"]:
-            from CoMET.analysis.get_vars import get_var
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["goes"]["tobac"]["analysis"] is None:
                 CONFIG["goes"]["tobac"]["analysis"] = {}
@@ -1552,19 +1546,18 @@ def run_goes(CONFIG, queue=None):
             for var in CONFIG["goes"]["tobac"]["analysis"].keys():
 
                 # Add default tracking featured_id variable in place of variable if not present
-                if "variable" not in CONFIG["goes"]["tobac"]["analysis"][var.lower()]:
-                    CONFIG["goes"]["tobac"]["analysis"][var.lower()]["variable"] = (
+                if "variable" not in CONFIG["goes"]["tobac"]["analysis"][var]:
+                    CONFIG["goes"]["tobac"]["analysis"][var]["variable"] = (
                         CONFIG["goes"]["feature_tracking_var"].upper()
                     )
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
 
-                goes_tobac_analysis_data[var.lower()] = get_var(
+                goes_tobac_analysis_data[var] = calc_var(
                     analysis_object,
                     proper_var_name,
-                    CONFIG["verbose"],
-                    **CONFIG["goes"]["tobac"]["analysis"][var.lower()],
+                    **CONFIG["goes"]["tobac"]["analysis"][var],
                 )
 
         if CONFIG["verbose"]:

@@ -3,7 +3,7 @@ from .tracker_output_translation_layer import *
 
 from .post_processor import *
 
-from CoMET.analysis.get_vars import get_var
+from CoMET.analysis.calc_var import calc_var
 
 from CoMET.MOAAP import moaap
 

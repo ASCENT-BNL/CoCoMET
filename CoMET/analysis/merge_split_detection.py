@@ -24,7 +24,6 @@ def merge_split_tracking(
     analysis_object,
     variable,
     invert=False,  # For fields where we care about tracking mins
-    verbose=False,
     cell_footprint_height=2000,  # m
     touching_threshold=0.20,
     flood_background=20,

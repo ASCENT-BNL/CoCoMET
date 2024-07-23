@@ -29,9 +29,9 @@ jobs:
     
       - name: Install dependencies
         run: |
-          mamba install --yes black=24.4.2
+          pip install black
           pip install .
 
       - name: Run black
         run: |
-          black CoMET --check --diff 
+          python -m black CoMET --check --diff 

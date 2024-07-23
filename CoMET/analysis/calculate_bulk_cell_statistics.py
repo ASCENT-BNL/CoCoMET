@@ -23,7 +23,6 @@ def find_nearest(array, pivot):
 def calculate_ETH(
     analysis_object,
     threshold,
-    verbose=False,
     variable=None,
     cell_footprint_height=2000,
     quantile=0.95,
@@ -33,7 +32,6 @@ def calculate_ETH(
     Inputs:
         analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d, and segmentation_xarray
         threshold: The value which needs to be exceeded to count towards the echo top height. I.e. 15 for reflectivity.
-        verbose: Determins if output should be printed during processing or not
         variable: The variable from the input segmentation_xarray which should be used for calculating ETH
         cell_footprint_height: The height used to calculate the cell area to determine where to calculate ETHs
         quantile: The percentile of calculated ETHs to return
@@ -140,11 +138,10 @@ def calculate_ETH(
     return pd.DataFrame(eth_info)
 
 
-def calculate_area(analysis_object, verbose=False, height=2000, **args):
+def calculate_area(analysis_object, height=2000, **args):
     """
     Inputs:
         analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d
-        verbose: Determins if output should be printed during processing or not
         height: The height which is used to calculate the area of cells
     Outputs:
         area_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, area where area is in km^2
@@ -223,11 +220,10 @@ def calculate_area(analysis_object, verbose=False, height=2000, **args):
     return pd.DataFrame(area_info)
 
 
-def calculate_volume(analysis_object, verbose=False, **args):
+def calculate_volume(analysis_object, **args):
     """
     Inputs:
         analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_3d
-        verbose: Determins if output should be printed during processing or not
     Outputs:
         volume_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, volume where area is in km^3
     """
