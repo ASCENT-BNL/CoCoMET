@@ -1,7 +1,4 @@
-# This workflow will install Python dependencies, run tests and lint with python version defined by the requirements
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
-name: pylint_linting
+name: check_black_formatting
 
 on:
   push:
@@ -32,10 +29,9 @@ jobs:
     
       - name: Install dependencies
         run: |
-          mamba install --yes pylint
+          pip install black
           pip install .
 
-      - name: Run pylint
+      - name: Run black
         run: |
-          pylint CoMET --disable=C --exit-zero
-        id: main_score
+          python -m black CoMET --check --diff 

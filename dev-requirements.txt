@@ -1,0 +1,17 @@
+# Python dependencies
+numpy<=1.26.4
+numba
+xarray
+netCDF4
+arm-pyart
+tobac @ git+https://github.com/tobac-project/tobac.git@37ddd51
+pandas
+geopandas
+cftime
+pyyaml
+vincenty
+iris
+tqdm
+metpy
+black
+pytest
