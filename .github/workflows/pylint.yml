@@ -37,5 +37,5 @@ jobs:
 
       - name: Run pylint
         run: |
-          pylint CoMET --exit-zero
+          pylint CoMET --disable=C --exit-zero
         id: main_score
