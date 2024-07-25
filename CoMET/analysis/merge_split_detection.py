@@ -28,16 +28,57 @@ def merge_split_tracking(
     touching_threshold=0.20,
     flood_background=20,
     score_threshold=0,
+    score_weight_1=1,
+    score_weight_2=1,
     radius_multiplyer=0.1,
     overlap_threshold=0.5,
-    steps_forward_back=2,  # Should be >= memory for tobac
+    steps_forward_back=2,  # Should be > memory for tobac
     **args,
 ):
     """
-    Inputs:
-        TBD
-    Outputs:
-        TBD
+
+
+        Parameters
+        ----------
+        analysis_object : TYPE
+            DESCRIPTION.
+        variable : TYPE
+            DESCRIPTION.
+        invert : TYPE, optional
+            DESCRIPTION. The default is False.
+        # For fields where we care about tracking mins    cell_footprint_height : TYPE, optional
+            DESCRIPTION. The default is 2000.
+        # m    touching_threshold : TYPE, optional
+            DESCRIPTION. The default is 0.20.
+        flood_background : TYPE, optional
+            DESCRIPTION. The default is 20.
+        score_threshold : TYPE, optional
+            DESCRIPTION. The default is 0.
+        score_weight_1 : TYPE, optional
+            DESCRIPTION. The default is 1.
+        score_weight_2 : TYPE, optional
+            DESCRIPTION. The default is 1.
+        radius_multiplyer : TYPE, optional
+            DESCRIPTION. The default is 0.1.
+        overlap_threshold : TYPE, optional
+            DESCRIPTION. The default is 0.5.
+        steps_forward_back : TYPE, optional
+            DESCRIPTION. The default is 2.
+        # Should be > : TYPE, optional
+            DESCRIPTION. The default is memory for tobac    **args.
+    print(cell_set)
+        Raises
+        ------
+        Exception
+            DESCRIPTION.
+
+        Returns
+        -------
+        merged_df : TYPE
+            DESCRIPTION.
+        split_df : TYPE
+            DESCRIPTION.
+
     """
 
     import numpy as np
@@ -114,19 +155,20 @@ def merge_split_tracking(
         if frame[1].frame.min() <= (Tracks.frame.min() + (steps_forward_back - 1)):
             continue
 
+        # Replace empty grid boxes with -1s to keep consistent with UDAF
         final_mask = deepcopy(footprint_data[frame[1].frame.min()])
-        final_mask.values[:] = 0
+        final_mask.values[:] = -1
 
         for feature in frame[1].iterrows():
 
             feature_mask = deepcopy(footprint_data[frame[1].frame.min()])
-            feature_mask.values[~isin(feature_mask.values, feature[1].feature_id)] = 0
+            feature_mask.values[~isin(feature_mask.values, feature[1].feature_id)] = -1
 
             # Replace with cell id instead of feature id and merge with final_mask
-            final_mask.values[feature_mask.values != 0] = feature[1].cell_id
+            final_mask.values[feature_mask.values != -1] = feature[1].cell_id
 
             # If cell has no area, skip
-            if np.all(feature_mask.values == 0):
+            if np.all(feature_mask.values == -1):
                 continue
 
         # Now find touching cells
@@ -155,7 +197,7 @@ def merge_split_tracking(
                         try:
                             t = cell_data[mx, my]
                         except:
-                            t = 0
+                            t = -1
 
                         neighboring_cells.append(t)
 
@@ -166,7 +208,7 @@ def merge_split_tracking(
                 if np.sum(neighboring_cells != cell_id) != 0:
                     num_of_edges += 1
 
-                temp = neighboring_cells[neighboring_cells != 0]
+                temp = neighboring_cells[neighboring_cells != -1]
                 temp = temp[temp != cell_id]
                 touching.append(np.unique(temp))
 
@@ -265,7 +307,9 @@ def merge_split_tracking(
                             continue
 
                         # Calculate the score and see if it exceeds the threshold
-                        score = (R_adj / adj_Rmax_1) - (dis / max_dist_1)
+                        score = score_weight_1 * (
+                            R_adj / adj_Rmax_1
+                        ) - score_weight_2 * (dis / max_dist_1)
 
                         if score > score_threshold:
                             segmented_1[mx, my] = 1
@@ -358,12 +402,13 @@ def merge_split_tracking(
                 )
                 output_init_cells_merge.append(np.array((cell_set[0], cell_set[1])))
                 output_merged_cells.append(cell_set[0])
+
             elif not np.any(cell_1_status) and np.all(cell_2_status):
 
                 output_frame_list_merge.append(
                     np.array([frame[1].frame.min(), frame[1].frame.min() + 1])
                 )
-                output_init_cells_merge.append(np.array(cell_set[0], cell_set[1]))
+                output_init_cells_merge.append(np.array((cell_set[0], cell_set[1])))
                 output_merged_cells.append(cell_set[1])
 
         # Check if all valid overlap cells still exist in the previous frame(s), if no, whichever didn"t exist is the split
@@ -396,14 +441,6 @@ def merge_split_tracking(
                 )
                 output_init_cells_split.append(cell_set[1])
                 output_split_cells.append((cell_set[0], cell_set[1]))
-
-        split_df = pd.DataFrame(
-            data={
-                "frame": output_frame_list_split,
-                "split_cell": output_init_cells_split,
-                "child_cells": output_split_cells,
-            }
-        )
 
     merged_df = pd.DataFrame(
         data={

@@ -270,7 +270,6 @@ def wrf_tobac_segmentation(
 
         return (outXarray, segment_features)
 
-    else:
-        raise Exception(
-            f"!=====Invalid Segmentation Type. You Entered: {segmentation_type.lower()}=====!"
-        )
+    raise Exception(
+        f"!=====Invalid Segmentation Type. You Entered: {segmentation_type.lower()}=====!"
+    )
