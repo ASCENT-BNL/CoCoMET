@@ -161,8 +161,8 @@ def mesonh_tobac_segmentation(
     if radar_features is None:
         return (None, None)
 
-    # Enforce 2D tracking only for brightness temperature tracking
-    if cube.name().lower() == "tb" and not segmentation_type.lower() == "2d":
+    # Enforce 2D tracking only for 2D variables
+    if len(cube.shape) == 3 and not segmentation_type.lower() == "2d":
         raise Exception(
             f"!=====Invalid Segmentation Type. You Entered: {segmentation_type.lower()}. TB Tracking Restricted to 2D Segmentation=====!"
         )
@@ -179,8 +179,8 @@ def mesonh_tobac_segmentation(
 
         # If altitude and/or model level number is present, remove it
 
-        # If tracking var is tb, bypass height
-        if cube.name().lower() == "tb":
+        # If tracking var is 2d, bypass height
+        if len(cube.shape) == 3:
             # Perform the 2d segmentation at the height_index and return the segmented cube and new geodataframe
             segment_cube, segment_features = tobac.segmentation_2D(
                 radar_features,
@@ -211,7 +211,7 @@ def mesonh_tobac_segmentation(
             or type(segmentation_height) == bool
         ):
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
             )
             return
         if (
@@ -219,7 +219,7 @@ def mesonh_tobac_segmentation(
             or segmentation_height < cube.coord("altitude").points.min()
         ):
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
             )
             return
 

@@ -217,7 +217,7 @@ def nexrad_tobac_segmentation(
         # Ensure segmentation_height is a proper number before running
         if type(segmentation_height) == str or type(segmentation_height) == bool:
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
             )
             return
 
@@ -228,7 +228,7 @@ def nexrad_tobac_segmentation(
                 or segmentation_height < cube.coord("altitude").points.min()
             ):
                 raise Exception(
-                    f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
+                    f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
                 )
                 return
 
@@ -238,7 +238,7 @@ def nexrad_tobac_segmentation(
 
         elif segmentation_height is None and cube.coord("altitude").shape[0] > 1:
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
             )
             return
 

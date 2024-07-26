@@ -112,9 +112,29 @@ def wrf_load_netcdf_iris(filepath, tracking_var, CONFIG):
         cube = load(wrf_xarray, "PR")
 
     else:
-        raise Exception(
-            f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
-        )
+        # If not any of the above, try using user inputed value
+        try:
+
+            var_values = wrf_xarray[tracking_var.upper()]
+            cube = load(wrf_xarray, tracking_var.upper())
+
+            if len(var_values.shape) == 4:
+
+                # Add correct altitude based off of average height at each height index
+                ht = wrf_calculate_agl_z(wrf_xarray)
+
+                correct_alts = [np.mean(h.values) for h in ht]
+                cube.coord("altitude").points = correct_alts
+
+                # Add altitude field for easier processing later
+                wrf_xarray[tracking_var.upper()] = wrf_xarray[
+                    tracking_var.upper()
+                ].assign_coords(altitude=("bottom_top", correct_alts))
+
+        except:
+            raise Exception(
+                f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
+            )
 
     return (cube, wrf_xarray.unify_chunks())
 
@@ -197,8 +217,26 @@ def wrf_load_netcdf(filepath, tracking_var, CONFIG):
         )
 
     else:
-        raise Exception(
-            f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
-        )
+        # If not any of the above, try using user inputed value
+        try:
+
+            var_values = wrf_xarray[tracking_var.upper()]
+
+            if len(var_values.shape) == 4:
+
+                # Add correct altitude based off of average height at each height index
+                ht = wrf_calculate_agl_z(wrf_xarray)
+
+                correct_alts = [np.mean(h.values) for h in ht]
+
+                # Add altitude field for easier processing later
+                wrf_xarray[tracking_var.upper()] = wrf_xarray[
+                    tracking_var.upper()
+                ].assign_coords(altitude=("bottom_top", correct_alts))
+
+        except:
+            raise Exception(
+                f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
+            )
 
     return wrf_xarray.unify_chunks()

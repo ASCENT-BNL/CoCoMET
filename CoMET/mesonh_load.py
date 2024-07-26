@@ -164,10 +164,43 @@ def mesonh_load_netcdf_iris(filepath, tracking_var, CONFIG):
             altitude=("z", correct_alts)
         )
 
-    else:
-        raise Exception(
-            f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
+    elif tracking_var.lower() == "pr":
+
+        # precipitation rate is only 2d so no heights needed
+        mesonh_xarray["PR"] = mesonh_xarray["pcp_rate"]
+
+        mesonh_xarray["PR"].attrs["units"] = "mm/hour"
+
+        # Adjust dask chunks
+        mesonh_xarray["PR"] = mesonh_xarray["PR"].chunk(
+            mesonh_xarray["LWup_TOA"].chunksizes
         )
+        cube = load(mesonh_xarray, "PR", filename)
+
+    else:
+        # If not any of the above, try using user inputed value
+        try:
+
+            var_values = mesonh_xarray[tracking_var]
+            cube = load(mesonh_xarray, tracking_var, filename)
+
+            if len(var_values.shape) == 4:
+
+                # add correct altitude based off of average height at each height index
+                ht = mesonh_calculate_agl_z(mesonh_xarray)
+
+                correct_alts = [np.mean(h.values) for h in ht]
+                cube.coord("altitude").points = correct_alts
+
+                # Add altitude field for easier processing later
+                mesonh_xarray[tracking_var] = mesonh_xarray[tracking_var].assign_coords(
+                    altitude=("z", correct_alts)
+                )
+
+        except:
+            raise Exception(
+                f"!=====Invalid Tracking Variable. You Entered: {tracking_var}=====!"
+            )
 
     return (cube, mesonh_xarray.unify_chunks())
 
@@ -261,9 +294,39 @@ def mesonh_load_netcdf(filepath, tracking_var, CONFIG):
             altitude=("z", correct_alts)
         )
 
-    else:
-        raise Exception(
-            f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
+    elif tracking_var.lower() == "pr":
+
+        # Brightness temperature is only 2d so no heights needed
+        mesonh_xarray["PR"] = mesonh_xarray["pcp_rate"]
+
+        mesonh_xarray["PR"].attrs["units"] = "mm/unit"
+
+        # Adjust dask chunks
+        mesonh_xarray["PR"] = mesonh_xarray["PR"].chunk(
+            mesonh_xarray["LWup_TOA"].chunksizes
         )
+
+    else:
+        # If not any of the above, try using user inputed value
+        try:
+
+            var_values = mesonh_xarray[tracking_var]
+
+            if len(var_values.shape) == 4:
+
+                # add correct altitude based off of average height at each height index
+                ht = mesonh_calculate_agl_z(mesonh_xarray)
+
+                correct_alts = [np.mean(h.values) for h in ht]
+
+                # Add altitude field for easier processing later
+                mesonh_xarray[tracking_var] = mesonh_xarray[tracking_var].assign_coords(
+                    altitude=("bottom_top", correct_alts)
+                )
+
+        except:
+            raise Exception(
+                f"!=====Invalid Tracking Variable. You Entered: {tracking_var}=====!"
+            )
 
     return mesonh_xarray.unify_chunks()
