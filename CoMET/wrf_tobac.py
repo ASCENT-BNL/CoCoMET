@@ -156,10 +156,8 @@ def wrf_tobac_segmentation(
     if radar_features is None:
         return (None, None)
 
-    # Enforce 2D tracking only for brightness temperature and precip rate tracking
-    if (
-        cube.name().lower() == "tb" or cube.name().lower() == "pr"
-    ) and not segmentation_type.lower() == "2d":
+    # Enforce 2D tracking only for 2D variables
+    if (len(cube.shape) == 3) and not segmentation_type.lower() == "2d":
         raise Exception(
             f"!=====Invalid Segmentation Type. You Entered: {segmentation_type.lower()}. TB and PR Tracking Restricted to 2D Segmentation=====!"
         )
@@ -175,8 +173,8 @@ def wrf_tobac_segmentation(
 
         # If altitude and/or model level number is present, remove it
 
-        # If tracking var is tb or pr, bypass height
-        if cube.name().lower() == "tb" or cube.name().lower() == "pr":
+        # If tracking var is 2d, bypass height
+        if len(cube.shape) == 3:
             # Perform the 2d segmentation at the height_index and return the segmented cube and new geodataframe
             segment_cube, segment_features = tobac.segmentation_2D(
                 radar_features,
@@ -207,14 +205,14 @@ def wrf_tobac_segmentation(
             or type(segmentation_height) == bool
         ):
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
             )
         if (
             segmentation_height > cube.coord("altitude").points.max()
             or segmentation_height < cube.coord("altitude").points.min()
         ):
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
             )
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights

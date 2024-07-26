@@ -214,7 +214,7 @@ def standard_radar_tobac_segmentation(
         # Ensure segmentation_height is a proper number before running
         if type(segmentation_height) == str or type(segmentation_height) == bool:
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
             )
 
         if segmentation_height is not None and cube.coord("altitude").shape[0] > 1:
@@ -224,7 +224,7 @@ def standard_radar_tobac_segmentation(
                 or segmentation_height < cube.coord("altitude").points.min()
             ):
                 raise Exception(
-                    f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
+                    f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
                 )
 
         elif segmentation_height is None and cube.coord("altitude").shape[0] == 1:
@@ -233,7 +233,7 @@ def standard_radar_tobac_segmentation(
 
         elif segmentation_height is None and cube.coord("altitude").shape[0] > 1:
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
             )
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights

@@ -87,8 +87,9 @@ def mesonh_moaap(mesonh_xarray, CONFIG):
     # Get geopotential heights
     # geopt =
 
-    # Get accumulated precipitation
-    # pr = (wrf_xarray.RAINC+wrf_xarray.RAINNC)
+    # Get precipitation rate
+    # Convert to per time unit, not per hour
+    pr = mesonh_xarray.pcp_rate / (60 / dt)
 
     moaap(
         longitudes,
@@ -109,7 +110,7 @@ def mesonh_moaap(mesonh_xarray, CONFIG):
         z500=None,
         v200=v_winds_200,
         u200=u_winds_200,
-        pr=None,
+        pr=pr,
         tb=tb,
         # Any user defined params
         **CONFIG["mesonh"]["moaap"],

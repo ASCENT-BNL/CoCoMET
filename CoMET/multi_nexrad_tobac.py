@@ -188,14 +188,14 @@ def multi_nexrad_tobac_segmentation(
             or type(segmentation_height) == bool
         ):
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
             )
         if (
             segmentation_height > cube.coord("altitude").points.max()
             or segmentation_height < cube.coord("altitude").points.min()
         ):
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
             )
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights

@@ -482,12 +482,18 @@ def run_wrf(CONFIG, queue=None):
             if CONFIG["verbose"]:
                 print("=====Starting WRF tobac 2D Segmentation=====")
 
+            height = (
+                CONFIG["wrf"]["tobac"]["segmentation_2d"]["height"]
+                if "height" in CONFIG["wrf"]["tobac"]["segmentation_2d"]
+                else None
+            )
+
             wrf_segmentation2d = wrf_tobac_segmentation(
                 wrf_segmentation_cube,
                 wrf_features,
                 "2d",
                 CONFIG,
-                CONFIG["wrf"]["tobac"]["segmentation_2d"]["height"],
+                height,
             )
 
         if "segmentation_3d" in CONFIG["wrf"]["tobac"]:
@@ -737,12 +743,14 @@ def run_mesonh(CONFIG, queue=None):
             if CONFIG["verbose"]:
                 print("=====Starting MesoNH tobac 2D Segmentation=====")
 
+            height = (
+                CONFIG["mesonh"]["tobac"]["segmentation_2d"]["height"]
+                if "height" in CONFIG["mesonh"]["tobac"]["segmentation_2d"]
+                else None
+            )
+
             mesonh_segmentation2d = mesonh_tobac_segmentation(
-                mesonh_segmentation_cube,
-                mesonh_features,
-                "2d",
-                CONFIG,
-                CONFIG["mesonh"]["tobac"]["segmentation_2d"]["height"],
+                mesonh_segmentation_cube, mesonh_features, "2d", CONFIG, height
             )
 
         if "segmentation_3d" in CONFIG["mesonh"]["tobac"]:
@@ -790,7 +798,7 @@ def run_mesonh(CONFIG, queue=None):
                 if "variable" not in CONFIG["mesonh"]["tobac"]["analysis"][var]:
                     CONFIG["mesonh"]["tobac"]["analysis"][var]["variable"] = CONFIG[
                         "mesonh"
-                    ]["feature_tracking_var"].lower()
+                    ]["feature_tracking_var"].upper()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -874,7 +882,7 @@ def run_mesonh(CONFIG, queue=None):
                 if "variable" not in CONFIG["mesonh"]["moaap"]["analysis"][var]:
                     CONFIG["mesonh"]["moaap"]["analysis"][var]["variable"] = CONFIG[
                         "mesonh"
-                    ]["feature_tracking_var"].lower()
+                    ]["feature_tracking_var"].upper()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -992,12 +1000,18 @@ def run_nexrad(CONFIG, queue=None):
             if CONFIG["verbose"]:
                 print("=====Starting NEXRAD tobac 2D Segmentation=====")
 
+            height = (
+                CONFIG["nexrad"]["tobac"]["segmentation_2d"]["height"]
+                if "height" in CONFIG["nexrad"]["tobac"]["segmentation_2d"]
+                else None
+            )
+
             nexrad_segmentation2d = nexrad_tobac_segmentation(
                 nexrad_tracking_cube,
                 nexrad_features,
                 "2d",
                 CONFIG,
-                CONFIG["nexrad"]["tobac"]["segmentation_2d"]["height"],
+                height,
             )
 
         if "segmentation_3d" in CONFIG["nexrad"]["tobac"]:
@@ -1177,12 +1191,18 @@ def run_multi_nexrad(CONFIG, queue=None):
             if CONFIG["verbose"]:
                 print("=====Starting Multi-NEXRAD tobac 2D Segmentation=====")
 
+            height = (
+                CONFIG["multi_nexrad"]["tobac"]["segmentation_2d"]["height"]
+                if "height" in CONFIG["multi_nexrad"]["tobac"]["segmentation_2d"]
+                else None
+            )
+
             multi_nexrad_segmentation2d = multi_nexrad_tobac_segmentation(
                 multi_nexrad_tracking_cube,
                 multi_nexrad_features,
                 "2d",
                 CONFIG,
-                CONFIG["multi_nexrad"]["tobac"]["segmentation_2d"]["height"],
+                height,
             )
 
         if "segmentation_3d" in CONFIG["multi_nexrad"]["tobac"]:
