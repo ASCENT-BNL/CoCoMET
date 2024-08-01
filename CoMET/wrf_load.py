@@ -85,10 +85,24 @@ def wrf_load_netcdf_iris(
                     {"description": "minutes since 2000-01-01 00:00:00"}
                 )
 
-        # Subset time of interest
-        if "min_frame" in CONFIG["wrf"]:
+        # Subset time based on user inputs
+        if "min_frame_index" in CONFIG["wrf"] or "max_frame_index" in CONFIG["wrf"]:
+            min_frame = (
+                CONFIG["wrf"]["min_frame_index"]
+                if "min_frame_index" in CONFIG["wrf"]
+                else 0
+            )
+            max_frame = (
+                CONFIG["wrf"]["max_frame_index"] + 1
+                if "max_frame_index" in CONFIG["wrf"]
+                else wrf_xarray.dims["Time"]
+            )
+
             wrf_xarray = wrf_xarray.isel(
-                Time=np.arange(CONFIG["wrf"]["min_frame"], wrf_xarray.dims["Time"]),
+                Time=np.arange(
+                    min_frame,
+                    max_frame,
+                ),
                 drop=True,
             )
 
@@ -252,10 +266,24 @@ def wrf_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Datase
                     {"description": "minutes since 2000-01-01 00:00:00"}
                 )
 
-        # Subset time of interest
-        if "min_frame" in CONFIG["wrf"]:
+        # Subset time based on user inputs
+        if "min_frame_index" in CONFIG["wrf"] or "max_frame_index" in CONFIG["wrf"]:
+            min_frame = (
+                CONFIG["wrf"]["min_frame_index"]
+                if "min_frame_index" in CONFIG["wrf"]
+                else 0
+            )
+            max_frame = (
+                CONFIG["wrf"]["max_frame_index"] + 1
+                if "max_frame_index" in CONFIG["wrf"]
+                else wrf_xarray.dims["Time"]
+            )
+
             wrf_xarray = wrf_xarray.isel(
-                Time=np.arange(CONFIG["wrf"]["min_frame"], wrf_xarray.dims["Time"]),
+                Time=np.arange(
+                    min_frame,
+                    max_frame,
+                ),
                 drop=True,
             )
 

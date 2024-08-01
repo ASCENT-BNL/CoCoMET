@@ -110,12 +110,6 @@ def goes_load_netcdf_iris(
             path_to_files, coords="all", concat_dim="t", combine="nested"
         )
 
-        if "min_frame" in CONFIG["goes"]:
-            goes_xarray = goes_xarray.isel(
-                t=np.arange(CONFIG["goes"]["min_frame"], goes_xarray.dims["t"]),
-                drop=True,
-            )
-
         # Add lat and lon to goes_xarray
         # Ignore boundary warnings
         with warnings.catch_warnings():
@@ -132,6 +126,27 @@ def goes_load_netcdf_iris(
 
         # Subset location of interest
         if "goes" in CONFIG:
+
+            # Subset time based on user inputs
+            if (
+                "min_frame_index" in CONFIG["goes"]
+                or "max_frame_index" in CONFIG["goes"]
+            ):
+                min_frame = (
+                    CONFIG["goes"]["min_frame_index"]
+                    if "min_frame_index" in CONFIG["goes"]
+                    else 0
+                )
+                max_frame = (
+                    CONFIG["goes"]["max_frame_index"] + 1
+                    if "max_frame_index" in CONFIG["goes"]
+                    else goes_xarray.dims["t"]
+                )
+
+                goes_xarray = goes_xarray.isel(
+                    t=np.arange(min_frame, max_frame),
+                    drop=True,
+                )
 
             if "bounds" in CONFIG["goes"]:
 
@@ -246,9 +261,24 @@ def goes_load_netcdf(
         # Subset location of interest
         if "goes" in CONFIG:
 
-            if "min_frame" in CONFIG["goes"]:
+            # Subset time based on user inputs
+            if (
+                "min_frame_index" in CONFIG["goes"]
+                or "max_frame_index" in CONFIG["goes"]
+            ):
+                min_frame = (
+                    CONFIG["goes"]["min_frame_index"]
+                    if "min_frame_index" in CONFIG["goes"]
+                    else 0
+                )
+                max_frame = (
+                    CONFIG["goes"]["max_frame_index"] + 1
+                    if "max_frame_index" in CONFIG["goes"]
+                    else goes_xarray.dims["t"]
+                )
+
                 goes_xarray = goes_xarray.isel(
-                    t=np.arange(CONFIG["goes"]["min_frame"], goes_xarray.dims["t"]),
+                    t=np.arange(min_frame, max_frame),
                     drop=True,
                 )
 

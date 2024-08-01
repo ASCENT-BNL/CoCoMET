@@ -310,17 +310,59 @@ def CoMET_load(
         CONFIG["parallel_processing"] = False
 
     # Go through each potential option and determine which functions need to run
-    if "wrf" in CONFIG and CONFIG["verbose"]:
-        print("=====WRF Setup Found in CONFIG=====")
+    if "wrf" in CONFIG:
 
-    if "mesonh" in CONFIG and CONFIG["verbose"]:
-        print("=====MesoNH Setup Found in CONFIG=====")
+        if CONFIG["verbose"]:
+            print("=====WRF Setup Found in CONFIG=====")
+
+        # Auto capitalize if one of CoMET's computed variables
+        CONFIG["wrf"]["feature_tracking_var"] = (
+            CONFIG["wrf"]["feature_tracking_var"].upper()
+            if CONFIG["wrf"]["feature_tracking_var"].lower()
+            in ["dbz", "wa", "tb", "wr"]
+            else CONFIG["wrf"]["feature_tracking_var"]
+        )
+        CONFIG["wrf"]["segmentation_var"] = (
+            CONFIG["wrf"]["segmentation_var"].upper()
+            if CONFIG["wrf"]["segmentation_var"].lower() in ["dbz", "wa", "tb", "wr"]
+            else CONFIG["wrf"]["segmentation_var"]
+        )
+
+    if "mesonh" in CONFIG:
+
+        if CONFIG["verbose"]:
+            print("=====MesoNH Setup Found in CONFIG=====")
+
+        # Auto capitalize if one of CoMET's computed variables
+        CONFIG["mesonh"]["feature_tracking_var"] = (
+            CONFIG["mesonh"]["feature_tracking_var"].upper()
+            if CONFIG["mesonh"]["feature_tracking_var"].lower()
+            in ["dbz", "wa", "tb", "wr"]
+            else CONFIG["mesonh"]["feature_tracking_var"]
+        )
+        CONFIG["mesonh"]["segmentation_var"] = (
+            CONFIG["mesonh"]["segmentation_var"].upper()
+            if CONFIG["mesonh"]["segmentation_var"].lower() in ["dbz", "wa", "tb", "wr"]
+            else CONFIG["mesonh"]["segmentation_var"]
+        )
 
     # if nexrad present, check for tuples
     if "nexrad" in CONFIG:
 
         if CONFIG["verbose"]:
             print("=====NEXRAD Setup Found in CONFIG=====")
+
+        # Auto capitalize valid variables
+        CONFIG["nexrad"]["feature_tracking_var"] = (
+            CONFIG["nexrad"]["feature_tracking_var"].upper()
+            if CONFIG["nexrad"]["feature_tracking_var"].lower() in ["dbz"]
+            else CONFIG["nexrad"]["feature_tracking_var"]
+        )
+        CONFIG["nexrad"]["segmentation_var"] = (
+            CONFIG["nexrad"]["segmentation_var"].upper()
+            if CONFIG["nexrad"]["segmentation_var"].lower() in ["dbz"]
+            else CONFIG["nexrad"]["segmentation_var"]
+        )
 
         # If nexrad gridding is needed, change grid shapes and limits back to tuples
         if "gridding" in CONFIG["nexrad"]:
@@ -345,6 +387,18 @@ def CoMET_load(
         if CONFIG["verbose"]:
             print("=====Multi-NEXRAD Setup Found in CONFIG=====")
 
+        # Auto capitalize valid variables
+        CONFIG["multi_nexrad"]["feature_tracking_var"] = (
+            CONFIG["multi_nexrad"]["feature_tracking_var"].upper()
+            if CONFIG["multi_nexrad"]["feature_tracking_var"].lower() in ["dbz"]
+            else CONFIG["multi_nexrad"]["feature_tracking_var"]
+        )
+        CONFIG["multi_nexrad"]["segmentation_var"] = (
+            CONFIG["multi_nexrad"]["segmentation_var"].upper()
+            if CONFIG["multi_nexrad"]["segmentation_var"].lower() in ["dbz"]
+            else CONFIG["multi_nexrad"]["segmentation_var"]
+        )
+
         # If nexrad gridding is needed, change grid shapes and limits back to tuples
         if "gridding" in CONFIG["multi_nexrad"]:
 
@@ -366,11 +420,39 @@ def CoMET_load(
             CONFIG["multi_nexrad"]["gridding"]["grid_shape"] = grid_shape
             CONFIG["multi_nexrad"]["gridding"]["grid_limits"] = grid_limits
 
-    if "standard_radar" in CONFIG and CONFIG["verbose"]:
-        print("=====RADAR Setup Found in CONFIG")
+    if "standard_radar" in CONFIG:
 
-    if "goes" in CONFIG and CONFIG["verbose"]:
-        print("=====GOES Setup Found in CONFIG=====")
+        if CONFIG["verbose"]:
+            print("=====RADAR Setup Found in CONFIG=====")
+
+        # Auto capitalize valid variables
+        CONFIG["standard_radar"]["feature_tracking_var"] = (
+            CONFIG["standard_radar"]["feature_tracking_var"].upper()
+            if CONFIG["standard_radar"]["feature_tracking_var"].lower() in ["dbz"]
+            else CONFIG["standard_radar"]["feature_tracking_var"]
+        )
+        CONFIG["standard_radar"]["segmentation_var"] = (
+            CONFIG["standard_radar"]["segmentation_var"].upper()
+            if CONFIG["standard_radar"]["segmentation_var"].lower() in ["dbz"]
+            else CONFIG["standard_radar"]["segmentation_var"]
+        )
+
+    if "goes" in CONFIG:
+
+        if CONFIG["verbose"]:
+            print("=====GOES Setup Found in CONFIG=====")
+
+        # Auto capitalize valid variables
+        CONFIG["goes"]["feature_tracking_var"] = (
+            CONFIG["goes"]["feature_tracking_var"].upper()
+            if CONFIG["goes"]["feature_tracking_var"].lower() in ["tb"]
+            else CONFIG["goes"]["feature_tracking_var"]
+        )
+        CONFIG["goes"]["segmentation_var"] = (
+            CONFIG["goes"]["segmentation_var"].upper()
+            if CONFIG["goes"]["segmentation_var"].lower() in ["tb"]
+            else CONFIG["goes"]["segmentation_var"]
+        )
 
     return CONFIG
 
@@ -516,7 +598,7 @@ def run_wrf(
                 if "variable" not in CONFIG["wrf"]["tobac"]["analysis"][var]:
                     CONFIG["wrf"]["tobac"]["analysis"][var]["variable"] = CONFIG["wrf"][
                         "feature_tracking_var"
-                    ].upper()
+                    ]
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -598,7 +680,7 @@ def run_wrf(
                 if "variable" not in CONFIG["wrf"]["moaap"]["analysis"][var]:
                     CONFIG["wrf"]["moaap"]["analysis"][var]["variable"] = CONFIG["wrf"][
                         "feature_tracking_var"
-                    ].upper()
+                    ]
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -768,7 +850,7 @@ def run_mesonh(
                 if "variable" not in CONFIG["mesonh"]["tobac"]["analysis"][var]:
                     CONFIG["mesonh"]["tobac"]["analysis"][var]["variable"] = CONFIG[
                         "mesonh"
-                    ]["feature_tracking_var"].upper()
+                    ]["feature_tracking_var"]
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -850,7 +932,7 @@ def run_mesonh(
                 if "variable" not in CONFIG["mesonh"]["moaap"]["analysis"][var]:
                     CONFIG["mesonh"]["moaap"]["analysis"][var]["variable"] = CONFIG[
                         "mesonh"
-                    ]["feature_tracking_var"].upper()
+                    ]["feature_tracking_var"]
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -1025,7 +1107,7 @@ def run_nexrad(
                 if "variable" not in CONFIG["nexrad"]["tobac"]["analysis"][var]:
                     CONFIG["nexrad"]["tobac"]["analysis"][var]["variable"] = CONFIG[
                         "nexrad"
-                    ]["feature_tracking_var"].upper()
+                    ]["feature_tracking_var"]
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -1213,7 +1295,7 @@ def run_multi_nexrad(
                 # Add default tracking featured_id variable in place of variable if not present
                 if "variable" not in CONFIG["multi_nexrad"]["tobac"]["analysis"][var]:
                     CONFIG["multi_nexrad"]["tobac"]["analysis"][var]["variable"] = (
-                        CONFIG["multi_nexrad"]["feature_tracking_var"].upper()
+                        CONFIG["multi_nexrad"]["feature_tracking_var"]
                     )
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
@@ -1379,7 +1461,7 @@ def run_standard_radar(
                 # Add default tracking featured_id variable in place of variable if not present
                 if "variable" not in CONFIG["standard_radar"]["tobac"]["analysis"][var]:
                     CONFIG["standard_radar"]["tobac"]["analysis"][var]["variable"] = (
-                        CONFIG["standard_radar"]["feature_tracking_var"].upper()
+                        CONFIG["standard_radar"]["feature_tracking_var"]
                     )
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
@@ -1513,7 +1595,7 @@ def run_goes(
                 if "variable" not in CONFIG["goes"]["tobac"]["analysis"][var]:
                     CONFIG["goes"]["tobac"]["analysis"][var]["variable"] = CONFIG[
                         "goes"
-                    ]["feature_tracking_var"].upper()
+                    ]["feature_tracking_var"]
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]

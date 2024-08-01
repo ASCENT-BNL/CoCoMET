@@ -27,7 +27,8 @@ wrf:
     path_to_data: "/D3/data/diewang/idealized_mcs_5min/03_2011-07-16_CTRL_Midwest_-Loc2_MCS_Storm-Nr_JJA-8-TH5/4000/*"
     
     is_idealized: True
-    min_frame: 10
+    min_frame_index: 10 # 0-based indexing, inclusive
+    max_frame_index: 70 # 0-based indexing, inclusive
 
     feature_tracking_var: "DBZ" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
     segmentation_var: "DBZ"

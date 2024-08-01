@@ -62,7 +62,7 @@ def wrf_tobac_feature_id(cube: iris.cube.Cube, CONFIG: dict) -> gpd.GeoDataFrame
             or type(CONFIG["wrf"]["tobac"]["feature_id"]["height"]) == bool
         ):
             raise Exception(
-                f"""!=====Tracking Height Out of Bounds. You Entered: {inCONFIG['wrf']['tobac']['feature_id']['height'] .lower()}=====!"""
+                f"""!=====Tracking Height Out of Bounds. You Entered: {inCONFIG["wrf"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
             )
         if (
             inCONFIG["wrf"]["tobac"]["feature_id"]["height"]
@@ -71,7 +71,7 @@ def wrf_tobac_feature_id(cube: iris.cube.Cube, CONFIG: dict) -> gpd.GeoDataFrame
             < cube.coord("altitude").points.min()
         ):
             raise Exception(
-                f"""!=====Tracking Height Out of Bounds. You Entered: {inCONFIG['wrf']['tobac']['feature_id']['height'] .lower()}=====!"""
+                f"""!=====Tracking Height Out of Bounds. You Entered: {inCONFIG["wrf"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
             )
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
@@ -177,7 +177,7 @@ def wrf_tobac_segmentation(
     radar_features : gpd.GeoDataFrame
         tobac radar features from wrf_tobac_feature_id output.
     segmentation_type : str
-        ['2D', '3D'], whether to perform 2d segmentation or 3d segmentation.
+        ["2D", "3D"], whether to perform 2d segmentation or 3d segmentation.
     CONFIG : dict
         User configuration file.
     segmentation_height : float | None, optional

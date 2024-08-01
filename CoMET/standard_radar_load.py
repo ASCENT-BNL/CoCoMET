@@ -63,10 +63,26 @@ def standard_radar_load_netcdf_iris(
         # Subset location of interest
         if "standard_radar" in CONFIG:
 
-            if "min_frame" in CONFIG["standard_radar"]:
+            # Subset time based on user inputs
+            if (
+                "min_frame_index" in CONFIG["standard_radar"]
+                or "max_frame_index" in CONFIG["standard_radar"]
+            ):
+                min_frame = (
+                    CONFIG["standard_radar"]["min_frame_index"]
+                    if "min_frame_index" in CONFIG["standard_radar"]
+                    else 0
+                )
+                max_frame = (
+                    CONFIG["standard_radar"]["max_frame_index"] + 1
+                    if "max_frame_index" in CONFIG["standard_radar"]
+                    else radar_xarray.dims["time"]
+                )
+
                 radar_xarray = radar_xarray.isel(
                     time=np.arange(
-                        CONFIG["standard_radar"]["min_frame"], radar_xarray.dims["time"]
+                        min_frame,
+                        max_frame,
                     ),
                     drop=True,
                 )
@@ -159,10 +175,26 @@ def standard_radar_load_netcdf(
         # Subset location of interest
         if "standard_radar" in CONFIG:
 
-            if "min_frame" in CONFIG["standard_radar"]:
+            # Subset time based on user inputs
+            if (
+                "min_frame_index" in CONFIG["standard_radar"]
+                or "max_frame_index" in CONFIG["standard_radar"]
+            ):
+                min_frame = (
+                    CONFIG["standard_radar"]["min_frame_index"]
+                    if "min_frame_index" in CONFIG["standard_radar"]
+                    else 0
+                )
+                max_frame = (
+                    CONFIG["standard_radar"]["max_frame_index"] + 1
+                    if "max_frame_index" in CONFIG["standard_radar"]
+                    else radar_xarray.dims["time"]
+                )
+
                 radar_xarray = radar_xarray.isel(
                     time=np.arange(
-                        CONFIG["standard_radar"]["min_frame"], radar_xarray.dims["time"]
+                        min_frame,
+                        max_frame,
                     ),
                     drop=True,
                 )

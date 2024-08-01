@@ -365,11 +365,26 @@ def multi_nexrad_load_netcdf_iris(
             # Subset location and time of interest
             if "multi_nexrad" in CONFIG:
 
-                if "min_frame" in CONFIG["multi_nexrad"]:
+                # Subset time based on user inputs
+                if (
+                    "min_frame_index" in CONFIG["multi_nexrad"]
+                    or "max_frame_index" in CONFIG["multi_nexrad"]
+                ):
+                    min_frame = (
+                        CONFIG["multi_nexrad"]["min_frame_index"]
+                        if "min_frame_index" in CONFIG["multi_nexrad"]
+                        else 0
+                    )
+                    max_frame = (
+                        CONFIG["multi_nexrad"]["max_frame_index"] + 1
+                        if "max_frame_index" in CONFIG["multi_nexrad"]
+                        else nexrad_xarray.dims["time"]
+                    )
+
                     nexrad_xarray = nexrad_xarray.isel(
                         time=np.arange(
-                            CONFIG["multi_nexrad"]["min_frame"],
-                            nexrad_xarray.dims["time"],
+                            min_frame,
+                            max_frame,
                         ),
                         drop=True,
                     )
@@ -466,11 +481,26 @@ def multi_nexrad_load_netcdf_iris(
             # Subset location and time of interest
             if "multi_nexrad" in CONFIG:
 
-                if "min_frame" in CONFIG["multi_nexrad"]:
+                # Subset time based on user inputs
+                if (
+                    "min_frame_index" in CONFIG["multi_nexrad"]
+                    or "max_frame_index" in CONFIG["multi_nexrad"]
+                ):
+                    min_frame = (
+                        CONFIG["multi_nexrad"]["min_frame_index"]
+                        if "min_frame_index" in CONFIG["multi_nexrad"]
+                        else 0
+                    )
+                    max_frame = (
+                        CONFIG["multi_nexrad"]["max_frame_index"] + 1
+                        if "max_frame_index" in CONFIG["multi_nexrad"]
+                        else nexrad_xarray.dims["time"]
+                    )
+
                     nexrad_xarray = nexrad_xarray.isel(
                         time=np.arange(
-                            CONFIG["multi_nexrad"]["min_frame"],
-                            nexrad_xarray.dims["time"],
+                            min_frame,
+                            max_frame,
                         ),
                         drop=True,
                     )
@@ -620,11 +650,26 @@ def multi_nexrad_load_netcdf(
             # Subset location and time of interest
             if "multi_nexrad" in CONFIG:
 
-                if "min_frame" in CONFIG["multi_nexrad"]:
+                # Subset time based on user inputs
+                if (
+                    "min_frame_index" in CONFIG["multi_nexrad"]
+                    or "max_frame_index" in CONFIG["multi_nexrad"]
+                ):
+                    min_frame = (
+                        CONFIG["multi_nexrad"]["min_frame_index"]
+                        if "min_frame_index" in CONFIG["multi_nexrad"]
+                        else 0
+                    )
+                    max_frame = (
+                        CONFIG["multi_nexrad"]["max_frame_index"] + 1
+                        if "max_frame_index" in CONFIG["multi_nexrad"]
+                        else nexrad_xarray.dims["time"]
+                    )
+
                     nexrad_xarray = nexrad_xarray.isel(
                         time=np.arange(
-                            CONFIG["multi_nexrad"]["min_frame"],
-                            nexrad_xarray.dims["time"],
+                            min_frame,
+                            max_frame,
                         ),
                         drop=True,
                     )
@@ -714,11 +759,26 @@ def multi_nexrad_load_netcdf(
             # Subset location and time of interest
             if "multi_nexrad" in CONFIG:
 
-                if "min_frame" in CONFIG["multi_nexrad"]:
+                # Subset time based on user inputs
+                if (
+                    "min_frame_index" in CONFIG["multi_nexrad"]
+                    or "max_frame_index" in CONFIG["multi_nexrad"]
+                ):
+                    min_frame = (
+                        CONFIG["multi_nexrad"]["min_frame_index"]
+                        if "min_frame_index" in CONFIG["multi_nexrad"]
+                        else 0
+                    )
+                    max_frame = (
+                        CONFIG["multi_nexrad"]["max_frame_index"] + 1
+                        if "max_frame_index" in CONFIG["multi_nexrad"]
+                        else nexrad_xarray.dims["time"]
+                    )
+
                     nexrad_xarray = nexrad_xarray.isel(
                         time=np.arange(
-                            CONFIG["multi_nexrad"]["min_frame"],
-                            nexrad_xarray.dims["time"],
+                            min_frame,
+                            max_frame,
                         ),
                         drop=True,
                     )

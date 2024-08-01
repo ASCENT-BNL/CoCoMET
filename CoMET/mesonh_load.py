@@ -130,12 +130,24 @@ def mesonh_load_netcdf_iris(
 
     if "mesonh" in CONFIG:
 
-        if "min_frame" in CONFIG["mesonh"]:
+        # Subset time based on user inputs
+        if (
+            "min_frame_index" in CONFIG["mesonh"]
+            or "max_frame_index" in CONFIG["mesonh"]
+        ):
+            min_frame = (
+                CONFIG["mesonh"]["min_frame_index"]
+                if "min_frame_index" in CONFIG["mesonh"]
+                else 0
+            )
+            max_frame = (
+                CONFIG["mesonh"]["max_frame_index"] + 1
+                if "max_frame_index" in CONFIG["mesonh"]
+                else mesonh_xarray.dims["time"]
+            )
+
             mesonh_xarray = mesonh_xarray.isel(
-                time=np.arange(
-                    CONFIG["mesonh"]["min_frame"], mesonh_xarray.dims["time"] - 1
-                ),
-                drop=True,
+                time=np.arange(min_frame, max_frame), drop=True
             )
 
     else:
@@ -284,12 +296,24 @@ def mesonh_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Dat
 
     if "mesonh" in CONFIG:
 
-        if "min_frame" in CONFIG["mesonh"]:
+        # Subset time based on user inputs
+        if (
+            "min_frame_index" in CONFIG["mesonh"]
+            or "max_frame_index" in CONFIG["mesonh"]
+        ):
+            min_frame = (
+                CONFIG["mesonh"]["min_frame_index"]
+                if "min_frame_index" in CONFIG["mesonh"]
+                else 0
+            )
+            max_frame = (
+                CONFIG["mesonh"]["max_frame_index"] + 1
+                if "max_frame_index" in CONFIG["mesonh"]
+                else mesonh_xarray.dims["time"]
+            )
+
             mesonh_xarray = mesonh_xarray.isel(
-                time=np.arange(
-                    CONFIG["mesonh"]["min_frame"], mesonh_xarray.dims["time"] - 1
-                ),
-                drop=True,
+                time=np.arange(min_frame, max_frame), drop=True
             )
 
     else:
