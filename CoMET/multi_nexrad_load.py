@@ -10,38 +10,63 @@ Created on Mon Jul 15 11:57:43 2024
 # This file contains scripts for loading (and gridding) multiple NEXRAD radars at once
 # =============================================================================
 
+import glob
+import multiprocessing
+import warnings
+from functools import partial
+
+import cftime
+import iris
+import iris.cube
+import numpy as np
+import pyart
+import xarray as xr
+from tqdm import tqdm
+
 
 # Calculate nearest item in list to given pivot
 def find_nearest(array, pivot):
-    import numpy as np
-
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx
 
 
 def gen_and_save_multi_nexrad_grid(
-    paths_to_files,
-    save_location,
-    tracking_var,
-    CONFIG,
-    parallel_processing=False,
-    max_cores=None,
-):
-    """
-    Inputs:
-        paths_to_files: Array of glob path to archival NEXRAD level 2 input files--i.e. ["/data/usr/KVNX*_V06.ar2v", "/data/usr/KIVX*_V06.ar2v"]
-        save_location: path to where the gridded NEXRAD files should be saved to, should be a directory and end with "/"
-        tracking_var: ["dbz"], variable which is going to be used for tracking--reflectivity
-        CONFIG: User configuration file
-        parallel_processing: [True, False], bool determinig whether to use parallel processing when gridding files
-        max_cores: Number of cores to use if parallel_processing == True
+    paths_to_files: list[str],
+    save_location: str,
+    tracking_var: str,
+    CONFIG: dict,
+    parallel_processing: bool = False,
+    max_cores: int | None = None,
+) -> None:
     """
 
-    import glob
-    import pyart
-    import numpy as np
-    from tqdm import tqdm
+
+    Parameters
+    ----------
+    paths_to_files : list[str]
+        Array of glob path to archival NEXRAD level 2 input files--i.e. ["/data/usr/KVNX*_V06.ar2v", "/data/usr/KIVX*_V06.ar2v"].
+    save_location : str
+        Path to where the gridded NEXRAD files should be saved to, should be a directory and end with "/".
+    tracking_var : str
+        ["dbz"], variable which is going to be used for tracking--reflectivity.
+    CONFIG : dict
+        User configuration file.
+    parallel_processing : bool, optional
+        Bool determinig whether to use parallel processing when gridding files. The default is False.
+    max_cores : int, optional
+        Number of cores to use if parallel_processing == True. The default is None.
+
+    Raises
+    ------
+    Exception
+        Exception if there are no files to grid or invalid tracking variable entered.
+
+    Returns
+    -------
+    None
+
+    """
 
     # No parallel processing for this as the time of arrival matters
     radar_list = []
@@ -58,7 +83,7 @@ def gen_and_save_multi_nexrad_grid(
         if len(files) == 0:
             raise Exception("!=====No Files Present to Grid=====!")
 
-        # Get radars and their respective times. Don't load them all at once to conserve memory
+        # Get radars and their respective times. Don"t load them all at once to conserve memory
         for ff in tqdm(
             files, desc=f"=====Loading NEXRAD #{ii+1}=====", total=len(files)
         ):
@@ -89,9 +114,6 @@ def gen_and_save_multi_nexrad_grid(
 
     # If parallel processing, save grids multi
     if parallel_processing:
-        import multiprocessing
-        from tqdm import tqdm
-        from functools import partial
 
         # Start a pool with max_cores and run the grid function
         with multiprocessing.Pool(max_cores) as multi_pool:
@@ -180,7 +202,7 @@ def gen_and_save_multi_nexrad_grid(
         # Save radar grid to save_location as a netcdf file
         pyart.io.write_grid(
             save_location
-            + f"combined_grid_{shortest_radar_time_list[ii].strftime('%Y_%m_%d_%H:%M:%S')}.nc",
+            + f"combined_grid_{shortest_radar_time_list[ii].strftime("%Y_%m_%d_%H:%M:%S")}.nc",
             combined_grid,
             arm_alt_lat_lon_variables=True,
             write_point_x_y_z=True,
@@ -202,9 +224,6 @@ def parallel_save_grid(ii, save_location, radar_list, radar_time_list, CONFIG):
     """
     Helper function for multi-processing
     """
-
-    import pyart
-    import numpy as np
 
     # Now loop over shortest subset of radar objects
     radar_lens = np.array([len(f) for f in radar_list])
@@ -260,7 +279,7 @@ def parallel_save_grid(ii, save_location, radar_list, radar_time_list, CONFIG):
     # Save radar grid to save_location as a netcdf file
     pyart.io.write_grid(
         save_location
-        + f"combined_grid_{shortest_radar_time_list[ii].strftime('%Y_%m_%d_%H:%M:%S')}.nc",
+        + f"""combined_grid_{shortest_radar_time_list[ii].strftime("%Y_%m_%d_%H:%M:%S")}.nc""",
         combined_grid,
         arm_alt_lat_lon_variables=True,
         write_point_x_y_z=True,
@@ -275,26 +294,41 @@ def parallel_save_grid(ii, save_location, radar_list, radar_time_list, CONFIG):
 
 
 def multi_nexrad_load_netcdf_iris(
-    paths_to_files, file_type, tracking_var, CONFIG, save_location=None
-):
-    """
-    Inputs:
-        paths_to_files: Array of glob path to input files, either archival or grided netcdf--i.e. ["/data/usr/KVNX*_V06.ar2v", "/data/usr/KIVX*_V06.ar2v"]. ONLY AN ARRAY WHEN NOT GRIDDED YET
-        file_type: ["ar2v", "nc"] type of input file--either archival or netcdf
-        tracking_var: ["dbz"], variable which is going to be used for tracking--reflectivity.
-        CONFIG: User configuration file
-        save_location: Where to save gridded NEXRAD data to if file_type=="ar2v"
-    Outputs:
-        cube: iris cube continaing gridded reflectivity data ready for tobac tracking
-        nexrad_xarray: Xarray dataset containing gridded NEXRAD archival data
+    paths_to_files: list[str] | str,
+    file_type: str,
+    tracking_var: str,
+    CONFIG: dict,
+    save_location: str | None = None,
+) -> tuple[iris.cube.Cube, xr.DataArray]:
     """
 
-    import glob
-    import pyart
-    import cftime
-    import warnings
-    import numpy as np
-    import xarray as xr
+
+    Parameters
+    ----------
+    paths_to_files : list[str] | str
+        Array of glob path to input files, either archival or grided netcdf--i.e. ["/data/usr/KVNX*_V06.ar2v", "/data/usr/KIVX*_V06.ar2v"]. ONLY AN ARRAY WHEN NOT GRIDDED YET.
+    file_type : str
+        ["ar2v", "nc"] type of input file--either archival or netcdf.
+    tracking_var : str
+        ["dbz"], variable which is going to be used for tracking--reflectivity.
+    CONFIG : dict
+        User configuration file.
+    save_location : str, optional
+        Where to save gridded NEXRAD data to if file_type=="ar2v". The default is None.
+
+    Raises
+    ------
+    Exception
+        Exception if missing MULTI-NEXRAD field in CONFIG, invalid tracking variable, and/or invalid file type.
+
+    Returns
+    -------
+    nexrad_cube : iris.cube.Cube
+        Iris cube continaing gridded reflectivity data ready for tobac tracking.
+    nexrad_xarray : xarray.core.dataarray.DataArray
+        Xarray DataArray containing gridded NEXRAD archival data.
+
+    """
 
     # If data is archival, perform gridding
     if file_type.lower() == "ar2v":
@@ -328,8 +362,17 @@ def multi_nexrad_load_netcdf_iris(
             nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity
             del radar_objects
 
-            # Subset location of interest
+            # Subset location and time of interest
             if "multi_nexrad" in CONFIG:
+
+                if "min_frame" in CONFIG["multi_nexrad"]:
+                    nexrad_xarray = nexrad_xarray.isel(
+                        time=np.arange(
+                            CONFIG["multi_nexrad"]["min_frame"],
+                            nexrad_xarray.dims["time"],
+                        ),
+                        drop=True,
+                    )
 
                 if "bounds" in CONFIG["multi_nexrad"]:
 
@@ -420,8 +463,17 @@ def multi_nexrad_load_netcdf_iris(
             nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity
             del radar_objects
 
-            # Subset location of interest
+            # Subset location and time of interest
             if "multi_nexrad" in CONFIG:
+
+                if "min_frame" in CONFIG["multi_nexrad"]:
+                    nexrad_xarray = nexrad_xarray.isel(
+                        time=np.arange(
+                            CONFIG["multi_nexrad"]["min_frame"],
+                            nexrad_xarray.dims["time"],
+                        ),
+                        drop=True,
+                    )
 
                 if "bounds" in CONFIG["multi_nexrad"]:
 
@@ -498,25 +550,39 @@ def multi_nexrad_load_netcdf_iris(
 
 
 def multi_nexrad_load_netcdf(
-    paths_to_files, file_type, tracking_var, CONFIG, save_location=None
-):
-    """
-    Inputs:
-        path_to_files: Array of glob path to archival NEXRAD level 2 input files--i.e. ["/data/usr/KVNX*_V06.ar2v", "/data/usr/KIVX*_V06.ar2v"]. ONLY AN ARRAY WHEN NOT GRIDDED YET
-        file_type: ["ar2v", "nc"] type of input file--either archival or netcdf
-        tracking_var: ["dbz"], variable which is going to be used for tracking--reflectivity.
-        CONFIG: User configuration file
-        save_location: Where to save gridded NEXRAD data to if file_type=="ar2v"
-    Outputs:
-        nexrad_xarray: Xarray dataset containing gridded NEXRAD archival data
+    paths_to_files: list[str] | str,
+    file_type: str,
+    tracking_var: str,
+    CONFIG: dict,
+    save_location: str | None = None,
+) -> xr.DataArray:
     """
 
-    import glob
-    import pyart
-    import cftime
-    import warnings
-    import numpy as np
-    import xarray as xr
+
+    Parameters
+    ----------
+    paths_to_files : list[str] | str
+        Array of glob path to input files, either archival or grided netcdf--i.e. ["/data/usr/KVNX*_V06.ar2v", "/data/usr/KIVX*_V06.ar2v"]. ONLY AN ARRAY WHEN NOT GRIDDED YET.
+    file_type : str
+        ["ar2v", "nc"] type of input file--either archival or netcdf.
+    tracking_var : str
+        ["dbz"], variable which is going to be used for tracking--reflectivity.
+    CONFIG : dict
+        User configuration file.
+    save_location : str, optional
+        Where to save gridded NEXRAD data to if file_type=="ar2v". The default is None.
+
+    Raises
+    ------
+    Exception
+        Exception if missing MULTI-NEXRAD field in CONFIG, invalid tracking variable, and/or invalid file type.
+
+    Returns
+    -------
+    nexrad_xarray : xarray.core.dataarray.DataArray
+        Xarray DataArray containing gridded NEXRAD archival data.
+
+    """
 
     # If data is archival, perform gridding
     if file_type.lower() == "ar2v":
@@ -551,8 +617,17 @@ def multi_nexrad_load_netcdf(
             nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity
             del radar_objects
 
-            # Subset location of interest
+            # Subset location and time of interest
             if "multi_nexrad" in CONFIG:
+
+                if "min_frame" in CONFIG["multi_nexrad"]:
+                    nexrad_xarray = nexrad_xarray.isel(
+                        time=np.arange(
+                            CONFIG["multi_nexrad"]["min_frame"],
+                            nexrad_xarray.dims["time"],
+                        ),
+                        drop=True,
+                    )
 
                 if "bounds" in CONFIG["multi_nexrad"]:
 
@@ -636,8 +711,17 @@ def multi_nexrad_load_netcdf(
             nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity
             del radar_objects
 
-            # Subset location of interest
+            # Subset location and time of interest
             if "multi_nexrad" in CONFIG:
+
+                if "min_frame" in CONFIG["multi_nexrad"]:
+                    nexrad_xarray = nexrad_xarray.isel(
+                        time=np.arange(
+                            CONFIG["multi_nexrad"]["min_frame"],
+                            nexrad_xarray.dims["time"],
+                        ),
+                        drop=True,
+                    )
 
                 if "bounds" in CONFIG["multi_nexrad"]:
 

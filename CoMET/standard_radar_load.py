@@ -18,20 +18,39 @@ Created on Mon Jun 10 16:28:49 2024
 # Loads in pre-gridded radar data which follows the radar standardization set out in the CoMET-UDAF Section S1.1.
 # =============================================================================
 
-
-"""
-Inputs:
-    path_to_files: Glob path to gridded input netcdf files--i.e. "/data/usr/KVNX*_V06.nc"
-    tracking_var: ["dbz"], variable which is going to be used for tracking--reflectivity.
-    CONFIG: User configuration file
-Outputs:
-    radar_cube: iris cube continaing gridded reflectivity data ready for tobac tracking 
-    radar_xarray: Xarray dataset containing gridded reflectivity data
-"""
+import iris.cube
+import numpy as np
+import xarray as xr
 
 
-def standard_radar_load_netcdf_iris(path_to_files, tracking_var, CONFIG):
-    import xarray as xr
+def standard_radar_load_netcdf_iris(
+    path_to_files: str, tracking_var: str, CONFIG: dict
+) -> tuple[iris.cube.Cube, xr.DataArray]:
+    """
+
+
+    Parameters
+    ----------
+    path_to_files : str
+        Glob path to gridded input netcdf files--i.e. "/data/usr/KVNX*_V06.nc".
+    tracking_var : str
+        ["dbz"], variable which is going to be used for tracking--reflectivity..
+    CONFIG : dict
+        User configuration file.
+
+    Raises
+    ------
+    Exception
+        Exception if CONFIG missing standard_radar field or invalid tracking variable entered.
+
+    Returns
+    -------
+    radar_cube : iris.cube.Cube
+        Iris cube continaing gridded reflectivity data ready for tobac tracking.
+    radar_xarray : xarray.core.dataarray.DataArray
+        Xarray DataArray containing gridded reflectivity data.
+
+    """
 
     # Convert to iris cube and return
     if tracking_var.lower() == "dbz":
@@ -43,6 +62,14 @@ def standard_radar_load_netcdf_iris(path_to_files, tracking_var, CONFIG):
 
         # Subset location of interest
         if "standard_radar" in CONFIG:
+
+            if "min_frame" in CONFIG["standard_radar"]:
+                radar_xarray = radar_xarray.isel(
+                    time=np.arange(
+                        CONFIG["standard_radar"]["min_frame"], radar_xarray.dims["time"]
+                    ),
+                    drop=True,
+                )
 
             if "bounds" in CONFIG["standard_radar"]:
 
@@ -94,18 +121,32 @@ def standard_radar_load_netcdf_iris(path_to_files, tracking_var, CONFIG):
         )
 
 
-"""
-Inputs:
-    path_to_files: Glob path to gridded input netcdf files--i.e. "/data/usr/KVNX*_V06.nc"
-    tracking_var: ["dbz"], variable which is going to be used for tracking--reflectivity.
-    CONFIG: User configuration file
-Outputs:
-    radar_xarray: Xarray dataset containing gridded reflectivity data
-"""
+def standard_radar_load_netcdf(
+    path_to_files: str, tracking_var: str, CONFIG: dict
+) -> xr.DataArray:
+    """
 
 
-def standard_radar_load_netcdf(path_to_files, tracking_var, CONFIG):
-    import xarray as xr
+    Parameters
+    ----------
+    path_to_files : str
+        Glob path to gridded input netcdf files--i.e. "/data/usr/KVNX*_V06.nc".
+    tracking_var : str
+        ["dbz"], variable which is going to be used for tracking--reflectivity..
+    CONFIG : dict
+        User configuration file.
+
+    Raises
+    ------
+    Exception
+        Exception if CONFIG missing standard_radar field or invalid tracking variable entered.
+
+    Returns
+    -------
+    radar_xarray : xarray.core.dataarray.DataArray
+        Xarray DataArray containing gridded reflectivity data.
+
+    """
 
     # Convert to iris cube and return
     if tracking_var.lower() == "dbz":
@@ -117,6 +158,14 @@ def standard_radar_load_netcdf(path_to_files, tracking_var, CONFIG):
 
         # Subset location of interest
         if "standard_radar" in CONFIG:
+
+            if "min_frame" in CONFIG["standard_radar"]:
+                radar_xarray = radar_xarray.isel(
+                    time=np.arange(
+                        CONFIG["standard_radar"]["min_frame"], radar_xarray.dims["time"]
+                    ),
+                    drop=True,
+                )
 
             if "bounds" in CONFIG["standard_radar"]:
 

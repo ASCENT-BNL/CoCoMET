@@ -10,17 +10,26 @@ Created on Tue Jul  2 09:55:18 2024
 # This file contains the functions used to calculate statistics and data related to ARM products
 # =============================================================================
 
+import numpy as np
+import xarray as xr
+from tqdm import tqdm
+from vincenty import vincenty
+
+from .calculate_convective_properties import (
+    calculate_interp_sonde_convective_properties,
+)
+
 
 # Calculate nearest item in list to given pivot
-def find_nearest(array, pivot):
-    import numpy as np
-
+def find_nearest(array: np.ndarray, pivot) -> int:
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx
 
 
-def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
+def extract_arm_product(
+    analysis_object: dict, path_to_files: str, variable_names: list[str], **args: dict
+) -> xr.Dataset:
     """
 
 
@@ -28,9 +37,9 @@ def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
     ----------
     analysis_object : dict
         A CoMET-UDAF standard analysis object containing at least UDAF_tracks.
-    path_to_files : string
+    path_to_files : str
         A glob-like path to the VDISQUANTS ARM product output.
-    variable_name : list of strings
+    variable_name : list[str]
         Case sensitive name of variable you want to extract from the ARM data
 
     Returns
@@ -39,11 +48,6 @@ def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
         An xarray Dataset with the following: frame, tracking_time, vdisquants_time, time_delta, closest_feature_id (km), variable_names list
 
     """
-
-    import numpy as np
-    import xarray as xr
-    from tqdm import tqdm
-    from vincenty import vincenty
 
     # Ensure input is a list
     if type(variable_names) != list:
@@ -221,7 +225,11 @@ def extract_arm_product(analysis_object, path_to_files, variable_names, **args):
     return output_data
 
 
-def calculate_arm_interpsonde(analysis_object, path_to_files, **args):
+# TODO: Change this to use same requested variable
+# Maybe change this to calc_convective_properties or something similar
+def calculate_arm_interpsonde(
+    analysis_object: dict, path_to_files: str, **args: dict
+) -> tuple[xr.Dataset, xr.Dataset]:
     """
 
 
@@ -229,10 +237,10 @@ def calculate_arm_interpsonde(analysis_object, path_to_files, **args):
     ----------
     analysis_object : dict
         A CoMET-UDAF standard analysis object containing at least UDAF_tracks.
-    path_to_files : string
+    path_to_files : str
         A glob-like path to the VDISQUANTS ARM product output.
-    **args : dict, optional
-        Parameters to pass to the calculations of convective initation properties.
+    **args : dict
+        Parameters to pass to the calculations of convective initation properties..
 
     Returns
     -------
@@ -241,15 +249,8 @@ def calculate_arm_interpsonde(analysis_object, path_to_files, **args):
                                                             barometric_pressure (hPA), wind_speed (m/s), wind_direction (degrees), northward_wind (m/s), eastward_wind (m/s).
     sonde_output_init_data : xarray.core.dataset.Dataset
         An xarray Dataset with the following: sonde_time, ...
-    """
 
-    import numpy as np
-    import xarray as xr
-    from tqdm import tqdm
-    from vincenty import vincenty
-    from .calculate_convective_properties import (
-        calculate_interp_sonde_convective_properties,
-    )
+    """
 
     # Open video disdrometer product
     sonde = xr.open_mfdataset(

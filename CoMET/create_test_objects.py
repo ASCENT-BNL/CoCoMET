@@ -11,13 +11,24 @@ Created on Fri Jul 19 13:48:43 2024
 # Should also convert this one case into the various model types / CoMET input types to test
 # =============================================================================
 
+import numpy as np
+import xarray as xr
+from scipy.ndimage import gaussian_filter
+from tqdm import tqdm
 
-def create_isolated_cell(grid_shape, cell_var, cell_radius, max_dbz=None, min_tb=None):
+
+def create_isolated_cell(
+    grid_shape: tuple[int, int, int, int],
+    cell_var: str,
+    cell_radius: int,
+    max_dbz: float = None,
+    min_tb: float = None,
+) -> np.ndarray:
     """
 
     Parameters
     ----------
-    grid_shape : length 4 tuple
+    grid_shape : tuple[int, int, int, int]
         The shape of the domain you want to create in number of grid points (t,x,y,z). i.e. (20,500,500,50).
     cell_var : string, ["dbz", "tb"]
         The variable you want to use to define the cell, either reflectivity or brightness temperature.
@@ -34,10 +45,6 @@ def create_isolated_cell(grid_shape, cell_var, cell_radius, max_dbz=None, min_tb
         A numpy array of shape equivelant to grid_shape but has either reflectivity or brightness temperature values.
 
     """
-
-    import numpy as np
-    from tqdm import tqdm
-    from scipy.ndimage import gaussian_filter
 
     cell_grid = np.zeros(grid_shape)
 
@@ -108,7 +115,9 @@ def create_mcs():
     print("=====In Progress=====")
 
 
-def create_test_wrf_xarray(cell_grid, dt, dx, dy, dz, cell_var):
+def create_test_wrf_xarray(
+    cell_grid: np.ndarray, dt: float, dx: float, dy: float, dz: float, cell_var: str
+) -> xr.Dataset:
     """
 
     Parameters
@@ -132,8 +141,6 @@ def create_test_wrf_xarray(cell_grid, dt, dx, dy, dz, cell_var):
         DESCRIPTION.
 
     """
-
-    import xarray as xr
 
     print("=====In Progress=====")
 

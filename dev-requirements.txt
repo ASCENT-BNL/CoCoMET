@@ -13,5 +13,8 @@ vincenty
 iris
 tqdm
 metpy
+scikit-image
 black
 pytest
+isort
+# pdoc -- TBD

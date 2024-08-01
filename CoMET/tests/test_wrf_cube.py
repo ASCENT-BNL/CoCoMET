@@ -10,13 +10,13 @@ Created on Fri Jul 19 13:12:33 2024
 # TODO: Implement all these tests once we can create our test cases
 # =============================================================================
 
+import xarray as xr
+
 from CoMET.create_test_objects import create_isolated_cell, create_test_wrf_xarray
 
 
 # This test should always pass for now
 def test_wrf_cube_load():
-
-    import xarray as xr
 
     cell = create_isolated_cell(
         grid_shape=(10, 200, 200, 50), cell_var="tb", cell_radius=10, max_dbz=62

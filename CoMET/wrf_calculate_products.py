@@ -10,17 +10,28 @@ Created on Wed Jul  3 11:01:10 2024
 # This file contains the functions used to calculate additional values from wrf output. Including reflectivity, mass point updrafts, and altitudes
 # =============================================================================
 
+import warnings
 
-def wrf_calculate_reflectivity(wrf_xarray):
-    """
-    Inputs:
-        wrf_xarray: xarray Dataset containing default WRF values
-    Ouputs:
-        dBZ: DataArray containing calculated reflectivity values
+import numpy as np
+import xarray as xr
+from tqdm import tqdm
+
+
+def wrf_calculate_reflectivity(wrf_xarray: xr.Dataset) -> xr.DataArray:
     """
 
-    import warnings
-    import numpy as np
+
+    Parameters
+    ----------
+    wrf_xarray : xarray.core.dataset.Dataset
+        Xarray Dataset containing default WRF values.
+
+    Returns
+    -------
+    dBZ : xarray.core.dataarray.DataArray
+        DataArray containing calculated reflectivity values.
+
+    """
 
     # Get variables from WRF
     t = wrf_xarray["T"]
@@ -84,19 +95,24 @@ def wrf_calculate_reflectivity(wrf_xarray):
         }
     )
 
-    return dBZ.chunk(t.chunksizes)
+    return dBZ.chunk(t.unify_chunks().chunksizes)
 
 
-def wrf_calculate_brightness_temp(wrf_xarray):
-    """
-    Inputs:
-        wrf_xarray:xarray Dataset containing default WRF values
-    Outputs:
-        TB: numpy array containing brightness temperature at each point and time--same dimension as input
+def wrf_calculate_brightness_temp(wrf_xarray: xr.Dataset) -> np.ndarray:
     """
 
-    import numpy as np
-    from tqdm import tqdm
+
+    Parameters
+    ----------
+    wrf_xarray : xarray.core.dataset.Dataset
+        Xarray Dataset containing default WRF values.
+
+    Returns
+    -------
+    TB : numpy.ndarray
+        Numpy array containing brightness temperature at each point and time--same dimension as input.
+
+    """
 
     OLR = wrf_xarray["OLR"].values
 
@@ -117,12 +133,20 @@ def wrf_calculate_brightness_temp(wrf_xarray):
     return TB
 
 
-def wrf_calculate_agl_z(wrf_xarray):
+def wrf_calculate_agl_z(wrf_xarray: xr.Dataset) -> xr.DataArray:
     """
-    Inputs:
-        wrf_xarray: xarray Dataset containing default WRF values
-    Outputs:
-        geopt: Dataarray of heights AGL
+
+
+    Parameters
+    ----------
+    wrf_xarray : xarray.core.dataset.Dataset
+        Xarray Dataset containing default WRF values.
+
+    Returns
+    -------
+    geopt : xarray.core.dataarray.DataArray
+        Dataarray of heights AGL.
+
     """
 
     ph = wrf_xarray["PH"]
@@ -140,12 +164,20 @@ def wrf_calculate_agl_z(wrf_xarray):
     return (geopt / 9.81) - hgt
 
 
-def wrf_calculate_wa(wrf_xarray):
+def wrf_calculate_wa(wrf_xarray: xr.Dataset) -> xr.DataArray:
     """
-    Inputs:
-        wrf_xarray: xarray Dataset containing default WRF values
-    Outputs:
-        wa: Dataarray of vertical wind components at mass points
+
+
+    Parameters
+    ----------
+    wrf_xarray : xarray.core.dataset.Dataset
+        Xarray Dataset containing default WRF values.
+
+    Returns
+    -------
+    wa : xarray.core.dataarray.DataArray
+        Dataarray of vertical wind components at mass points.
+
     """
 
     # Destagger vertical winds
@@ -164,16 +196,21 @@ def wrf_calculate_wa(wrf_xarray):
     return wa
 
 
-def wrf_calculate_precip_rate(wrf_xarray):
-    """
-    Inputs:
-        wrf_xarray: xarray Dataset containing default WRF values
-    Outputs:
-        pr: Numpy array of precipitation rate in mm/hr
+def wrf_calculate_precip_rate(wrf_xarray: xr.Dataset) -> np.ndarray:
     """
 
-    import numpy as np
-    from tqdm import tqdm
+
+    Parameters
+    ----------
+    wrf_xarray : xarray.core.dataset.Dataset
+        Xarray Dataset containing default WRF values.
+
+    Returns
+    -------
+    precip_rate : numpy.ndarray
+        Numpy array of precipitation rate in mm/hr.
+
+    """
 
     total_precip = (wrf_xarray.RAINC + wrf_xarray.RAINNC).values
     precip_rate = np.zeros(total_precip.shape)

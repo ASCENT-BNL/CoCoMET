@@ -24,7 +24,10 @@ max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None 
 
 # WRF
 wrf:
-    path_to_data: "/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*"
+    path_to_data: "/D3/data/diewang/idealized_mcs_5min/03_2011-07-16_CTRL_Midwest_-Loc2_MCS_Storm-Nr_JJA-8-TH5/4000/*"
+    
+    is_idealized: True
+    min_frame: 10
 
     feature_tracking_var: "DBZ" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
     segmentation_var: "DBZ"
@@ -56,12 +59,12 @@ wrf:
             threshold: 15
     
         analysis: # Optional
-            # merge_split: { variable: "DBZ" }
+            merge_split: { variable: "DBZ" }
             # eth: { variable: "OLR", cell_footprint_height: 2000, threshold: 15 }
-            # area-low: { height: 2000, threshold: 30 }
+            area-low: { height: 2000, threshold: 15 }
             # area-high: { height: 4000, threshold: 15 }
-            volume: { threshold: 15 }
-            volume-high: { threshold: 30 }
+            # volume: { threshold: 15 }
+            # volume-high: { threshold: 30 }
             
 #     moaap:
 #         tracking_save_path: "/D3/data/thahn/wrf/wrfout_2023_07_09/moaap_test/"

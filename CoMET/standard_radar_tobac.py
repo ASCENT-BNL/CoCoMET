@@ -18,28 +18,48 @@ Created on Tue Jun 11 17:36:27 2024
 # This defines the methods for running tobac on standard gridded radar data processed using standard_radar_load.py
 # =============================================================================
 
+import logging
+from copy import deepcopy
+
+import geopandas as gpd
+import iris.cube
+import numpy as np
+import tobac
+import xarray as xr
+
 
 # Calculate nearest item in list to given pivot
 def find_nearest(array, pivot):
-    import numpy as np
 
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx
 
 
-def standard_radar_tobac_feature_id(cube, CONFIG):
-    """
-    Inputs:
-        cube: iris cube containing the variable to be tracked
-        CONFIG: User configuration file
-    Outputs:
-        radar_geopd: geodataframe containing all default tobac feature id outputs
+def standard_radar_tobac_feature_id(
+    cube: iris.cube.Cube, CONFIG: dict
+) -> gpd.GeoDataFrame | None:
     """
 
-    import tobac
-    import geopandas as gpd
-    from copy import deepcopy
+
+    Parameters
+    ----------
+    cube : iris.cube.Cube
+        Iris cube containing the variable to be tracked.
+    CONFIG : dict
+        User configuration file.
+
+    Raises
+    ------
+    Exception
+        Exception for out-of-bounds segmentation height.
+
+    Returns
+    -------
+    radar_geopd : geopandas.geodataframe.GeoDataFrame
+        Geodataframe containing all default tobac feature id outputs.
+
+    """
 
     feat_cube = deepcopy(cube)
     inCONFIG = deepcopy(CONFIG)
@@ -53,7 +73,7 @@ def standard_radar_tobac_feature_id(cube, CONFIG):
             or type(CONFIG["standard_radar"]["tobac"]["feature_id"]["height"]) == bool
         ):
             raise Exception(
-                f"""!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
+                f"""!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
             )
         if (
             inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"]
@@ -62,7 +82,7 @@ def standard_radar_tobac_feature_id(cube, CONFIG):
             < cube.coord("altitude").points.min()
         ):
             raise Exception(
-                f"""!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
+                f"""!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
             )
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
@@ -108,23 +128,30 @@ def standard_radar_tobac_feature_id(cube, CONFIG):
     return radar_geopd
 
 
-def standard_radar_tobac_linking(cube, radar_features, CONFIG):
-    """
-    Inputs:
-        cube: iris cube containing the variable to be tracked
-        radar_features: tobac radar features from standard_radar_tobac_feature_id output
-        CONFIG: User configuration file
-    Outputs:
-        radar_geopd_tracks: geodataframe containing all default tobac feature id outputs
+def standard_radar_tobac_linking(
+    cube: iris.cube.Cube, radar_features: gpd.GeoDataFrame, CONFIG: dict
+) -> gpd.GeoDataFrame | None:
     """
 
-    import tobac
-    import logging
-    import numpy as np
-    import geopandas as gpd
+
+    Parameters
+    ----------
+    cube : iris.cube.Cube
+        Iris cube containing the variable to be tracked.
+    radar_features : geopandas.geodataframe.GeoDataFrame
+        tobac radar features from standard_radar_tobac_feature_id output.
+    CONFIG : dict
+        User configuration file.
+
+    Returns
+    -------
+    radar_geopd_tracks : geopandas.geodataframe.GeoDataFrame
+        Geodataframe containing all default tobac feature id outputs.
+
+    """
 
     if radar_features is None:
-        return (None, None)
+        return None
 
     # Mute tobac logging output
     logging.getLogger("trackpy").setLevel(level=logging.ERROR)
@@ -175,25 +202,44 @@ def standard_radar_tobac_linking(cube, radar_features, CONFIG):
 
 
 def standard_radar_tobac_segmentation(
-    cube, radar_features, segmentation_type, CONFIG, segmentation_height=None
-):
-    """
-    Inputs:
-        cube: iris cube containing the variable to be tracked
-        radar_features: tobac radar features from standard_radar_tobac_feature_id output
-        segmentation_type: ["2D", "3D"], whether to perform 2d segmentation or 3d segmentation
-        CONFIG: User configuration file
-        segmentation_height: height, in meters, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var != tb
-    Outputs:
-        (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
+    cube: iris.cube.Cube,
+    radar_features: gpd.GeoDataFrame,
+    segmentation_type: str,
+    CONFIG: dict,
+    segmentation_height: float | None = None,
+) -> tuple[xr.DataArray, gpd.GeoDataFrame] | tuple[None, None]:
     """
 
-    import tobac
-    import xarray as xr
-    from copy import deepcopy
+
+    Parameters
+    ----------
+    cube : iris.cube.Cube
+        Iris cube containing the variable to be tracked.
+    radar_features : geopandas.geodataframe.GeoDataFrame
+        tobac radar features from standard_radar_tobac_feature_id output.
+    segmentation_type : str
+        ["2D", "3D"], whether to perform 2d segmentation or 3d segmentation.
+    CONFIG : dict
+        User configuration file.
+    segmentation_height : float | None, optional
+        Height, in meters, to perform the updraft or reflectivity segmentation if 2d selected. The default is None.
+
+    Raises
+    ------
+    Exception
+        Exception if out-of-bounds height or invalid tracking variable.
+
+    Returns
+    -------
+    segment_array : xarray.core.dataarray.DataArray
+        Xarray DataArray containing segmented data.
+    segment_features : geopandas.geodataframe.GeoDataFrame
+        Geodataframe with ncells row.
+
+    """
 
     if radar_features is None:
-        return None
+        return (None, None)
 
     # Check tracking var
     if cube.name().lower() != "equivalent_reflectivity_factor":

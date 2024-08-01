@@ -71,6 +71,7 @@ Created on Thu Jul 11 11:23:21 2024
 # =========================
 
 import numpy as np
+import xarray as xr
 
 
 def find_closest(A, target):
@@ -171,16 +172,51 @@ def calc_elr(T, alt):
 
 
 def calculate_interp_sonde_convective_properties(
-    sonde,
-    parcel=3,
-    ml_depth=482,
-    mu_depth=700.0,
-    start=0,
-    flag_heat=2,
-    flag_convert=0,
-    flag_adiabat=1,
-    **args,
-):
+    sonde: xr.Dataset,
+    parcel: int = 3,
+    ml_depth: float = 482,
+    mu_depth: float = 700.0,
+    start: int = 0,
+    flag_heat: int = 2,
+    flag_convert: int = 0,
+    flag_adiabat: int = 1,
+    **args: dict,
+) -> dict:
+    """
+
+
+    Parameters
+    ----------
+    sonde : xarray.core.dataset.Dataset
+        Input data from INTERPSONDE ARM VAP at one time index.
+    parcel : int, optional
+        Whether to use 1 - Surface, 2 - Mixed-Layer, or 3 - Most Unstable parcel. The default is 3.
+    ml_depth : float, optional
+        Depth of mixed-layer [meters] (when parcel = 2). The default is 482.
+    mu_depth : float, optional
+        Look below this pressure level for MU parcel [hPa] (when parcel = 3). The default is 700.0.
+    start : int, optional
+        Index to start at for determining parcel properties (e.g. 1 = z(1)).. The default is 0.
+    flag_heat : int, optional
+        Latent heating only due to liquid or liquid and ice? 1 - Liquid only / 2 - Liquid and Ice. The default is 2.
+    flag_convert : int, optional
+        Convert pre-existing cloud water to cloud ice? 0 = No / 1 - Yes (using linear function of temperature) Requires flag_adiabat = 2 below (so we have hydrometeors to freeze). The default is 0.
+    flag_adiabat : int, optional
+        Reversible or Irreversible parcel path? 1 - Pseudoadiabatic (Irreversible) / 2 - Moist Adiabatic (Reversible). The default is 1.
+    **args : dict
+        Throw away params.
+
+    Raises
+    ------
+    Exception
+        TBD.
+
+    Returns
+    -------
+    results : dict
+        Dictionary of all convective properties (CAPE, CIN, etc.).
+
+    """
 
     tdryo = sonde["temp"].values  # Dry Bulb Temperature [C]
     p_e = sonde["bar_pres"].values * 1000  # Pressure [Pa]

@@ -10,30 +10,39 @@ Created on Wed Jul 17 14:14:14 2024
 # This defines the methods for running MOAAP on WRF data processed using wrf_load.py
 # =============================================================================
 
+import numpy as np
+import pandas as pd
+import xarray as xr
+
+from CoMET.MOAAP import moaap
+
+from .mesonh_calculate_products import mesonh_calculate_brightness_temp
+
 
 # Calculate nearest item in list to given pivot
 def find_nearest(array, pivot):
-    import numpy as np
-
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx
 
 
-def mesonh_moaap(mesonh_xarray, CONFIG):
-    """
-    Inputs:
-        wrf_xarray: xarray Dataset containing WRF data calculated from wrf_load.py
-        CONFIG: User configuration file
-    Outputs:
-        mask: Default MOAAP output mask
+def mesonh_moaap(mesonh_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
     """
 
-    import numpy as np
-    import pandas as pd
-    import xarray as xr
-    from .mesonh_calculate_products import mesonh_calculate_brightness_temp
-    from CoMET.MOAAP import moaap
+
+    Parameters
+    ----------
+    mesonh_xarray : xarray.core.dataset.Dataset
+        xarray Dataset containing MesoNH data calculated from mesonh_load.py.
+    CONFIG : dict
+        User configuration file.
+
+    Returns
+    -------
+    mask_file : xarray.core.dataset.Dataset
+        Default MOAAP output mask.
+
+    """
 
     # Get basic setup variables including lat/lon, delta time, a pandas time range vector (TODO: adjust output to )
     latitudes = mesonh_xarray.lat[0].values
@@ -46,7 +55,7 @@ def mesonh_moaap(mesonh_xarray, CONFIG):
     )
     mask = np.ones(latitudes.shape)
 
-    # TODO: Find out how to calculate geopotential heights and accumulated precipitation
+    # TODO: Find out how to calculate geopotential heights
     # Get all necessary variables from WRF output to input into MOAAP
 
     # Get pressure heights

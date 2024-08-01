@@ -1,35 +1,27 @@
-from .user_interface_layer import *
-from .tracker_output_translation_layer import *
-
-from .post_processor import *
-
 from CoMET.analysis.calc_var import calc_var
-
 from CoMET.MOAAP import moaap
-
-from .wrfcube import *
-from .wrf_load import *
-from .wrf_tobac import *
-from .wrf_moaap import *
-from .wrf_calculate_products import *
-
-from .mesonhcube import *
-from .mesonh_load import *
-from .mesonh_tobac import *
-from .mesonh_moaap import *
-from .mesonh_calculate_products import *
-
-from .nexrad_load import *
-from .nexrad_tobac import *
-
-from .multi_nexrad_load import *
-from .multi_nexrad_tobac import *
-
-from .standard_radar_load import *
-from .standard_radar_tobac import *
 
 from .goes_load import *
 from .goes_tobac import *
+from .mesonh_calculate_products import *
+from .mesonh_load import *
+from .mesonh_moaap import *
+from .mesonh_tobac import *
+from .mesonhcube import *
+from .multi_nexrad_load import *
+from .multi_nexrad_tobac import *
+from .nexrad_load import *
+from .nexrad_tobac import *
+from .post_processor import *
+from .standard_radar_load import *
+from .standard_radar_tobac import *
+from .tracker_output_translation_layer import *
+from .user_interface_layer import *
+from .wrf_calculate_products import *
+from .wrf_load import *
+from .wrf_moaap import *
+from .wrf_tobac import *
+from .wrfcube import *
 
 print(
     "=====Welcome To CoMET=====\n\n"

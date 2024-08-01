@@ -10,10 +10,16 @@ Created on Fri Jun 28 15:00:59 2024
 # This contains all of the functions to calculate basic bulk cell statistics (ETH, area, etc.) from CoMET-UDAF data
 # =============================================================================
 
+import warnings
+
+import numpy as np
+import pandas as pd
+import xarray as xr
+from tqdm import tqdm
+
 
 # Calculate nearest item in list to given pivot
-def find_nearest(array, pivot):
-    import numpy as np
+def find_nearest(array: np.ndarray, pivot) -> int:
 
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
@@ -21,33 +27,48 @@ def find_nearest(array, pivot):
 
 
 def calculate_ETH(
-    analysis_object,
-    threshold,
-    variable=None,
-    cell_footprint_height=2000,
-    quantile=0.95,
-    **args,
-):
-    """
-    Inputs:
-        analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d, and segmentation_xarray
-        threshold: The value which needs to be exceeded to count towards the echo top height. I.e. 15 for reflectivity.
-        variable: The variable from the input segmentation_xarray which should be used for calculating ETH
-        cell_footprint_height: The height used to calculate the cell area to determine where to calculate ETHs
-        quantile: The percentile of calculated ETHs to return
-    Outputs:
-        eth_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, eth where eth is in km
+    analysis_object: dict,
+    threshold: float,
+    variable: str | None = None,
+    cell_footprint_height: float = 2000,
+    quantile: float = 0.95,
+    **args: dict,
+) -> pd.DataFrame | None:
     """
 
-    import numpy as np
-    import xarray as xr
-    import pandas as pd
-    from tqdm import tqdm
+
+    Parameters
+    ----------
+    analysis_object : dict
+        A  CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d, and segmentation_xarray.
+    threshold : float
+        The value which needs to be exceeded to count towards the echo top height. I.e. 15 for reflectivity.
+    variable : str, optional
+        The variable from the input segmentation_xarray which should be used for calculating ETH. The default is None.
+    cell_footprint_height : float, optional
+        The height used to calculate the cell area to determine where to calculate ETHs. The default is 2000.
+    quantile : float, optional
+        The percentile of calculated ETHs to return. The default is 0.95.
+    **args : dict
+        Throw away inputs.
+
+    Raises
+    ------
+    Exception
+        Exception if missing segmentation data from the analysis object.
+
+    Returns
+    -------
+    pandas.core.frame.DataFrame
+        A pandas dataframe with the following rows: frame, feature_id, cell_id, eth where eth is in km.
+
+    """
 
     # If input variable field is 2D return None. Also, if DataArray, use those values for calculations. If Dataset, use tracking_var to get variable
     if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
 
         if len(analysis_object["segmentation_xarray"].shape) != 4:
+            warnings.warn("!=====Input Variable is not 3D=====!")
             return None
 
         else:
@@ -56,6 +77,7 @@ def calculate_ETH(
     else:
 
         if len(analysis_object["segmentation_xarray"][variable].shape) != 4:
+            warnings.warn("!=====Input Variable is not 3D=====!")
             return None
 
         else:
@@ -138,33 +160,40 @@ def calculate_ETH(
     return pd.DataFrame(eth_info)
 
 
-def calculate_area(analysis_object, height=2000, variable=None, threshold=None, **args):
+def calculate_area(
+    analysis_object: dict,
+    height: float = 2000,
+    variable: str | None = None,
+    threshold: float | None = None,
+    **args: dict,
+) -> pd.DataFrame:
     """
-    Inputs:
-        analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d
-        height: The height which is used to calculate the area of cells
-        threshold: Value of which the area should be greater than
-    Outputs:
-        area_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, area where area is in km^2
+
+
+    Parameters
+    ----------
+    analysis_object : dict
+        A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d.
+    height : float, optional
+        The height which is used to calculate the area of cells. The default is 2000.
+    variable : str, optional
+        Variable to which we should apply the threshold. The default is None.
+    threshold : float, optional
+        Value of which the area should be greater than. The default is None.
+    **args : dict
+        Throw away variables.
+
+    Raises
+    ------
+    Exception
+        Exception if missing segmentation input from the analysis object.
+
+    Returns
+    -------
+    pandas.core.frame.DataFrame
+        A pandas dataframe with the following rows: frame, feature_id, cell_id, area where area is in km^2.
+
     """
-
-    import numpy as np
-    import pandas as pd
-    import xarray as xr
-    from tqdm import tqdm
-
-    # Load background varaible
-    if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
-        variable_field = analysis_object["segmentation_xarray"]
-    else:
-        variable_field = analysis_object["segmentation_xarray"][variable]
-
-    if len(variable_field.shape) == 4:
-        height_index = find_nearest(
-            analysis_object["segmentation_xarray"]["altitude"].values, height
-        )
-
-        variable_field = variable_field[:, height_index]
 
     # If 3D segmentation is available, use that at given height, otherwise use 2D segmentation
     if analysis_object["UDAF_segmentation_3d"] is not None:
@@ -184,8 +213,21 @@ def calculate_area(analysis_object, height=2000, variable=None, threshold=None, 
     else:
         raise Exception("!=====Missing Segmentation Input=====!")
 
-    # Enforce threshold
+    # Enforce threshold if present
     if threshold is not None:
+        # Load background varaible
+        if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
+            variable_field = analysis_object["segmentation_xarray"]
+        else:
+            variable_field = analysis_object["segmentation_xarray"][variable]
+
+        if len(variable_field.shape) == 4:
+            height_index = find_nearest(
+                analysis_object["segmentation_xarray"]["altitude"].values, height
+            )
+
+            variable_field = variable_field[:, height_index]
+
         mask.values[variable_field.values < threshold] = -1
 
     area_info = {"frame": [], "feature_id": [], "cell_id": [], "area": []}  # in km^2
@@ -239,27 +281,37 @@ def calculate_area(analysis_object, height=2000, variable=None, threshold=None, 
     return pd.DataFrame(area_info)
 
 
-def calculate_volume(analysis_object, variable=None, threshold=None, **args):
+def calculate_volume(
+    analysis_object: dict,
+    variable: str | None = None,
+    threshold: float | None = None,
+    **args: dict,
+) -> pd.DataFrame:
     """
-    Inputs:
-        analysis_object: A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_3d
-    Outputs:
-        volume_info: A pandas dataframe with the following rows: frame, feature_id, cell_id, volume where area is in km^3
+
+
+    Parameters
+    ----------
+    analysis_object : dict
+        A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_3d.
+    variable : str, optional
+        Variable to which we should apply the threshold. The default is None.
+    threshold : float, optional
+        Value of which the area should be greater than. The default is None.
+    **args : dict
+        Throw away variables.
+
+    Raises
+    ------
+    Exception
+        Exception if missing segmentation input from the analysis object.
+
+    Returns
+    -------
+    pandas.core.frame.DataFrame
+        A pandas dataframe with the following rows: frame, feature_id, cell_id, volume where area is in km^3.
+
     """
-
-    import numpy as np
-    import pandas as pd
-    import xarray as xr
-    from tqdm import tqdm
-
-    # Load background varaible
-    if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
-        variable_field = analysis_object["segmentation_xarray"]
-    else:
-        variable_field = analysis_object["segmentation_xarray"][variable]
-
-    if len(variable_field.shape) != 4:
-        raise Exception("=====Must have a 3D segmentation _array=====")
 
     if analysis_object["UDAF_segmentation_3d"] is None:
         raise Exception(
@@ -268,8 +320,19 @@ def calculate_volume(analysis_object, variable=None, threshold=None, **args):
 
     mask = analysis_object["UDAF_segmentation_3d"].Feature_Segmentation
 
-    # Enforce threshold
     if threshold is not None:
+        # Load background varaible
+        if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
+            variable_field = analysis_object["segmentation_xarray"]
+        else:
+            variable_field = analysis_object["segmentation_xarray"][variable]
+
+        if len(variable_field.shape) != 4:
+            raise Exception(
+                "=====Must have a 3D segmentation_xarray for threshold application====="
+            )
+
+        # Enforce threshold
         mask.values[variable_field.values < threshold] = -1
 
     volume_info = {

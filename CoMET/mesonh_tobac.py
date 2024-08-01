@@ -10,29 +10,48 @@ Created on Tue Jul  9 15:41:26 2024
 # This defines the methods for running tobac on MesoNH data processed using mesonh_load.py
 # =============================================================================
 
+import logging
+from copy import deepcopy
+
+import geopandas as gpd
+import iris
+import iris.cube
+import numpy as np
+import tobac
+import xarray as xr
+
 
 # Calculate nearest item in list to given pivot
 def find_nearest(array, pivot):
-    import numpy as np
-
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx
 
 
-"""
-Inputs:
-    cube: iris cube containing the variable to be tracked
-    CONFIG: User defined configuration dict
-Outputs:
-    mesonh_geopd: geodataframe containing all default tobac feature id outputs
-"""
+def mesonh_tobac_feature_id(
+    cube: iris.cube.Cube, CONFIG: dict
+) -> gpd.GeoDataFrame | None:
+    """
 
 
-def mesonh_tobac_feature_id(cube, CONFIG):
-    import tobac
-    import geopandas as gpd
-    from copy import deepcopy
+    Parameters
+    ----------
+    cube : iris.cube.Cube
+        Iris cube containing the variable to be tracked.
+    CONFIG : dict
+        User configuration file.
+
+    Raises
+    ------
+    Exception
+        Exception if out-of-bounds height.
+
+    Returns
+    -------
+    mesonh_geopd : geopandas.geodataframe.GeoDataFrame
+        Geodataframe containing all default tobac feature id outputs.
+
+    """
 
     feat_cube = deepcopy(cube)
     inCONFIG = deepcopy(CONFIG)
@@ -46,7 +65,7 @@ def mesonh_tobac_feature_id(cube, CONFIG):
             or type(CONFIG["mesonh"]["tobac"]["feature_id"]["height"]) == bool
         ):
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG['mesonh']['tobac']['feature_id']['height'] .lower()}=====!"
+                f"!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG['mesonh']['tobac']['feature_id']['height'] .lower()}=====!"
             )
             return
         if (
@@ -56,7 +75,7 @@ def mesonh_tobac_feature_id(cube, CONFIG):
             < cube.coord("altitude").points.min()
         ):
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG['mesonh']['tobac']['feature_id']['height'] .lower()}=====!"
+                f"!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG['mesonh']['tobac']['feature_id']['height'] .lower()}=====!"
             )
             return
 
@@ -94,20 +113,27 @@ def mesonh_tobac_feature_id(cube, CONFIG):
     return mesonh_geopd
 
 
-"""
-Inputs:
-    cube: iris cube containing the variable to be tracked
-    radar_features: tobac radar features from mesonh_tobac_feature_id output
-    CONFIG: User configuration file
-Outputs:
-    mesonh_geopd_tracks: geodataframe containing all default tobac tracking outputs
-"""
+def mesonh_tobac_linking(
+    cube: iris.cube.Cube, radar_features: gpd.GeoDataFrame, CONFIG: dict
+) -> gpd.GeoDataFrame | None:
+    """
 
 
-def mesonh_tobac_linking(cube, radar_features, CONFIG):
-    import tobac
-    import logging
-    import geopandas as gpd
+    Parameters
+    ----------
+    cube : iris.cube.Cube
+        Iris cube containing the variable to be tracked.
+    radar_features : gpd.GeoDataFrame
+        Tobac radar features from mesonh_tobac_feature_id output.
+    CONFIG : dict
+        User configuration file.
+
+    Returns
+    -------
+    mesonh_geopd_tracks : geopandas.geodataframe.GeoDataFrame
+        Geodataframe containing all default tobac tracking outputs.
+
+    """
 
     if radar_features is None:
         return None
@@ -141,22 +167,52 @@ def mesonh_tobac_linking(cube, radar_features, CONFIG):
 
 """
 Inputs:
-    cube: iris cube containing the variable to be tracked
-    radar_features: tobac radar features from mesonh_tobac_feature_id output
-    segmentation_type: ["2D", "3D"], whether to perform 2d segmentation or 3d segmentation
-    CONFIG: User configuration file
-    segmentation_height: height, in meters, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var != tb
+    cube: 
+    radar_features: 
+    segmentation_type: 
+    CONFIG: 
+    segmentation_height: 
 Outputs:
     (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
 """
 
 
 def mesonh_tobac_segmentation(
-    cube, radar_features, segmentation_type, CONFIG, segmentation_height=None
-):
-    import tobac
-    import xarray as xr
-    from copy import deepcopy
+    cube: iris.cube.Cube,
+    radar_features: gpd.GeoDataFrame,
+    segmentation_type: str,
+    CONFIG: dict,
+    segmentation_height: float = None,
+) -> tuple[xr.DataArray, gpd.GeoDataFrame] | tuple[None, None]:
+    """
+
+
+    Parameters
+    ----------
+    cube : iris.cube.Cube
+        Iris cube containing the variable to be tracked.
+    radar_features : gpd.GeoDataFrame
+        tobac radar features from mesonh_tobac_feature_id output.
+    segmentation_type : str
+        ["2D", "3D"], whether to perform 2d segmentation or 3d segmentation.
+    CONFIG : dict
+        User configuration file.
+    segmentation_height : float, optional
+        Height, in meters, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var is 3D. The default is None.
+
+    Raises
+    ------
+    Exception
+        Exception for invalid segmentation type or height.
+
+    Returns
+    -------
+    segment_xarray : xarray.core.dataarray.DataArray
+        Xarray DataArray containing default tobac segmented data.
+    segment_pd : geopandas.geodataframe.GeoDataFrame
+        Geodataframe with ncells row.
+
+    """
 
     if radar_features is None:
         return (None, None)
@@ -164,7 +220,7 @@ def mesonh_tobac_segmentation(
     # Enforce 2D tracking only for 2D variables
     if len(cube.shape) == 3 and not segmentation_type.lower() == "2d":
         raise Exception(
-            f"!=====Invalid Segmentation Type. You Entered: {segmentation_type.lower()}. TB Tracking Restricted to 2D Segmentation=====!"
+            f"!=====Invalid Segmentation Type. You Entered: {segmentation_type.lower()}. {cube.name()} Tracking Restricted to 2D Segmentation=====!"
         )
         return
 

@@ -29,7 +29,7 @@ class Analysis_Object:
         self.UDAF_segmentation_2d = UDAF_segmentation_2d
         self.UDAF_segmentation_3d = UDAF_segmentation_3d
 
-    def return_analysis_dictionary(self):
+    def return_analysis_dictionary(self) -> dict:
 
         return {
             "tracking_xarray": self.tracking_xarray,

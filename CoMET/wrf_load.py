@@ -10,32 +10,90 @@ Created on Wed Jun  5 15:19:26 2024
 # Takes in a filepath containing WRF netCDF data and converts it to a netcdf dataset and/or an iris cube for use in trackers
 # =============================================================================
 
+import cftime
+import iris.cube
+import numpy as np
+import xarray as xr
 
-def wrf_load_netcdf_iris(filepath, tracking_var, CONFIG):
+from .wrf_calculate_products import (
+    wrf_calculate_agl_z,
+    wrf_calculate_brightness_temp,
+    wrf_calculate_precip_rate,
+    wrf_calculate_reflectivity,
+    wrf_calculate_wa,
+)
+from .wrfcube import load
+
+
+def wrf_load_netcdf_iris(
+    filepath: str, tracking_var: str, CONFIG: dict
+) -> tuple[iris.cube.Cube, xr.Dataset]:
     """
-    Inputs:
-        filepath: glob style path to wrfout files (i.e. ./data/wrfout/wrfout_d03_*)
-        trackingVar: ["dbz","tb","wa"], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
 
-    Outputs:
-        cube: iris cube containing either reflectivity, updraft velocity, or brightness temperature values
-        wrf_netcdf: xarray dataset containing merged WRF data
+
+    Parameters
+    ----------
+    filepath : str
+        Glob style path to wrfout files (i.e. ./data/wrfout/wrfout_d03_*).
+    tracking_var : str
+        ["dbz","tb","wa","pr", "..."], variable which is going to be used for tracking.
+    CONFIG : dict
+        User configuration file.
+
+    Raises
+    ------
+    Exception
+        Exception if missing wrf field or invalid tracking variable entered.
+
+    Returns
+    -------
+    cube : iris.cube.Cube
+        Iris cube containing tracking variable data.
+    wrf_xarray : xarray.core.dataset.Dataset
+        Xarray dataset containing merged WRF data.
+
     """
-
-    import numpy as np
-    import xarray as xr
-    from .wrf_calculate_products import (
-        wrf_calculate_reflectivity,
-        wrf_calculate_agl_z,
-        wrf_calculate_wa,
-        wrf_calculate_brightness_temp,
-        wrf_calculate_precip_rate,
-    )
-    from .wrfcube import load
 
     wrf_xarray = xr.open_mfdataset(
         filepath, coords="all", concat_dim="Time", combine="nested"
     )
+
+    if "wrf" in CONFIG:
+
+        # Check for idealized data then correct times
+        if "is_idealized" in CONFIG["wrf"]:
+            if CONFIG["wrf"]["is_idealized"]:
+                # Update Times
+                # Get time differences in minutes
+                time_diffs = (
+                    np.diff(wrf_xarray.XTIME.values)
+                    .astype("timedelta64[m]")
+                    .astype("int")
+                )
+
+                time_list = [0]
+
+                for diff in time_diffs:
+                    time_list.append(time_list[-1] + diff)
+
+                # Initialize simulation at January 1, 2000 for convinence
+                time_list = cftime.num2date(
+                    time_list, units="minutes since 2000-01-01 00:00:00"
+                )
+                wrf_xarray.assign_coords(XTIME=("Time", time_list))
+                wrf_xarray["XTIME"] = wrf_xarray["XTIME"].assign_attrs(
+                    {"description": "minutes since 2000-01-01 00:00:00"}
+                )
+
+        # Subset time of interest
+        if "min_frame" in CONFIG["wrf"]:
+            wrf_xarray = wrf_xarray.isel(
+                Time=np.arange(CONFIG["wrf"]["min_frame"], wrf_xarray.dims["Time"]),
+                drop=True,
+            )
+
+    else:
+        raise Exception('!=====CONFIG Missing "wrf" Field=====!')
 
     # Add projection x and y coordinates to WRF
     proj_y_values = wrf_xarray.DY * (
@@ -139,28 +197,70 @@ def wrf_load_netcdf_iris(filepath, tracking_var, CONFIG):
     return (cube, wrf_xarray.unify_chunks())
 
 
-def wrf_load_netcdf(filepath, tracking_var, CONFIG):
-    """
-    Inputs:
-        filepath: path to wrfout files (i.e. ./data/wrfout/wrfout_d03_*), works with * delimintator
-        trackingVar: ["dbz","tb","wa"], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
-
-    Outputs:sudo snap install outlook-for-linux --edge
-        wrf_netcdf: xarray dataset containing merged WRF data
+def wrf_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Dataset:
     """
 
-    import numpy as np
-    import xarray as xr
-    from .wrf_calculate_products import (
-        wrf_calculate_reflectivity,
-        wrf_calculate_agl_z,
-        wrf_calculate_wa,
-        wrf_calculate_brightness_temp,
-    )
+
+    Parameters
+    ----------
+    filepath : str
+        Glob style path to wrfout files (i.e. ./data/wrfout/wrfout_d03_*).
+    tracking_var : str
+        ["dbz","tb","wa","pr", "..."], variable which is going to be used for tracking.
+    CONFIG : dict
+        User configuration file.
+
+    Raises
+    ------
+    Exception
+        Exception if missing wrf field or invalid tracking variable entered.
+
+    Returns
+    -------
+    wrf_xarray : xarray.core.dataset.Dataset
+        Xarray dataset containing merged WRF data.
+
+    """
 
     wrf_xarray = xr.open_mfdataset(
         filepath, coords="all", concat_dim="Time", combine="nested"
     )
+
+    if "wrf" in CONFIG:
+
+        if "is_idealized" in CONFIG["wrf"]:
+            if CONFIG["wrf"]["is_idealized"]:
+                # Update Times
+                # Get time differences in minutes
+                time_diffs = (
+                    np.diff(wrf_xarray.XTIME.values)
+                    .astype("timedelta64[m]")
+                    .astype("int")
+                )
+
+                time_list = [0]
+
+                for diff in time_diffs:
+                    time_list.append(time_list[-1] + diff)
+
+                # Initialize simulation at January 1, 2000 for convinence
+                time_list = cftime.num2date(
+                    time_list, units="minutes since 2000-01-01 00:00:00"
+                )
+                wrf_xarray.assign_coords(XTIME=("Time", time_list))
+                wrf_xarray["XTIME"] = wrf_xarray["XTIME"].assign_attrs(
+                    {"description": "minutes since 2000-01-01 00:00:00"}
+                )
+
+        # Subset time of interest
+        if "min_frame" in CONFIG["wrf"]:
+            wrf_xarray = wrf_xarray.isel(
+                Time=np.arange(CONFIG["wrf"]["min_frame"], wrf_xarray.dims["Time"]),
+                drop=True,
+            )
+
+    else:
+        raise Exception('!=====CONFIG Missing "wrf" Field=====!')
 
     # Add projection x and y coordinates to WRF
     proj_y_values = wrf_xarray.DY * (

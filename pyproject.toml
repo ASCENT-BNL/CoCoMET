@@ -19,14 +19,15 @@ dependencies = [
     "iris",
     "tobac @ git+https://github.com/tobac-project/tobac.git@37ddd51",
     "tqdm",
-    "metpy"
+    "metpy",
+    "scikit-image"
 ]
 authors = [
   { name="Travis Hahn", email="travis.hahn@psu.edu" },
 ]
 description = "Convective cloud Model Evaluation Toolkit (CoMET)"
 readme = "README.md"
-requires-python = ">=3.11.0"
+requires-python = ">=3.10.0"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: BSD-3 License",

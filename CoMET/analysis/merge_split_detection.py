@@ -10,83 +10,82 @@ Created on Thu Jul 11 19:37:09 2024
 # This file contains the functionality for detecting merging and splitting cells
 # =============================================================================
 
+import warnings
+from copy import deepcopy
+
+import numpy as np
+import pandas as pd
+import xarray as xr
+from dask.array import isin
+from tqdm import tqdm
+
 
 # Calculate nearest item in list to given pivot
 def find_nearest(array, pivot):
-    import numpy as np
-
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx
 
 
 def merge_split_tracking(
-    analysis_object,
-    variable,
-    invert=False,  # For fields where we care about tracking mins
-    cell_footprint_height=2000,  # m
-    touching_threshold=0.20,
-    flood_background=20,
-    score_threshold=0,
-    score_weight_1=1,
-    score_weight_2=1,
-    radius_multiplyer=0.1,
-    overlap_threshold=0.5,
-    steps_forward_back=2,  # Should be > memory for tobac
-    **args,
-):
+    analysis_object: dict,
+    variable: str,
+    invert: bool = False,
+    cell_footprint_height: float = 2000,
+    touching_threshold: float = 0.20,
+    flood_background: float = 20,
+    score_threshold: float = 0,
+    score_weight_1: float = 1,
+    score_weight_2: float = 1,
+    radius_multiplyer: float = 0.1,
+    overlap_threshold: float = 0.5,
+    steps_forward_back: int = 2,
+    **args: dict,
+) -> tuple[pd.DataFrame, pd.DataFrame] | None:
     """
 
 
-        Parameters
-        ----------
-        analysis_object : TYPE
-            DESCRIPTION.
-        variable : TYPE
-            DESCRIPTION.
-        invert : TYPE, optional
-            DESCRIPTION. The default is False.
-        # For fields where we care about tracking mins    cell_footprint_height : TYPE, optional
-            DESCRIPTION. The default is 2000.
-        # m    touching_threshold : TYPE, optional
-            DESCRIPTION. The default is 0.20.
-        flood_background : TYPE, optional
-            DESCRIPTION. The default is 20.
-        score_threshold : TYPE, optional
-            DESCRIPTION. The default is 0.
-        score_weight_1 : TYPE, optional
-            DESCRIPTION. The default is 1.
-        score_weight_2 : TYPE, optional
-            DESCRIPTION. The default is 1.
-        radius_multiplyer : TYPE, optional
-            DESCRIPTION. The default is 0.1.
-        overlap_threshold : TYPE, optional
-            DESCRIPTION. The default is 0.5.
-        steps_forward_back : TYPE, optional
-            DESCRIPTION. The default is 2.
-        # Should be > : TYPE, optional
-            DESCRIPTION. The default is memory for tobac    **args.
-    print(cell_set)
-        Raises
-        ------
-        Exception
-            DESCRIPTION.
+    Parameters
+    ----------
+    analysis_object : dict
+        A  CoMET-UDAF standard analysis object containing at least segmentation_xarray, UDAF_tracks. and UDAF_segmentation_2d or UDAF_segmentation_3d, and segmentation_xarray.
+    variable : str
+        The variable which defines the background field.
+    invert : bool, optional
+        If we care about tracking lower values such as brightness temperature (i.e. we want to flood fill stuff less than a threshold), we need to invert the data so we can use the same algorithm. Will also invert background value. The default is False.
+    cell_footprint_height : float, optional
+        The height at which we want to find the newly calculated cell areas in meters. The default is 2000.
+    touching_threshold : float, optional
+        The percentage of cell border which must be shared by two cells. The default is 0.20.
+    flood_background : float, optional
+        The minimum background value for area calculation. The default is 20.
+    score_threshold : float, optional
+        The minimum value of the score function to be considered a part of the cell. The default is 0.
+    score_weight_1 : float, optional
+        The weighting of the relative strength of the cell. The default is 1.
+    score_weight_2 : float, optional
+        The weighting of the relative distance of the cell. The default is 1.
+    radius_multiplyer : float, optional
+        The multiplyer to increase the search radius by. Is equal to 1 + radius_multiplyer. The default is 0.1.
+    overlap_threshold : float, optional
+        The amount two cells need to overlap [0 to 1]. The default is 0.5.
+    steps_forward_back : int, optional
+        The number of steps to look forward or back to detect mergers/splitters. The default is 2.
+    **args : dict
+        Throw away params.
 
-        Returns
-        -------
-        merged_df : TYPE
-            DESCRIPTION.
-        split_df : TYPE
-            DESCRIPTION.
+    Raises
+    ------
+    Exception
+        Exception if missing segmentation input.
 
+    Returns
+    -------
+    merged_df : pandas.core.frame.DataFrame
+        A pandas dataframe with these columns: frame, parent_cells, merged_cell
+    split_df : pandas.core.frame.DataFrame
+        A pandas dataframe with these columns: frame, split_cell, child_cells
     """
-
-    import numpy as np
-    import pandas as pd
-    import xarray as xr
-    from tqdm import tqdm
-    from copy import deepcopy
-    from dask.array import isin
 
     # TODO: Rewrite this to be more efficent / better in general
 
@@ -96,6 +95,7 @@ def merge_split_tracking(
     if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
 
         if len(analysis_object["segmentation_xarray"].shape) < 3:
+            warnings.warn("!=====Input Variable has Too Low Dimensionality=====!")
             return None
 
         else:
@@ -104,6 +104,7 @@ def merge_split_tracking(
     else:
 
         if len(analysis_object["segmentation_xarray"][variable].shape) < 3:
+            warnings.warn("!=====Input Variable has Too Low Dimensionality=====!")
             return None
 
         else:

@@ -10,15 +10,30 @@ Created on Thur Jun 13 11:33:16 2024
 # Loads in and converts GOES satellite data to an iris cube and/or an xarray DataArray
 # =============================================================================
 
+import warnings
+
+import iris
+import iris.cube
+import numpy as np
+import xarray as xr
+
 
 # Used to calculate lat and lon values for GOES data which only has proj_x and proj_y values
-def calc_latlon(ds):
-    """
-    Inputs:
-        ds: xarray Dataset of the GOES data
+def calc_latlon(ds: xr.Dataset) -> xr.Dataset:
     """
 
-    import numpy as np
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        xarray Dataset of the GOES data.
+
+    Returns
+    -------
+    ds : TYPE
+        xarray Dataset of the GOES data with added lat/lon data.
+
+    """
 
     # The math for this function was taken from
     # https://makersportal.com/blog/2018/11/25/goes-r-satellite-latitude-and-longitude-grid-projection-algorithm
@@ -58,20 +73,34 @@ def calc_latlon(ds):
     return ds
 
 
-def goes_load_netcdf_iris(path_to_files, tracking_var, CONFIG):
-    """
-    Inputs:
-        path_to_files: Glob path to input files, either archival or grided netcdf--i.e. "/data/usr/KVNX*_V06.ar2v"
-        tracking_var: ['tb'], variable which is going to be used for tracking--brightness temperature.
-        CONFIG: User configuration file
-    Outputs:
-        cube: iris cube continaing birhtness temperature ready for tobac tracking
-        goes_xarray: Xarray dataset containing GOES brightness temperature data
+def goes_load_netcdf_iris(
+    path_to_files: str, tracking_var: str, CONFIG: dict
+) -> tuple[iris.cube.Cube, xr.DataArray]:
     """
 
-    import warnings
-    import numpy as np
-    import xarray as xr
+
+    Parameters
+    ----------
+    path_to_files : str
+        Glob path to input files i.e. "/data/usr/GOES/*.nc".
+    tracking_var : str
+        ["tb"], variable which is going to be used for tracking--brightness temperature..
+    CONFIG : dict
+        User configuration file.
+
+    Raises
+    ------
+    Exception
+        Exception if missing GOES field on CONFIG or invalid tracking variable entered.
+
+    Returns
+    -------
+    cube : iris.cube.Cube
+        Iris cube continaing birhtness temperature ready for tobac tracking.
+    goes_xarray : xarray.core.dataarray.DataArray
+        Xarray DataArray containing GOES brightness temperature data.
+
+    """
 
     # Convert to iris cube and return
     if tracking_var.lower() == "tb":
@@ -80,6 +109,12 @@ def goes_load_netcdf_iris(path_to_files, tracking_var, CONFIG):
         goes_xarray = xr.open_mfdataset(
             path_to_files, coords="all", concat_dim="t", combine="nested"
         )
+
+        if "min_frame" in CONFIG["goes"]:
+            goes_xarray = goes_xarray.isel(
+                t=np.arange(CONFIG["goes"]["min_frame"], goes_xarray.dims["t"]),
+                drop=True,
+            )
 
         # Add lat and lon to goes_xarray
         # Ignore boundary warnings
@@ -159,19 +194,32 @@ def goes_load_netcdf_iris(path_to_files, tracking_var, CONFIG):
     )
 
 
-def goes_load_netcdf(path_to_files, tracking_var, CONFIG):
-    """
-    Inputs:
-        path_to_files: Glob path to input files, either archival or grided netcdf--i.e. "/data/usr/KVNX*_V06.ar2v"
-        tracking_var: ['tb'], variable which is going to be used for tracking--brightness temperature.
-        CONFIG: User configuration file
-    Outputs:
-        goes_xarray: Xarray dataset containing GOES brightness temperature data
+def goes_load_netcdf(
+    path_to_files: str, tracking_var: str, CONFIG: dict
+) -> xr.DataArray:
     """
 
-    import warnings
-    import numpy as np
-    import xarray as xr
+
+    Parameters
+    ----------
+    path_to_files : str
+        Glob path to input files i.e. "/data/usr/GOES/*.nc".
+    tracking_var : str
+        ["tb"], variable which is going to be used for tracking--brightness temperature..
+    CONFIG : dict
+        User configuration file.
+
+    Raises
+    ------
+    Exception
+        Exception if missing GOES field on CONFIG or invalid tracking variable entered.
+
+    Returns
+    -------
+    goes_xarray : xarray.core.dataarray.DataArray
+        Xarray DataArray containing GOES brightness temperature data.
+
+    """
 
     # Convert to iris cube and return
     if tracking_var.lower() == "tb":
@@ -197,6 +245,12 @@ def goes_load_netcdf(path_to_files, tracking_var, CONFIG):
 
         # Subset location of interest
         if "goes" in CONFIG:
+
+            if "min_frame" in CONFIG["goes"]:
+                goes_xarray = goes_xarray.isel(
+                    t=np.arange(CONFIG["goes"]["min_frame"], goes_xarray.dims["t"]),
+                    drop=True,
+                )
 
             if "bounds" in CONFIG["goes"]:
 

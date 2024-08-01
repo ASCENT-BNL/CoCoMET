@@ -1,4 +1,4 @@
-name: CoMET-dev
+name: CoMET-redo
 channels:
   - defaults
   - conda-forge
@@ -17,4 +17,7 @@ dependencies:
   - libsqlite
   - tqdm
   - metpy
-prefix: /home/thahn/.conda/envs/CoMET-dev
+  - black
+  - isort
+  - pytest
+prefix: /home/thahn/.conda/envs/CoMET-redo
