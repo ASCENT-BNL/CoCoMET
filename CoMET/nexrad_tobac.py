@@ -60,27 +60,27 @@ def nexrad_tobac_feature_id(
 
         # Ensure segmentation_height is a proper number before running
         if (
-            inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] == None
+            inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] is None
             or type(inCONFIG["nexrad"]["tobac"]["feature_id"]["height"]) == str
             or type(CONFIG["nexrad"]["tobac"]["feature_id"]["height"]) == bool
         ):
             raise Exception(
-                f"""!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
+                f"""!=====Invalid Feature Identification Height. You Entered: {inCONFIG["nexrad"]["tobac"]["feature_id"]["height"]}=====!"""
             )
         if (
-            inCONFIG["nexrad"]["tobac"]["feature_id"]["height"]
+            inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] * 1000
             > cube.coord("altitude").points.max()
-            or inCONFIG["nexrad"]["tobac"]["feature_id"]["height"]
+            or inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] * 1000
             < cube.coord("altitude").points.min()
         ):
             raise Exception(
-                f"""!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
+                f"""!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG["nexrad"]["tobac"]["feature_id"]["height"]}=====!"""
             )
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
         height_index = find_nearest(
             cube.coord("altitude").points,
-            inCONFIG["nexrad"]["tobac"]["feature_id"]["height"],
+            inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] * 1000,
         )
 
         feat_cube = feat_cube[:, height_index]
@@ -219,7 +219,7 @@ def nexrad_tobac_segmentation(
     CONFIG : dict
         User configuration file.
     segmentation_height : float, optional
-        Height, in meters, to perform the updraft or reflectivity segmentation if 2d selected. The default is None.
+        Height, in kilometers, to perform the updraft or reflectivity segmentation if 2d selected. The default is None.
 
     Raises
     ------
@@ -258,15 +258,15 @@ def nexrad_tobac_segmentation(
         # Ensure segmentation_height is a proper number before running
         if type(segmentation_height) == str or type(segmentation_height) == bool:
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
+                f"!=====Invalid Segmentation Height. You Entered: {segmentation_height}=====!"
             )
             return
 
         if segmentation_height is not None and cube.coord("altitude").shape[0] > 1:
 
             if (
-                segmentation_height > cube.coord("altitude").points.max()
-                or segmentation_height < cube.coord("altitude").points.min()
+                segmentation_height * 1000 > cube.coord("altitude").points.max()
+                or segmentation_height * 1000 < cube.coord("altitude").points.min()
             ):
                 raise Exception(
                     f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
@@ -284,7 +284,9 @@ def nexrad_tobac_segmentation(
             return
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
-        height_index = find_nearest(cube.coord("altitude").points, segmentation_height)
+        height_index = find_nearest(
+            cube.coord("altitude").points, segmentation_height * 1000
+        )
 
         # Remove 1 dimensional coordinates caused by taking only one altitude
         seg_cube = deepcopy(cube[:, height_index])

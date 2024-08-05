@@ -26,7 +26,7 @@ def find_nearest(array, pivot):
     return idx
 
 
-def mesonh_moaap(mesonh_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
+def mesonh_run_moaap(mesonh_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
     """
 
 

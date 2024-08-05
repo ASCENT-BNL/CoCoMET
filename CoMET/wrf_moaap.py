@@ -30,7 +30,7 @@ def find_nearest(array, pivot):
     return idx
 
 
-def wrf_moaap(wrf_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
+def wrf_run_moaap(wrf_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
     """
 
 

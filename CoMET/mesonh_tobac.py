@@ -65,24 +65,24 @@ def mesonh_tobac_feature_id(
             or type(CONFIG["mesonh"]["tobac"]["feature_id"]["height"]) == bool
         ):
             raise Exception(
-                f"!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG['mesonh']['tobac']['feature_id']['height'] .lower()}=====!"
+                f"""!=====Invalid Feature Identification Height. You Entered: {inCONFIG["mesonh"]["tobac"]["feature_id"]["height"]}=====!"""
             )
             return
         if (
-            inCONFIG["mesonh"]["tobac"]["feature_id"]["height"]
+            inCONFIG["mesonh"]["tobac"]["feature_id"]["height"] * 1000
             > cube.coord("altitude").points.max()
-            or inCONFIG["mesonh"]["tobac"]["feature_id"]["height"]
+            or inCONFIG["mesonh"]["tobac"]["feature_id"]["height"] * 1000
             < cube.coord("altitude").points.min()
         ):
             raise Exception(
-                f"!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG['mesonh']['tobac']['feature_id']['height'] .lower()}=====!"
+                f"""!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG["mesonh"]["tobac"]["feature_id"]["height"]}=====!"""
             )
             return
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
         height_index = find_nearest(
             cube.coord("altitude").points,
-            inCONFIG["mesonh"]["tobac"]["feature_id"]["height"],
+            inCONFIG["mesonh"]["tobac"]["feature_id"]["height"] * 1000,
         )
 
         feat_cube = feat_cube[:, height_index]
@@ -165,18 +165,6 @@ def mesonh_tobac_linking(
     return mesonh_geopd_tracks
 
 
-"""
-Inputs:
-    cube: 
-    radar_features: 
-    segmentation_type: 
-    CONFIG: 
-    segmentation_height: 
-Outputs:
-    (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
-"""
-
-
 def mesonh_tobac_segmentation(
     cube: iris.cube.Cube,
     radar_features: gpd.GeoDataFrame,
@@ -198,7 +186,7 @@ def mesonh_tobac_segmentation(
     CONFIG : dict
         User configuration file.
     segmentation_height : float, optional
-        Height, in meters, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var is 3D. The default is None.
+        Height, in kilometers, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var is 3D. The default is None.
 
     Raises
     ------
@@ -267,12 +255,12 @@ def mesonh_tobac_segmentation(
             or type(segmentation_height) == bool
         ):
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
+                f"!=====Incalid Segmentation Height. You Entered: {segmentation_height}=====!"
             )
             return
         if (
-            segmentation_height > cube.coord("altitude").points.max()
-            or segmentation_height < cube.coord("altitude").points.min()
+            segmentation_height * 1000 > cube.coord("altitude").points.max()
+            or segmentation_height * 1000 < cube.coord("altitude").points.min()
         ):
             raise Exception(
                 f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
@@ -280,7 +268,9 @@ def mesonh_tobac_segmentation(
             return
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
-        height_index = find_nearest(cube.coord("altitude").points, segmentation_height)
+        height_index = find_nearest(
+            cube.coord("altitude").points, segmentation_height * 1000
+        )
 
         # Remove 1 dimensional coordinates cause by taking only one altitude
         seg_cube = deepcopy(cube[:, height_index])

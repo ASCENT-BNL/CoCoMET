@@ -68,17 +68,17 @@ def standard_radar_tobac_feature_id(
 
         # Ensure tracking height is a proper number before running
         if (
-            inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"] == None
+            inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"] is None
             or type(inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"]) == str
             or type(CONFIG["standard_radar"]["tobac"]["feature_id"]["height"]) == bool
         ):
             raise Exception(
-                f"""!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
+                f"""!=====Invalid Feature Identification Height. You Entered: {inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
             )
         if (
-            inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"]
+            inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"] * 1000
             > cube.coord("altitude").points.max()
-            or inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"]
+            or inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"] * 1000
             < cube.coord("altitude").points.min()
         ):
             raise Exception(
@@ -88,7 +88,7 @@ def standard_radar_tobac_feature_id(
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
         height_index = find_nearest(
             cube.coord("altitude").points,
-            inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"],
+            inCONFIG["standard_radar"]["tobac"]["feature_id"]["height"] * 1000,
         )
 
         feat_cube = feat_cube[:, height_index]
@@ -222,7 +222,7 @@ def standard_radar_tobac_segmentation(
     CONFIG : dict
         User configuration file.
     segmentation_height : float | None, optional
-        Height, in meters, to perform the updraft or reflectivity segmentation if 2d selected. The default is None.
+        Height, in kilometers, to perform the updraft or reflectivity segmentation if 2d selected. The default is None.
 
     Raises
     ------
@@ -266,8 +266,8 @@ def standard_radar_tobac_segmentation(
         if segmentation_height is not None and cube.coord("altitude").shape[0] > 1:
 
             if (
-                segmentation_height > cube.coord("altitude").points.max()
-                or segmentation_height < cube.coord("altitude").points.min()
+                segmentation_height * 1000 > cube.coord("altitude").points.max()
+                or segmentation_height * 1000 < cube.coord("altitude").points.min()
             ):
                 raise Exception(
                     f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
@@ -283,7 +283,9 @@ def standard_radar_tobac_segmentation(
             )
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
-        height_index = find_nearest(cube.coord("altitude").points, segmentation_height)
+        height_index = find_nearest(
+            cube.coord("altitude").points, segmentation_height * 1000
+        )
 
         # Remove 1 dimensional coordinates cause by taking only one altitude
         seg_cube = deepcopy(cube[:, height_index])

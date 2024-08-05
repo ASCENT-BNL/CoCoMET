@@ -12,10 +12,10 @@ Created on Mon Jun 24 12:17:45 2024
 
 from CoMET.analysis.analysis_object import Analysis_Object
 
-from .calculate_arm_products import calculate_arm_interpsonde, extract_arm_product
+from .calculate_arm_products import calculate_convective_indices, extract_arm_product
 from .calculate_bulk_cell_statistics import (
     calculate_area,
-    calculate_ETH,
+    calculate_var_max_height,
     calculate_volume,
 )
 from .merge_split_detection import merge_split_tracking
@@ -46,23 +46,23 @@ def calc_var(analysis_object: Analysis_Object, var: str, **args: dict):
 
     Valid Variables
     ---------------
-    "eth",
+    "var_max_height",
     "area",
     "volume",
     "merge_split",
     "arm",
-    "interpsonde"
+    "convective_indices"
 
     """
 
     # Map the correct functions to the proper variables. This is a list of all the calculatable variables as well.
     variable_call_mechanism = {
-        "eth": calculate_ETH,
+        "var_max_height": calculate_var_max_height,
         "area": calculate_area,
         "volume": calculate_volume,
         "merge_split": merge_split_tracking,
         "arm": extract_arm_product,
-        "interpsonde": calculate_arm_interpsonde,
+        "convective_indices": calculate_convective_indices,
     }
 
     # Check for valid variables

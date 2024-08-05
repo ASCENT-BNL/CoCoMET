@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jun 28 15:00:59 2024
+Created on Mon Aug  5 12:37:22 2024
 
 @author: thahn
 """
 
-# =============================================================================
-# This contains all of the functions to calculate basic bulk cell statistics (ETH, area, etc.) from CoMET-UDAF data
-# =============================================================================
-
-import warnings
-
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import xarray as xr
 from tqdm import tqdm
+
+__all__ = ["area_func", "volume_func", "var_max_height_func"]
 
 
 # Calculate nearest item in list to given pivot
@@ -26,31 +23,28 @@ def find_nearest(array: np.ndarray, pivot) -> int:
     return idx
 
 
-def calculate_var_max_height(
-    analysis_object: dict,
+def var_max_height_func(
+    variable_field: xr.DataArray,
+    tracks: gpd.GeoDataFrame,
+    segmentation_2d: xr.DataArray,
     threshold: float,
-    variable: str | None = None,
-    cell_footprint_height: float = 2,
     quantile: float = 0.95,
-    **args: dict,
 ) -> pd.DataFrame | None:
     """
 
 
     Parameters
     ----------
-    analysis_object : dict
-        A  CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d, and segmentation_xarray.
+    variable_field : xarray.core.dataarray.DataArray
+        An xarray DataArray that has the values you are interested in with an altitude coordinate.
+    tracks : geopandas.geodataframe.GeoDataFrame
+        UDAF_linking formated tracks from CoMET-like output.
+    segmentation_2d : xarray.core.dataarray.DataArray
+        2D Segmentation output with feature-wise labelling.
     threshold : float
         The value which needs to be exceeded to count towards the var top height. I.e. 15 for reflectivity.
-    variable : str, optional
-        The variable from the input segmentation_xarray which should be used for calculating var_max_height. The default is None.
-    cell_footprint_height : float, optional
-        The height used to calculate the cell area to determine where to calculate var_max_heights. The default is 2km.
     quantile : float, optional
         The percentile of calculated max heights to return. The default is 0.95.
-    **args : dict
-        Throw away inputs.
 
     Raises
     ------
@@ -64,47 +58,11 @@ def calculate_var_max_height(
 
     """
 
-    # If input variable field is 2D return None. Also, if DataArray, use those values for calculations. If Dataset, use tracking_var to get variable
-    if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
-
-        if len(analysis_object["segmentation_xarray"].shape) != 4:
-            warnings.warn("!=====Input Variable is not 3D=====!")
-            return None
-
-        else:
-            variable_field = analysis_object["segmentation_xarray"]
-
-    else:
-
-        if len(analysis_object["segmentation_xarray"][variable].shape) != 4:
-            warnings.warn("!=====Input Variable is not 3D=====!")
-            return None
-
-        else:
-            variable_field = analysis_object["segmentation_xarray"][variable]
-
-    # If 3D segmentation is available, use that to calculate cell footprint, otherwise use 2D segmentation
-    if analysis_object["UDAF_segmentation_3d"] is not None:
-
-        height_index = find_nearest(
-            analysis_object["UDAF_segmentation_3d"].altitude.values,
-            cell_footprint_height * 1000,
-        )
-
-        footprint_data = analysis_object["UDAF_segmentation_3d"].Feature_Segmentation[
-            :, height_index
-        ]
-
-    elif analysis_object["UDAF_segmentation_2d"] is not None:
-
-        footprint_data = analysis_object["UDAF_segmentation_2d"].Feature_Segmentation
-
-    else:
-        raise Exception("!=====Missing Segmentation Input=====!")
+    footprint_data = segmentation_2d
 
     eth_info = {"frame": [], "feature_id": [], "cell_id": [], "eth": []}  # in km
 
-    frame_groups = analysis_object["UDAF_linking"].groupby("frame")
+    frame_groups = tracks.groupby("frame")
 
     # Loop over frames
     for ii, frame in tqdm(
@@ -160,28 +118,16 @@ def calculate_var_max_height(
     return pd.DataFrame(eth_info)
 
 
-def calculate_area(
-    analysis_object: dict,
-    height: float = 2,
-    variable: str | None = None,
-    threshold: float | None = None,
-    **args: dict,
-) -> pd.DataFrame:
+def area_func(segmentation_2d: xr.DataArray, tracks: gpd.GeoDataFrame) -> pd.DataFrame:
     """
 
 
     Parameters
     ----------
-    analysis_object : dict
-        A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_2d or UDAF_segmentation_3d.
-    height : float, optional
-        The height which is used to calculate the area of cells. The default is 2km.
-    variable : str, optional
-        Variable to which we should apply the threshold. The default is None.
-    threshold : float, optional
-        Value of which the area should be greater than. The default is None.
-    **args : dict
-        Throw away variables.
+    segmentation_2d : xarray.core.dataarray.DataArray
+        2D Segmentation output with feature-wise labelling.
+    tracks : geopandas.geodataframe.GeoDataFrame
+        UDAF_linking formated tracks from CoMET-like output.
 
     Raises
     ------
@@ -195,40 +141,7 @@ def calculate_area(
 
     """
 
-    # If 3D segmentation is available, use that at given height, otherwise use 2D segmentation
-    if analysis_object["UDAF_segmentation_3d"] is not None:
-
-        height_index = find_nearest(
-            analysis_object["UDAF_segmentation_3d"].altitude.values, height * 1000
-        )
-
-        mask = analysis_object["UDAF_segmentation_3d"].Feature_Segmentation[
-            :, height_index
-        ]
-
-    elif analysis_object["UDAF_segmentation_2d"] is not None:
-
-        mask = analysis_object["UDAF_segmentation_2d"].Feature_Segmentation
-
-    else:
-        raise Exception("!=====Missing Segmentation Input=====!")
-
-    # Enforce threshold if present
-    if threshold is not None:
-        # Load background varaible
-        if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
-            variable_field = analysis_object["segmentation_xarray"]
-        else:
-            variable_field = analysis_object["segmentation_xarray"][variable]
-
-        if len(variable_field.shape) == 4:
-            height_index = find_nearest(
-                analysis_object["segmentation_xarray"]["altitude"].values, height * 1000
-            )
-
-            variable_field = variable_field[:, height_index]
-
-        mask.values[variable_field.values < threshold] = -1
+    mask = segmentation_2d
 
     area_info = {"frame": [], "feature_id": [], "cell_id": [], "area": []}  # in km^2
 
@@ -245,7 +158,7 @@ def calculate_area(
     # Multiply each cell by the other to get an area for one individual cell
     cell_areas = np.outer(y_dim_sizes, x_dim_sizes)
 
-    frame_groups = analysis_object["UDAF_linking"].groupby("frame")
+    frame_groups = tracks.groupby("frame")
 
     # Loop over frames
     for ii, frame in tqdm(
@@ -281,25 +194,18 @@ def calculate_area(
     return pd.DataFrame(area_info)
 
 
-def calculate_volume(
-    analysis_object: dict,
-    variable: str | None = None,
-    threshold: float | None = None,
-    **args: dict,
+def volume_func(
+    segmentation_3d: xr.DataArray, tracks: gpd.GeoDataFrame
 ) -> pd.DataFrame:
     """
 
 
     Parameters
     ----------
-    analysis_object : dict
-        A CoMET-UDAF standard analysis object containing at least UDAF_tracks and UDAF_segmentation_3d.
-    variable : str, optional
-        Variable to which we should apply the threshold. The default is None.
-    threshold : float, optional
-        Value of which the area should be greater than. The default is None.
-    **args : dict
-        Throw away variables.
+    segmentation_3d : xarray.core.dataarray.DataArray
+        3D Segmentation output with feature-wise labelling.
+    tracks : geopandas.geodataframe.GeoDataFrame
+        UDAF_linking formated tracks from CoMET-like output.
 
     Raises
     ------
@@ -313,27 +219,7 @@ def calculate_volume(
 
     """
 
-    if analysis_object["UDAF_segmentation_3d"] is None:
-        raise Exception(
-            "!=====3D Segmentation Data is Required for Volume Calculation=====!"
-        )
-
-    mask = analysis_object["UDAF_segmentation_3d"].Feature_Segmentation
-
-    if threshold is not None:
-        # Load background varaible
-        if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
-            variable_field = analysis_object["segmentation_xarray"]
-        else:
-            variable_field = analysis_object["segmentation_xarray"][variable]
-
-        if len(variable_field.shape) != 4:
-            raise Exception(
-                "=====Must have a 3D segmentation_xarray for threshold application====="
-            )
-
-        # Enforce threshold
-        mask.values[variable_field.values < threshold] = -1
+    mask = segmentation_3d
 
     volume_info = {
         "frame": [],
@@ -357,7 +243,7 @@ def calculate_volume(
     # use Einstein sum notation to get volume of cells
     cell_volumes = np.einsum("i,j,k->ijk", z_dim_sizes, y_dim_sizes, x_dim_sizes)
 
-    frame_groups = analysis_object["UDAF_linking"].groupby("frame")
+    frame_groups = tracks.groupby("frame")
 
     # Loop over frames
     for ii, frame in tqdm(

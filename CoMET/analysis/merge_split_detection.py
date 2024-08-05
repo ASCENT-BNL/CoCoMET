@@ -31,7 +31,7 @@ def merge_split_tracking(
     analysis_object: dict,
     variable: str,
     invert: bool = False,
-    cell_footprint_height: float = 2000,
+    cell_footprint_height: float = 2,
     touching_threshold: float = 0.20,
     flood_background: float = 20,
     score_threshold: float = 0,
@@ -54,7 +54,7 @@ def merge_split_tracking(
     invert : bool, optional
         If we care about tracking lower values such as brightness temperature (i.e. we want to flood fill stuff less than a threshold), we need to invert the data so we can use the same algorithm. Will also invert background value. The default is False.
     cell_footprint_height : float, optional
-        The height at which we want to find the newly calculated cell areas in meters. The default is 2000.
+        The height at which we want to find the newly calculated cell areas in kilometers. The default is 2km.
     touching_threshold : float, optional
         The percentage of cell border which must be shared by two cells. The default is 0.20.
     flood_background : float, optional
@@ -115,7 +115,7 @@ def merge_split_tracking(
 
         height_index = find_nearest(
             analysis_object["UDAF_segmentation_3d"].altitude.values,
-            cell_footprint_height,
+            cell_footprint_height * 1000,
         )
 
         footprint_data = analysis_object["UDAF_segmentation_3d"].Feature_Segmentation[
@@ -257,7 +257,7 @@ def merge_split_tracking(
 
                 height_index = find_nearest(
                     analysis_object["UDAF_segmentation_3d"].altitude.values,
-                    cell_footprint_height,
+                    cell_footprint_height * 1000,
                 )
                 reflectivity_data = deepcopy(
                     variable_field[cell1_data.frame.min()]

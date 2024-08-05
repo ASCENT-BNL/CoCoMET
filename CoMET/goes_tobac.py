@@ -163,7 +163,7 @@ def goes_tobac_segmentation(
 
     dxy = tobac.get_spacings(cube, grid_spacing=res)[0]
 
-    # Perform the 2d segmentation at the height_index and return the segmented cube and new geodataframe
+    # Perform the 2d segmentation and return the segmented cube and new geodataframe
     segment_cube, segment_features = tobac.segmentation_2D(
         radar_features, cube, dxy=dxy, **CONFIG["goes"]["tobac"]["segmentation_2d"]
     )

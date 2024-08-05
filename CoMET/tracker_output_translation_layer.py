@@ -68,7 +68,7 @@ def feature_id_to_UDAF(
 
         # Include 3D coordinates if present. If not, set all alt values as NaN
         if "altitude" in features and "vdim" in features:
-            altitudes = features.altitude.values
+            altitudes = features.altitude.values / 1000
             up_downs = features.vdim.values
 
         else:
@@ -146,7 +146,7 @@ def linking_to_UDAF(tracks: gpd.GeoDataFrame, tracker: str) -> gpd.GeoDataFrame 
 
         # Include 3D coordinates if present. If not, set all alt values as NaN
         if "altitude" in tracks and "vdim" in tracks:
-            altitudes = tracks.altitude.values
+            altitudes = tracks.altitude.values / 1000
             up_downs = tracks.vdim.values
 
         else:

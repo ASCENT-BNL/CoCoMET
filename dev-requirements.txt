@@ -17,4 +17,4 @@ scikit-image
 black
 pytest
 isort
-# pdoc -- TBD
+pdoc

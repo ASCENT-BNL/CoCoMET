@@ -57,27 +57,27 @@ def wrf_tobac_feature_id(cube: iris.cube.Cube, CONFIG: dict) -> gpd.GeoDataFrame
 
         # Ensure segmentation_height is a proper number before running
         if (
-            inCONFIG["wrf"]["tobac"]["feature_id"]["height"] == None
+            inCONFIG["wrf"]["tobac"]["feature_id"]["height"] is None
             or type(inCONFIG["wrf"]["tobac"]["feature_id"]["height"]) == str
             or type(CONFIG["wrf"]["tobac"]["feature_id"]["height"]) == bool
         ):
             raise Exception(
-                f"""!=====Tracking Height Out of Bounds. You Entered: {inCONFIG["wrf"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
+                f"""!=====Invalid Feature Identification Height. You Entered: {inCONFIG["wrf"]["tobac"]["feature_id"]["height"]}=====!"""
             )
         if (
-            inCONFIG["wrf"]["tobac"]["feature_id"]["height"]
+            inCONFIG["wrf"]["tobac"]["feature_id"]["height"] * 1000
             > cube.coord("altitude").points.max()
-            or inCONFIG["wrf"]["tobac"]["feature_id"]["height"]
+            or inCONFIG["wrf"]["tobac"]["feature_id"]["height"] * 1000
             < cube.coord("altitude").points.min()
         ):
             raise Exception(
-                f"""!=====Tracking Height Out of Bounds. You Entered: {inCONFIG["wrf"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
+                f"""!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG["wrf"]["tobac"]["feature_id"]["height"]}=====!"""
             )
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
         height_index = find_nearest(
             cube.coord("altitude").points,
-            inCONFIG["wrf"]["tobac"]["feature_id"]["height"],
+            inCONFIG["wrf"]["tobac"]["feature_id"]["height"] * 1000,
         )
 
         feat_cube = feat_cube[:, height_index]

@@ -30,7 +30,7 @@ from .goes_tobac import (
     goes_tobac_segmentation,
 )
 from .mesonh_load import mesonh_load_netcdf_iris
-from .mesonh_moaap import mesonh_moaap
+from .mesonh_moaap import mesonh_run_moaap
 from .mesonh_tobac import (
     mesonh_tobac_feature_id,
     mesonh_tobac_linking,
@@ -61,8 +61,19 @@ from .tracker_output_translation_layer import (
     segmentation_to_UDAF,
 )
 from .wrf_load import wrf_load_netcdf_iris
-from .wrf_moaap import wrf_moaap
+from .wrf_moaap import wrf_run_moaap
 from .wrf_tobac import wrf_tobac_feature_id, wrf_tobac_linking, wrf_tobac_segmentation
+
+__all__ = [
+    "CoMET_start",
+    "CoMET_load",
+    "run_goes",
+    "run_mesonh",
+    "run_multi_nexrad",
+    "run_nexrad",
+    "run_standard_radar",
+    "run_wrf",
+]
 
 
 def CoMET_start(path_to_config: str | None = None, CONFIG: dict | None = None) -> dict:
@@ -638,7 +649,7 @@ def run_wrf(
             print("=====Starting WRF MOAAP Tracking=====")
 
         # Run MOAAP
-        mask_output = wrf_moaap(wrf_tracking_xarray, CONFIG)
+        mask_output = wrf_run_moaap(wrf_tracking_xarray, CONFIG)
 
         # Calculate UDAF values
         UDAF_values = bulk_moaap_to_UDAF(
@@ -890,7 +901,7 @@ def run_mesonh(
             print("=====Starting MesoNH MOAAP Tracking=====")
 
         # Run MOAAP
-        mask_output = mesonh_moaap(mesonh_tracking_xarray, CONFIG)
+        mask_output = mesonh_run_moaap(mesonh_tracking_xarray, CONFIG)
 
         # Calculate UDAF values
         UDAF_values = bulk_moaap_to_UDAF(
