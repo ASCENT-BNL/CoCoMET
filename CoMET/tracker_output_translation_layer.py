@@ -121,6 +121,8 @@ def linking_to_UDAF(tracks: gpd.GeoDataFrame, tracker: str) -> gpd.GeoDataFrame 
 
     """
 
+    # TODO: figure out how to remove cells with -1 cell id
+
     if tracks is None:
         return None
 

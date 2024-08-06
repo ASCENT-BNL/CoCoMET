@@ -252,8 +252,8 @@ def wrf_tobac_segmentation(
                 f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
             )
         if (
-            segmentation_height > cube.coord("altitude").points.max()
-            or segmentation_height < cube.coord("altitude").points.min()
+            segmentation_height*1000 > cube.coord("altitude").points.max()
+            or segmentation_height*1000 < cube.coord("altitude").points.min()
         ):
             raise Exception(
                 f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"

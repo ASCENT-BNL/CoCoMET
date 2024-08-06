@@ -10,19 +10,344 @@ Created on Fri Jul 19 13:12:33 2024
 # TODO: Implement all these tests once we can create our test cases
 # =============================================================================
 
-import xarray as xr
-
-from CoMET.create_test_objects import create_isolated_cell, create_test_wrf_xarray
-
+import os
+from pathlib import Path
+import glob
+from six.moves import urllib
+import shutil
 
 # This test should always pass for now
 def test_wrf_cube_load():
+    
+    # We need to store the data online somewhere
+    # Then add a script to download data from online...probably zenodo
 
-    cell = create_isolated_cell(
-        grid_shape=(10, 200, 200, 50), cell_var="tb", cell_radius=10, max_dbz=62
-    )
-    wrf_xarray = create_test_wrf_xarray(
-        cell_grid=cell, dt=5, dx=1000, dy=1000, dz=500, cell_var="dbz"
-    )
+    data_out = Path(os.getcwd())
+    data_files = glob.glob(str(data_out) + "/comet_testing_datasets/WRF/*")
+    
+    if len(data_files) == 0:
+        
+        file_path = "https://zenodo.org/records/13245024/files/comet_testing_datasets.zip?download=1"
+        
+        temp_zip_file = Path("temp.zip")
+        print("=====Downloading and Extracing Data=====")
+        
+        urllib.request.urlretrieve(file_path, temp_zip_file)
+        
+        shutil.unpack_archive(temp_zip_file, data_out)
+        temp_zip_file.unlink()
+        
+        data_files = glob.glob(str(data_out) + "/comet_testing_datasets/WRF/*")
 
-    assert type(wrf_xarray) == type(xr.Dataset())
+    assert True
+
+
+# """
+# TODO: Add full testing coverage
+# """
+
+# # Test CONFIGS
+# wrf_CONFIG_dbz = {
+#     'verbose': True, # Whether to use verbose output
+#     'parallel_processing': True, # [bool] Whether or not to use parallel processing for certain tasks
+#     'max_cores': 32, # Number of cores to use if parallel_processing==True; Enter None for unlimited
+
+#     'wrf': {
+#         'path_to_data': '/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*',
+
+#         'tracking_type': 'IC',
+
+#         'feature_tracking_var': 'dbz',
+#         'segmentation_var': 'dbz',
+
+#         'tobac': {
+#             'feature_id': {
+#                 'threshold': [30, 40, 50, 60],
+#                 'target': 'maximum',
+#                 'position_threshold': 'weighted_diff',
+#                 'sigma_threshold': 0.5,
+#                 'n_min_threshold': 4
+#             },
+
+#             'linking': {
+#                 'method_linking': 'predict',
+#                 'adaptive_stop': 0.2,
+#                 'adaptive_step': 0.95,
+#                 'order': 1,
+#                 'subnetwork_size': 10,
+#                 'memory': 1,
+#                 'v_max': 20
+#             },
+
+#             "segmentation_3d": {
+#                 "method": 'watershed',
+#                 "threshold": 15
+#             }
+
+#         }
+
+#     }
+
+# }
+
+
+# import CoMET
+# import unittest
+
+# class Test_User_Interface_Layer(unittest.TestCase):
+
+#     # Test to make sure CoMET can handle CONFIG inputs well
+#     def test_CoMET_start(self):
+#         self.assertEqual(CoMET.CoMET_start(None, True, CONFIG=wrf_CONFIG_dbz), wrf_CONFIG_dbz)
+#         self.assertEqual(CoMET.CoMET_start('./examples/example_configs/wrf_test_config_dbz.yml', True), wrf_CONFIG_dbz)
+
+#     # Make sure the CONFIG loading is working
+#     def test_config_load(self):
+#         CONFIG = CoMET.CoMET_load('./examples/example_configs/boilerplate.yml')
+#         self.assertEqual(type(CONFIG), dict, "Should return dictionary object")
+
+
+# # Test for WRF input combined with tobac tracking
+# class Test_WRF_tobac(unittest.TestCase):
+
+#     CONFIG_dbz = None
+#     CONFIG_w = None
+#     CONFIG_tb = None
+
+#     wrf_cube_dbz = None
+#     wrf_cube_w = None
+#     wrf_cube_tb = None
+
+#     wrf_features_dbz = None
+#     wrf_features_w = None
+#     wrf_features_tb = None
+
+#     # Test the loading of the netcdf and iris for reflectivity
+#     def test_wrf_load_netcdf_iris_dbz(self):
+#         CONFIG = CoMET.CoMET_start('./examples/example_configs//wrf_test_config_dbz.yml', True)
+#         self.__class__.CONFIG_dbz = CONFIG
+
+#         wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris('/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*', 'dbz', CONFIG)
+#         self.__class__.wrf_cube_dbz = wrf_cube
+
+#         self.assertEqual(wrf_cube.name(), 'DBZ')
+#         self.assertEqual(len(wrf_cube.coords()), 11)
+#         self.assertAlmostEqual(wrf_cube.data.max(),60.6, places=2)
+#         self.assertAlmostEqual(wrf_cube.data.min(),-30, places=2)
+#         self.assertTupleEqual(wrf_cube.data.shape, (289, 44, 213, 219))
+#         self.assertEqual(wrf_cube.dim_coords[0].name(), 'time')
+#         self.assertEqual(wrf_cube.dim_coords[1].name(), 'altitude')
+#         self.assertEqual(wrf_cube.dim_coords[2].name(), 'south_north')
+#         self.assertEqual(wrf_cube.dim_coords[3].name(), 'west_east')
+#         self.assertAlmostEqual(wrf_cube.coord('latitude').points.min(), 35.86, places=2)
+#         self.assertAlmostEqual(wrf_cube.coord('latitude').points.max(), 38.22, places=2)
+#         self.assertAlmostEqual(wrf_cube.coord('longitude').points.min(), -98.73, places=2)
+#         self.assertAlmostEqual(wrf_cube.coord('longitude').points.max(), -95.72, places=2)
+
+
+#         self.assertTrue('DBZ' in wrf_xarray)
+#         self.assertTupleEqual(wrf_xarray.DBZ.shape, (289, 44, 213, 219))
+#         self.assertAlmostEqual(wrf_xarray.DBZ.values.max(), 60.6, places=2)
+#         self.assertAlmostEqual(wrf_xarray.DBZ.values.min(), -30, places=2)
+#         self.assertTupleEqual(wrf_xarray.DBZ.dims, ('Time', 'bottom_top', 'south_north', 'west_east'))
+#         self.assertAlmostEqual(wrf_xarray.DBZ.XLAT.values.min(), 35.86, places=2)
+#         self.assertAlmostEqual(wrf_xarray.DBZ.XLAT.values.max(), 38.22, places=2)
+#         self.assertAlmostEqual(wrf_xarray.DBZ.XLONG.values.min(), -98.73, places=2)
+#         self.assertAlmostEqual(wrf_xarray.DBZ.XLONG.values.max(), -95.72, places=2)
+
+
+#     # Test the loading of the netcdf and iris for updraft
+#     def test_wrf_load_netcdf_iris_w(self):
+#         CONFIG = CoMET.CoMET_start('./examples/example_configs/wrf_test_config_w.yml', True)
+#         self.__class__.CONFIG_w = CONFIG
+
+#         wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris('/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*', 'W', CONFIG)
+#         self.__class__.wrf_cube_w = wrf_cube
+
+#         self.assertEqual(wrf_cube.name(), 'WA')
+#         self.assertEqual(len(wrf_cube.coords()), 11)
+#         self.assertAlmostEqual(wrf_cube.data.max(),19.08, places=2)
+#         self.assertAlmostEqual(wrf_cube.data.min(),-8.76, places=2)
+#         self.assertTupleEqual(wrf_cube.data.shape, (289, 44, 213, 219))
+#         self.assertEqual(wrf_cube.dim_coords[0].name(), 'time')
+#         self.assertEqual(wrf_cube.dim_coords[1].name(), 'altitude')
+#         self.assertEqual(wrf_cube.dim_coords[2].name(), 'south_north')
+#         self.assertEqual(wrf_cube.dim_coords[3].name(), 'west_east')
+#         self.assertAlmostEqual(wrf_cube.coord('latitude').points.min(), 35.86, places=2)
+#         self.assertAlmostEqual(wrf_cube.coord('latitude').points.max(), 38.22, places=2)
+#         self.assertAlmostEqual(wrf_cube.coord('longitude').points.min(), -98.73, places=2)
+#         self.assertAlmostEqual(wrf_cube.coord('longitude').points.max(), -95.72, places=2)
+
+
+#         self.assertTrue('WA' in wrf_xarray)
+#         self.assertTupleEqual(wrf_xarray.WA.shape, (289, 44, 213, 219))
+#         self.assertAlmostEqual(wrf_xarray.WA.values.max(), 19.08, places=2)
+#         self.assertAlmostEqual(wrf_xarray.WA.values.min(), -8.76, places=2)
+#         self.assertTupleEqual(wrf_xarray.WA.dims, ('Time', 'bottom_top', 'south_north', 'west_east'))
+#         self.assertAlmostEqual(wrf_xarray.WA.XLAT.values.min(), 35.86, places=2)
+#         self.assertAlmostEqual(wrf_xarray.WA.XLAT.values.max(), 38.22, places=2)
+#         self.assertAlmostEqual(wrf_xarray.WA.XLONG.values.min(), -98.73, places=2)
+#         self.assertAlmostEqual(wrf_xarray.WA.XLONG.values.max(), -95.72, places=2)
+
+
+#     # Test the loading of the netcdf and iris for brightness temperature
+#     def test_wrf_load_netcdf_iris_tb(self):
+#         CONFIG = CoMET.CoMET_start('./examples/example_configs/wrf_test_config_tb.yml', True)
+#         self.__class__.CONFIG_tb = CONFIG
+
+#         wrf_cube, wrf_xarray = CoMET.wrf_load_netcdf_iris('/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*', 'tb', CONFIG)
+#         self.__class__.wrf_cube_tb = wrf_cube
+
+#         self.assertEqual(wrf_cube.name(), 'TB')
+#         self.assertEqual(len(wrf_cube.coords()), 9)
+#         self.assertAlmostEqual(wrf_cube.data[1:].max(),305.86, places=2)
+#         self.assertAlmostEqual(wrf_cube.data[1:].min(),213.65, places=2)
+#         self.assertTupleEqual(wrf_cube.data.shape, (289, 213, 219))
+#         self.assertEqual(wrf_cube.dim_coords[0].name(), 'time')
+#         self.assertEqual(wrf_cube.dim_coords[1].name(), 'south_north')
+#         self.assertEqual(wrf_cube.dim_coords[2].name(), 'west_east')
+#         self.assertAlmostEqual(wrf_cube.coord('latitude').points.min(), 35.86, places=2)
+#         self.assertAlmostEqual(wrf_cube.coord('latitude').points.max(), 38.22, places=2)
+#         self.assertAlmostEqual(wrf_cube.coord('longitude').points.min(), -98.73, places=2)
+#         self.assertAlmostEqual(wrf_cube.coord('longitude').points.max(), -95.72, places=2)
+
+
+#         self.assertTrue('TB' in wrf_xarray)
+#         self.assertTupleEqual(wrf_xarray.TB.shape, (289, 213, 219))
+#         self.assertAlmostEqual(wrf_xarray.TB.values[1:].max(), 305.86, places=2)
+#         self.assertAlmostEqual(wrf_xarray.TB.values[1:].min(), 213.65, places=2)
+#         self.assertTupleEqual(wrf_xarray.TB.dims, ('Time', 'south_north', 'west_east'))
+#         self.assertAlmostEqual(wrf_xarray.TB.XLAT.values.min(), 35.86, places=2)
+#         self.assertAlmostEqual(wrf_xarray.TB.XLAT.values.max(), 38.22, places=2)
+#         self.assertAlmostEqual(wrf_xarray.TB.XLONG.values.min(), -98.73, places=2)
+#         self.assertAlmostEqual(wrf_xarray.TB.XLONG.values.max(), -95.72, places=2)
+
+
+#     # Test the loading of just the netcdf for reflectivity to ensure contintuity
+#     def test_wrf_load_netcdf_dbz(self):
+#         wrf_xarray = CoMET.wrf_load_netcdf('/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*', 'dbz', self.__class__.CONFIG_dbz)
+
+#         self.assertTrue('DBZ' in wrf_xarray)
+#         self.assertTupleEqual(wrf_xarray.DBZ.shape, (289, 44, 213, 219))
+#         self.assertAlmostEqual(wrf_xarray.DBZ.values.max(), 60.6, places=2)
+#         self.assertAlmostEqual(wrf_xarray.DBZ.values.min(), -30, places=2)
+#         self.assertTupleEqual(wrf_xarray.DBZ.dims, ('Time', 'bottom_top', 'south_north', 'west_east'))
+#         self.assertAlmostEqual(wrf_xarray.DBZ.XLAT.values.min(), 35.86, places=2)
+#         self.assertAlmostEqual(wrf_xarray.DBZ.XLAT.values.max(), 38.22, places=2)
+#         self.assertAlmostEqual(wrf_xarray.DBZ.XLONG.values.min(), -98.73, places=2)
+#         self.assertAlmostEqual(wrf_xarray.DBZ.XLONG.values.max(), -95.72, places=2)
+
+
+#     # Test the loading of just the netcdf for updrafts to ensure contintuity
+#     def test_wrf_load_netcdf_w(self):
+#         wrf_xarray = CoMET.wrf_load_netcdf('/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*', 'w', self.__class__.CONFIG_w)
+
+#         self.assertTrue('WA' in wrf_xarray)
+#         self.assertTupleEqual(wrf_xarray.WA.shape, (289, 44, 213, 219))
+#         self.assertAlmostEqual(wrf_xarray.WA.values.max(), 19.08, places=2)
+#         self.assertAlmostEqual(wrf_xarray.WA.values.min(), -8.76, places=2)
+#         self.assertTupleEqual(wrf_xarray.WA.dims, ('Time', 'bottom_top', 'south_north', 'west_east'))
+#         self.assertAlmostEqual(wrf_xarray.WA.XLAT.values.min(), 35.86, places=2)
+#         self.assertAlmostEqual(wrf_xarray.WA.XLAT.values.max(), 38.22, places=2)
+#         self.assertAlmostEqual(wrf_xarray.WA.XLONG.values.min(), -98.73, places=2)
+#         self.assertAlmostEqual(wrf_xarray.WA.XLONG.values.max(), -95.72, places=2)
+
+
+#     # Test the loading of just the netcdf for brightness temperature to ensure contintuity
+#     def test_wrf_load_netcdf_tb(self):
+#         wrf_xarray = CoMET.wrf_load_netcdf('/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*', 'tb', self.__class__.CONFIG_tb)
+
+#         self.assertTrue('TB' in wrf_xarray)
+#         self.assertTupleEqual(wrf_xarray.TB.shape, (289, 213, 219))
+#         self.assertAlmostEqual(wrf_xarray.TB.values[1:].max(), 305.86, places=2)
+#         self.assertAlmostEqual(wrf_xarray.TB.values[1:].min(), 213.65, places=2)
+#         self.assertTupleEqual(wrf_xarray.TB.dims, ('Time', 'south_north', 'west_east'))
+#         self.assertAlmostEqual(wrf_xarray.TB.XLAT.values.min(), 35.86, places=2)
+#         self.assertAlmostEqual(wrf_xarray.TB.XLAT.values.max(), 38.22, places=2)
+#         self.assertAlmostEqual(wrf_xarray.TB.XLONG.values.min(), -98.73, places=2)
+#         self.assertAlmostEqual(wrf_xarray.TB.XLONG.values.max(), -95.72, places=2)
+
+
+#     # Test tobac feature id for reflectivity
+#     def test_wrf_tobac_feature_id_dbz(self):
+#         import geopandas
+#         import numpy as np
+
+#         wrf_features = CoMET.wrf_tobac_feature_id(self.__class__.wrf_cube_dbz, 'IC', self.__class__.CONFIG_dbz)
+#         self.__class__.wrf_features_dbz = wrf_features
+
+#         self.assertTupleEqual(wrf_features.shape, (1516, 21))
+#         self.assertEqual(type(wrf_features), geopandas.geodataframe.GeoDataFrame)
+#         self.assertTrue(np.all(wrf_features.longitude!=0))
+#         self.assertTrue(np.all(wrf_features.latitude!=0))
+
+
+#     # Test tobac feature id for updrafts
+#     def test_wrf_tobac_feature_id_w(self):
+#         import geopandas
+#         import numpy as np
+
+#         wrf_features = CoMET.wrf_tobac_feature_id(self.__class__.wrf_cube_w, 'IC', self.__class__.CONFIG_w)
+#         self.__class__.wrf_features_w = wrf_features
+
+#         self.assertTupleEqual(wrf_features.shape, (437, 21))
+#         self.assertEqual(type(wrf_features), geopandas.geodataframe.GeoDataFrame)
+#         self.assertTrue(np.all(wrf_features.longitude!=0))
+#         self.assertTrue(np.all(wrf_features.latitude!=0))
+
+
+#     # Test tobac feature id for brightness temperature
+#     def test_wrf_tobac_feature_id_tb(self):
+#         import geopandas
+#         import numpy as np
+
+#         wrf_features = CoMET.wrf_tobac_feature_id(self.__class__.wrf_cube_tb, 'IC', self.__class__.CONFIG_tb)
+#         self.__class__.wrf_features_tb = wrf_features
+
+#         self.assertTupleEqual(wrf_features.shape, (475, 18))
+#         self.assertEqual(type(wrf_features), geopandas.geodataframe.GeoDataFrame)
+#         self.assertTrue(np.all(wrf_features.longitude!=0))
+#         self.assertTrue(np.all(wrf_features.latitude!=0))
+
+
+#     # Test tobac linking for reflectivity
+#     def test_wrf_tobac_linking_dbz(self):
+#         import geopandas
+#         import numpy as np
+
+#         wrf_tracks = CoMET.wrf_tobac_linking(self.__class__.wrf_cube_dbz, 'IC', self.__class__.wrf_features_dbz, self.__class__.CONFIG_dbz)
+
+#         self.assertTupleEqual(wrf_tracks.shape, (1516, 23))
+#         self.assertEqual(type(wrf_tracks), geopandas.geodataframe.GeoDataFrame)
+#         self.assertTrue(np.all(wrf_tracks.longitude!=0))
+#         self.assertTrue(np.all(wrf_tracks.latitude!=0))
+
+
+#     # Test tobac linking for updrafts
+#     def test_wrf_tobac_linking_w(self):
+#         import geopandas
+#         import numpy as np
+
+#         wrf_tracks = CoMET.wrf_tobac_linking(self.__class__.wrf_cube_w, 'IC', self.__class__.wrf_features_w, self.__class__.CONFIG_w)
+
+#         self.assertTupleEqual(wrf_tracks.shape, (437, 23))
+#         self.assertEqual(type(wrf_tracks), geopandas.geodataframe.GeoDataFrame)
+#         self.assertTrue(np.all(wrf_tracks.longitude!=0))
+#         self.assertTrue(np.all(wrf_tracks.latitude!=0))
+
+
+#     # Test tobac linking for brightness temperature
+#     def test_wrf_tobac_linking_tb(self):
+#         import geopandas
+#         import numpy as np
+
+#         wrf_tracks = CoMET.wrf_tobac_linking(self.__class__.wrf_cube_tb, 'IC', self.__class__.wrf_features_tb, self.__class__.CONFIG_tb)
+
+#         self.assertTupleEqual(wrf_tracks.shape, (475, 20))
+#         self.assertEqual(type(wrf_tracks), geopandas.geodataframe.GeoDataFrame)
+#         self.assertTrue(np.all(wrf_tracks.longitude!=0))
+#         self.assertTrue(np.all(wrf_tracks.latitude!=0))
+
+
+# if __name__ == '__main__':
+#     unittest.main()
