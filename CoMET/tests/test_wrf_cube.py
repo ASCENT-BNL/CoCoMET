@@ -10,33 +10,35 @@ Created on Fri Jul 19 13:12:33 2024
 # TODO: Implement all these tests once we can create our test cases
 # =============================================================================
 
-import os
-from pathlib import Path
 import glob
-from six.moves import urllib
+import os
 import shutil
+from pathlib import Path
+
+from six.moves import urllib
+
 
 # This test should always pass for now
 def test_wrf_cube_load():
-    
+
     # We need to store the data online somewhere
     # Then add a script to download data from online...probably zenodo
 
     data_out = Path(os.getcwd())
     data_files = glob.glob(str(data_out) + "/comet_testing_datasets/WRF/*")
-    
+
     if len(data_files) == 0:
-        
+
         file_path = "https://zenodo.org/records/13245024/files/comet_testing_datasets.zip?download=1"
-        
+
         temp_zip_file = Path("temp.zip")
         print("=====Downloading and Extracing Data=====")
-        
+
         urllib.request.urlretrieve(file_path, temp_zip_file)
-        
+
         shutil.unpack_archive(temp_zip_file, data_out)
         temp_zip_file.unlink()
-        
+
         data_files = glob.glob(str(data_out) + "/comet_testing_datasets/WRF/*")
 
     assert True

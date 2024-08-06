@@ -57,7 +57,7 @@ def standard_radar_load_netcdf_iris(
 
         # Open combined netcdf radar dataarray
         radar_xarray = xr.open_mfdataset(
-            path_to_files, #concat_dim="time", combine="nested"
+            path_to_files,  # concat_dim="time", combine="nested"
         ).reflectivity
 
         # Subset location of interest
@@ -118,14 +118,18 @@ def standard_radar_load_netcdf_iris(
                 "units": f"minutes since {first_time}",
             }
         )
-        
+
         radar_xarray = radar_xarray.assign_coords(
             projection_x_coordinate=("x", radar_xarray.proj_x.values),
-            projection_y_coordinate=("y", radar_xarray.proj_y.values)
+            projection_y_coordinate=("y", radar_xarray.proj_y.values),
         )
-        
-        radar_xarray["projection_x_coordinate"] = radar_xarray.projection_x_coordinate.assign_attrs({ "units": "m" })
-        radar_xarray["projection_y_coordinate"] = radar_xarray.projection_y_coordinate.assign_attrs({ "units": "m" })
+
+        radar_xarray["projection_x_coordinate"] = (
+            radar_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+        )
+        radar_xarray["projection_y_coordinate"] = (
+            radar_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+        )
 
         # Drop altitude coordinate temporarily when making iris cube
         radar_xarray = radar_xarray.drop_vars(["altitude", "proj_x", "proj_y"])
