@@ -35,5 +35,5 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/travis-j-hahn/CoMET"
-Issues = "https://github.com/travis-j-hahn/CoMET/issues"
+Homepage = "https://github.com/ASCENT-BNL/CoMET"
+Issues = "https://github.com/ASCENT-BNL/CoMET/issues"
