@@ -20,7 +20,7 @@ def find_nearest(array, pivot):
     return idx
 
 
-def calculate_ETH(
+def calculate_ETH( # TODO: make this the max height of tracking var, not eth
     analysis_object,
     threshold,
     variable=None,
@@ -95,11 +95,11 @@ def calculate_ETH(
         for feature in frame[1].groupby("feature_id"):
 
             # Get the indices of the cell footprint
-            proper_indices = np.argwhere(footprint_data[frame[0]].values == feature[0])
+            proper_indices = np.argwhere(footprint_data[frame[0]].values == feature[0]) 
+            # try to see if you can get the altitude information from footprint data
 
             # Cells which have no segmented output should get a NaN
             if len(proper_indices) == 0:
-
                 eth_info["frame"].append(frame[0])
                 eth_info["feature_id"].append(feature[0])
                 eth_info["cell_id"].append(feature[1]["cell_id"].min())

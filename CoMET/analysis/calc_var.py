@@ -38,11 +38,13 @@ def calc_var(analysis_object, var, **args):
         calculate_ETH,
         calculate_area,
         calculate_volume,
+        # calculate_max_height
     )
 
     # Map the correct functions to the proper variables. This is a list of all the calculatable variables as well.
     variable_call_mechanism = {
         "eth": calculate_ETH,
+        # "max_height" : calculate_max_height,
         "area": calculate_area,
         "volume": calculate_volume,
         "merge_split": merge_split_tracking,

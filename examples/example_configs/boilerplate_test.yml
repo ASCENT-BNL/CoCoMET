@@ -288,12 +288,14 @@ max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None 
 
 # RAMS
 rams:
-    path_to_data: "/share/D3/data/thahn/RAMS/1min/CLN/*-g3.h5"
-    path_to_header: "/share/D3/data/thahn/RAMS/1min/CLN/*-head.txt"
+    # path_to_data: "/share/D3/data/hweiner/RAMS/TestingPurposesOnly/*.h5"
+    # path_to_header: "/share/D3/data/hweiner/RAMS/TestingPurposesOnly/*.txt"
+    path_to_data: "/share/D3/data/hweiner/RAMS/TestingPurposesOnly/tograbandgo/*-g3.h5"
+    path_to_header: "/share/D3/data/hweiner/RAMS/TestingPurposesOnly/tograbandgo/*-head.txt"
 
-    feature_tracking_var: &feature_tracking_var "dbz" #DBZ, TB, WA, PR
+    feature_tracking_var: "dbz" #DBZ, TB, WA, PR
     segmentation_var: "dbz"
-    
+
     tobac:
         feature_id:
             threshold: [30,40,50,60]
@@ -314,26 +316,24 @@ rams:
         segmentation_2d:
             height: 2000 # m
             method: "watershed"
-            target: 'maximum'
             threshold: 30
             
         segmentation_3d:
             method: "watershed"
-            target: 'maximum'
             threshold: 30
     
         analysis: # Optional
             # merge_split: { variable: "DBZ" }
-            eth: { variable: "DBZ", cell_footprint_height: 2000, threshold: 30 }
-            # max_height : {variable : *feature_tracking_var, cell_footprint_height : 2000, threshold : 30}
-            area-low: { height: 200 }
-            area-high: { height: 2000 }
+            max_height: { variable: "DBZ", cell_footprint_height: 2000, threshold: 30 }
+            # TODO: make the feature tracking variable
+            # area-low: { height: 2000 }
+            # area-high: { height: 6000 }
             # volume: {}
             
     # moaap:
-    #     tracking_save_path: "/home/hweiner/Internship/RAMS-MAT/rams-mat/MOAAP_out"
-    #     MinTimePR: 0.5
-    #     MinAreaPR: 10
+    #     tracking_save_path: "/home/hweiner/Internship/RAMS-MAT/rams-mat/MOAAP_out/"
+    #     MinTimePR: 0.1  # was at MinTimePR: 0.5 and MinAreaPR: 10, but working with smaller data set so scale the variables down
+    #     MinAreaPR: 2
         
         # analysis:
             # None yet
