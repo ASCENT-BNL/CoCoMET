@@ -47,7 +47,7 @@ def CoMET_start(path_to_config=None, manual_mode=False, CONFIG=None):
     start_time = time.perf_counter()
 
     # Create empty dictionaries for each data type
-    wrf_data = mesonh_data = nexrad_data = multi_nexrad_data = standard_radar_data = rams_data = (
+    wrf_data = mesonh_data = nexrad_data = multi_nexrad_data = standard_radar_data = (
         goes_data
     ) = {}
 
@@ -86,12 +86,6 @@ def CoMET_start(path_to_config=None, manual_mode=False, CONFIG=None):
 
         # Call run goes function to handle all goes tasks
         goes_data = run_goes(CONFIG)
-    
-    # Handle RAMS data
-    if "rams" in CONFIG:
-
-        # Call run rams function to handle all rams tasks
-        rams_data = run_rams(CONFIG)
 
     end_time = time.perf_counter()
 
@@ -102,13 +96,12 @@ def CoMET_start(path_to_config=None, manual_mode=False, CONFIG=None):
 
     # Return dict at end
     return (
-        rams_data
+        wrf_data
         | mesonh_data
         | nexrad_data
         | multi_nexrad_data
         | standard_radar_data
         | goes_data
-        | wrf_data
     )
 
 
@@ -281,27 +274,6 @@ def CoMET_start_multi(CONFIG):
             radar_process.start()
 
             active_process_count += 1
-        
-        # Handle rams data
-        if "rams" in CONFIG:
-
-            # Check to make sure max core count has not been exceeded
-            if (
-                CONFIG["max_cores"] is not None
-                and active_process_count + 1 > CONFIG["max_cores"]
-            ):
-                raise Exception(
-                    "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
-                )
-
-            # Call run goes function to handle all goes tasks
-            rams_process = multiprocessing.Process(
-                target=run_rams, args=(CONFIG, queue)
-            )
-            processes.append(rams_process)
-            rams_process.start()
-
-            active_process_count += 1
 
         for p in processes:
             responses.append(queue.get())
@@ -351,17 +323,6 @@ def CoMET_load(path_to_config=None, CONFIG_string=None):
     else:
 
         CONFIG = yaml.safe_load(CONFIG_string)
-    
-    # Check that the analysis variables are all uppercase
-    for var in CONFIG.keys():
-        if var in ['verbose', 'parallel_processing', 'max_cores']: # if the key is not a dataset then don't worry about it
-            continue
-        for trckr in CONFIG[var].keys():
-            if 'analysis' in CONFIG[var][trckr]:
-                if 'max_height' in CONFIG[var][trckr]['analysis']:
-                    CONFIG[var][trckr]['analysis']['max_height']['variable'] = CONFIG[var][trckr]['analysis']['max_height']['variable'].upper()
-                if 'eth' in CONFIG[var][trckr]['analysis']:
-                    CONFIG[var][trckr]['analysis']['eth']['variable'] = CONFIG[var][trckr]['analysis']['eth']['variable'].upper()
 
     # Check for default setup parameters, add them if not present
     if "verbose" not in CONFIG:
@@ -432,9 +393,6 @@ def CoMET_load(path_to_config=None, CONFIG_string=None):
 
     if "goes" in CONFIG and CONFIG["verbose"]:
         print("=====GOES Setup Found in CONFIG=====")
-    
-    if "rams" in CONFIG and CONFIG["verbose"]:
-        print("=====RAMS Setup Found in CONFIG=====")
 
     return CONFIG
 
@@ -442,255 +400,6 @@ def CoMET_load(path_to_config=None, CONFIG_string=None):
 # =============================================================================
 # This section is for running individual data types
 # =============================================================================
-
-def run_rams(CONFIG, queue=None):
-    """
-    Inputs:
-        CONFIG: User configuration file
-    Outputs:
-        user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
-    """
-    from .tracker_output_translation_layer import (
-        feature_id_to_UDAF,
-        linking_to_UDAF,
-        segmentation_to_UDAF,
-        bulk_moaap_to_UDAF,
-    )
-    from CoMET.analysis.analysis_object import Analysis_Object
-    from .rams_load import rams_load_netcdf_iris
-
-    if CONFIG["verbose"]:
-        print("=====Loading RAMS Data=====")
-
-    rams_tracking_cube, rams_tracking_xarray = rams_load_netcdf_iris(
-        CONFIG["rams"]["path_to_data"], CONFIG["rams"]["feature_tracking_var"], 
-        CONFIG["rams"]["path_to_header"], CONFIG
-    )
-
-    # if tracking and segmentation variables are different, load seperately
-    if CONFIG["rams"]["feature_tracking_var"] != CONFIG["rams"]["segmentation_var"]:
-
-        rams_segmentation_cube, rams_segmentation_xarray = rams_load_netcdf_iris(
-            CONFIG["rams"]["path_to_data"], CONFIG["rams"]["segmentation_var"],
-            CONFIG["rams"]["path_to_header"], CONFIG
-        )
-
-    else:
-        rams_segmentation_cube = rams_tracking_cube
-        rams_segmentation_xarray = rams_tracking_xarray
-
-    # Add xarrays and cubes to return dict
-    user_return_dict = {}
-
-    user_return_dict["rams"] = {
-        # "tracking_xarray": rams_tracking_xarray,
-        # "tracking_cube": rams_tracking_cube,
-        # "segmentation_xarray": rams_segmentation_xarray,
-        # "segmentation_cube": rams_segmentation_cube,
-    }
-    # now determine which tracker(s) to use
-    if "tobac" in CONFIG["rams"]:
-        from .rams_tobac import (
-            rams_tobac_feature_id,
-            rams_tobac_linking,
-            rams_tobac_segmentation,
-        )
-
-        rams_features = None
-        rams_tracks = None
-        rams_segmentation2d = (None, None)
-        rams_segmentation3d = (None, None)
-        rams_tobac_analysis_data = {}
-
-        # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
-        if "feature_id" in CONFIG["rams"]["tobac"]:
-
-            if CONFIG["verbose"]:
-                print("=====Starting RAMS tobac Feature ID=====")
-
-            rams_features = rams_tobac_feature_id(rams_tracking_cube, CONFIG)
-
-        if "linking" in CONFIG["rams"]["tobac"]:
-
-            if CONFIG["verbose"]:
-                print("=====Starting RAMS tobac Feature Linking=====")
-
-            rams_tracks = rams_tobac_linking(rams_tracking_cube, rams_features, CONFIG)
-
-        if "segmentation_2d" in CONFIG["rams"]["tobac"]:
-
-            if CONFIG["verbose"]:
-                print("=====Starting RAMS tobac 2D Segmentation=====")
-
-            rams_segmentation2d = rams_tobac_segmentation(
-                rams_segmentation_cube,
-                rams_features,
-                "2d",
-                CONFIG,
-                CONFIG["rams"]["tobac"]["segmentation_2d"]["height"],
-            )
-
-        if "segmentation_3d" in CONFIG["rams"]["tobac"]:
-
-            if CONFIG["verbose"]:
-                print("=====Starting RAMS tobac 3D Segmentation=====")
-
-            rams_segmentation3d = rams_tobac_segmentation(
-                rams_segmentation_cube, rams_features, "3d", CONFIG
-            )
-
-        # Create analysis object values
-        UDAF_features = feature_id_to_UDAF(rams_features, "tobac")
-        UDAF_tracks = linking_to_UDAF(rams_tracks, "tobac")
-        UDAF_segmentation_2d = segmentation_to_UDAF(
-            rams_segmentation2d[0], UDAF_tracks, "tobac"
-        )
-        UDAF_segmentation_3d = segmentation_to_UDAF(
-            rams_segmentation3d[0], UDAF_tracks, "tobac"
-        )
-
-        # Create analysis object
-        analysis_object = Analysis_Object(
-            rams_tracking_xarray,
-            rams_segmentation_xarray,
-            UDAF_features,
-            UDAF_tracks,
-            UDAF_segmentation_2d,
-            UDAF_segmentation_3d,
-
-            rams_segmentation_3d=rams_segmentation3d[1],
-        )
-
-        if "analysis" in CONFIG["rams"]["tobac"]:
-            from CoMET.analysis.calc_var import calc_var
-
-            if CONFIG["rams"]["tobac"]["analysis"] is None:
-                CONFIG["rams"]["tobac"]["analysis"] = {}
-
-            if CONFIG["verbose"]:
-                print("=====Starting RAMS tobac Analysis Calculations=====")
-
-            # Calcaulte each variable of interest and append to analysis data array
-            for var in CONFIG["rams"]["tobac"]["analysis"].keys():
-
-                # Add default tracking featured_id variable in place of variable if not present
-                if "variable" not in CONFIG["rams"]["tobac"]["analysis"][var]:
-                    CONFIG["rams"]["tobac"]["analysis"][var]["variable"] = CONFIG["rams"][
-                        "feature_tracking_var"
-                    ].upper()
-
-                # This allows us to have multiple copies of the same variable by adjoining a dash
-                proper_var_name = var.lower().split("-")[0]
-
-                rams_tobac_analysis_data[var] = calc_var(
-                    analysis_object,
-                    proper_var_name,
-                    **CONFIG["rams"]["tobac"]["analysis"][var],
-                )
-
-        if CONFIG["verbose"]:
-            print("=====Converting RAMS tobac Output to CoMET-UDAF=====")
-
-        # Add all products to return dict
-        user_return_dict["rams"]["tobac"] = {
-            # "feature_id": rams_features,
-            # "UDAF_features": feature_id_to_UDAF(rams_features, "tobac"),
-            # "linking": rams_tracks,
-            "UDAF_linking": UDAF_tracks,
-            # "segmentation_2d": rams_segmentation2d,
-            "UDAF_segmentation_2d": UDAF_segmentation_2d,
-            # "segmentation_3d": rams_segmentation3d,
-            "UDAF_segmentation_3d": UDAF_segmentation_3d,
-            "analysis": rams_tobac_analysis_data,
-            "analysis_object": analysis_object,
-        }
-
-        if CONFIG["verbose"]:
-            print("=====RAMS tobac Tracking Complete=====")
-
-    # Run MOAAP if present
-    if "moaap" in CONFIG["rams"]:
-        from .rams_moaap import rams_moaap
-
-        rams_moaap_analysis_data = {}
-
-        if CONFIG["verbose"]:
-            print("=====Starting RAMS MOAAP Tracking=====")
-
-        # Run MOAAP
-        mask_output = rams_moaap(rams_tracking_xarray, CONFIG)
-
-        # Calculate UDAF values
-        UDAF_values = bulk_moaap_to_UDAF(
-            mask_output,
-            rams_tracking_xarray.PROJX.values,
-            rams_tracking_xarray.PROJY.values,
-            convert_type=CONFIG["rams"]["moaap"]["analysis_type"],
-        )
-
-        if UDAF_values is None:
-            UDAF_values = [None, None, None]
-
-        # Create analysis object
-        analysis_object = Analysis_Object(
-            rams_tracking_xarray,
-            rams_tracking_xarray,
-            UDAF_values[0],
-            UDAF_values[1],
-            UDAF_values[2],
-            None,
-        )
-
-        # Run analysis on MOAAP output
-        if "analysis" in CONFIG["rams"]["moaap"]:
-            from CoMET.analysis.calc_var import calc_var
-
-            if CONFIG["rams"]["moaap"]["analysis"] is None:
-                CONFIG["rams"]["moaap"]["analysis"] = {}
-
-            if CONFIG["verbose"]:
-                print("=====Starting RAMS MOAAP Analysis Calculations=====")
-
-            # Calcaulte each variable of interest and append to analysis data array
-            for var in CONFIG["rams"]["moaap"]["analysis"].keys():
-
-                if UDAF_values == [None, None, None]:
-                    continue
-
-                # Add default tracking featured_id variable in place of variable if not present
-                if "variable" not in CONFIG["rams"]["moaap"]["analysis"][var]:
-                    CONFIG["rams"]["moaap"]["analysis"][var]["variable"] = CONFIG["rams"][
-                        "feature_tracking_var"
-                    ].upper()
-
-                # This allows us to have multiple copies of the same variable by adjoining a dash
-                proper_var_name = var.lower().split("-")[0]
-
-                rams_moaap_analysis_data[var] = calc_var(
-                    analysis_object,
-                    proper_var_name,
-                    **CONFIG["rams"]["moaap"]["analysis"][var],
-                )
-
-        user_return_dict["rams"]["moaap"] = {
-            # "mask_xarray": mask_output,
-            # "UDAF_features": UDAF_values[0],
-            "UDAF_linking": UDAF_values[1],
-            "UDAF_segmentation_2d": UDAF_values[2],
-            "analysis": rams_moaap_analysis_data,
-            "analysis_object": analysis_object,
-        }
-
-        if CONFIG["verbose"]:
-            print("=====RAMS MOAAP Tracking Complete=====")
-
-    # Send return dict to queue if there is a queue object passed
-    if queue is not None:
-        queue.put(user_return_dict)
-        return None
-
-    # Return dictionary
-    return user_return_dict
 
 
 def run_wrf(CONFIG, queue=None):
