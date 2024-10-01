@@ -10,42 +10,16 @@ Created on Fri Jun 21 18:01:16 2024
 # Takes in a filepath containing WRF netCDF data and converts it to a netcdf dataset and/or an iris cube for use in trackers
 # =============================================================================
 
-import glob
-import os
 
-import iris
-import iris.cube
-import numpy as np
-import vincenty
-import xarray as xr
-
-from .mesonh_calculate_products import (
-    mesonh_calculate_agl_z,
-    mesonh_calculate_brightness_temp,
-    mesonh_calculate_reflectivity,
-)
-from .mesonhcube import load
-
-
-def guess_horizontal_spacing(
-    mesonh_xarray: xr.Dataset, filename: str
-) -> tuple[float, float]:
+def guess_horizontal_spacing(mesonh_xarray, filename):
     """
     This functions attempts to find the horizontal spacing of MesoNH data
-
-    Parameters
-    ----------
-    mesonh_xarray : xarray.core.dataset.Dataset
-        Standard mesonh xarray dataset.
-    filename : str
-        The name of a mesonh input file.
-
-    Returns
-    -------
-    dy : float
-        Estimated y spacing (m).
-    dx : float
-        Estimated x spacing (m).
+    Inputs:
+        mesonh_xarray: Standard mesonh xarray file
+        filename: The name of a mesonh input file
+    Ouputs:
+        dx: Estimated x spacing
+        dy: Estimated y spacing
     """
 
     try:
@@ -68,6 +42,7 @@ def guess_horizontal_spacing(
         print(
             "!=====Non-Default MesoNH Filename Found, Estimating Distance Instead=====!"
         )
+        import vincenty
 
         # Guess x dimension by finding distance between two points offset by one x value
         x_dis = (
@@ -93,65 +68,33 @@ def guess_horizontal_spacing(
         return (y_dis, x_dis)
 
 
-def mesonh_load_netcdf_iris(
-    filepath: str, tracking_var: str, CONFIG: dict
-) -> tuple[iris.cube.Cube, xr.Dataset]:
+def mesonh_load_netcdf_iris(filepath, tracking_var, CONFIG):
+    """
+    Inputs:
+        filepath: glob style path to MesoNH files (i.e. ./data/MesoNH/500m*)
+        trackingVar: ["dbz","tb","wa"], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
+
+    Outputs:
+        cube: iris cube containing either reflectivity, updraft velocity, or brightness temperature values
+        mesonh_netcdf: xarray dataset containing merged MesoNH data
     """
 
-
-    Parameters
-    ----------
-    filepath : str
-        Glob style path to MesoNH files (i.e. ./data/MesoNH/500m*).
-    tracking_var : str
-        ["dbz","tb","wa", "pr", ...], variable which is going to be used for tracking
-    CONFIG : dict
-        User configuration file.
-
-    Raises
-    ------
-    Exception
-        Exception if entered invalid tracking variable.
-
-    Returns
-    -------
-    cube : iris.cube.Cube
-        Iris cube containing tracking variable.
-    mesonh_xarray : xarray.core.dataset.Dataset
-        Xarray dataset containing merged MesoNH data.
-
-    """
+    import os
+    import glob
+    import numpy as np
+    import xarray as xr
+    from .mesonh_calculate_products import (
+        mesonh_calculate_reflectivity,
+        mesonh_calculate_agl_z,
+        mesonh_calculate_brightness_temp,
+    )
+    from .mesonhcube import load
 
     # Get one filename for guessing spacing
     filename = [os.path.basename(x) for x in glob.glob(filepath)][0]
     mesonh_xarray = xr.open_mfdataset(
         filepath, coords="all", concat_dim="time", combine="nested"
     )
-
-    if "mesonh" in CONFIG:
-
-        # Subset time based on user inputs
-        if (
-            "min_frame_index" in CONFIG["mesonh"]
-            or "max_frame_index" in CONFIG["mesonh"]
-        ):
-            min_frame = (
-                CONFIG["mesonh"]["min_frame_index"]
-                if "min_frame_index" in CONFIG["mesonh"]
-                else 0
-            )
-            max_frame = (
-                CONFIG["mesonh"]["max_frame_index"] + 1
-                if "max_frame_index" in CONFIG["mesonh"]
-                else mesonh_xarray.dims["time"]
-            )
-
-            mesonh_xarray = mesonh_xarray.isel(
-                time=np.arange(min_frame, max_frame), drop=True
-            )
-
-    else:
-        raise Exception('!=====CONFIG Missing "mesonh" field=====!')
 
     # Correct for 360 degree lat/lon system by subtracting 360 from values exceeding 180 degrees...correction for latitude may not be necessary
     mesonh_xarray = mesonh_xarray.assign_coords(
@@ -221,71 +164,33 @@ def mesonh_load_netcdf_iris(
             altitude=("z", correct_alts)
         )
 
-    elif tracking_var.lower() == "pr":
-
-        # precipitation rate is only 2d so no heights needed
-        mesonh_xarray["PR"] = mesonh_xarray["pcp_rate"]
-
-        mesonh_xarray["PR"].attrs["units"] = "mm/hour"
-
-        # Adjust dask chunks
-        mesonh_xarray["PR"] = mesonh_xarray["PR"].chunk(
-            mesonh_xarray["LWup_TOA"].chunksizes
-        )
-        cube = load(mesonh_xarray, "PR", filename)
-
     else:
-        # If not any of the above, try using user inputed value
-        try:
-
-            var_values = mesonh_xarray[tracking_var]
-            cube = load(mesonh_xarray, tracking_var, filename)
-
-            if len(var_values.shape) == 4:
-
-                # add correct altitude based off of average height at each height index
-                ht = mesonh_calculate_agl_z(mesonh_xarray)
-
-                correct_alts = [np.mean(h.values) for h in ht]
-                cube.coord("altitude").points = correct_alts
-
-                # Add altitude field for easier processing later
-                mesonh_xarray[tracking_var] = mesonh_xarray[tracking_var].assign_coords(
-                    altitude=("z", correct_alts)
-                )
-
-        except:
-            raise Exception(
-                f"!=====Invalid Tracking Variable. You Entered: {tracking_var}=====!"
-            )
+        raise Exception(
+            f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
+        )
 
     return (cube, mesonh_xarray.unify_chunks())
 
 
-def mesonh_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Dataset:
+def mesonh_load_netcdf(filepath, tracking_var, CONFIG):
+    """
+    Inputs:
+        filepath: glob style path to MesoNH files (i.e. ./data/MesoNH/500m*)
+        trackingVar: ["dbz","tb","wa"], variable which is going to be used for tracking--either reflectivity, brightness temperature, or updraft velocity
+
+    Outputs:
+        mesonh_netcdf: xarray dataset containing merged MesoNH data
     """
 
-
-    Parameters
-    ----------
-    filepath : str
-        Glob style path to MesoNH files (i.e. ./data/MesoNH/500m*).
-    tracking_var : str
-        ["dbz","tb","wa", "pr", ...], variable which is going to be used for tracking
-    CONFIG : dict
-        User configuration file.
-
-    Raises
-    ------
-    Exception
-        Exception if entered invalid tracking variable.
-
-    Returns
-    -------
-    mesonh_xarray : xarray.core.dataset.Dataset
-        Xarray dataset containing merged MesoNH data.
-
-    """
+    import os
+    import glob
+    import numpy as np
+    import xarray as xr
+    from .mesonh_calculate_products import (
+        mesonh_calculate_reflectivity,
+        mesonh_calculate_agl_z,
+        mesonh_calculate_brightness_temp,
+    )
 
     # Get one filename for guessing spacing
     filename = [os.path.basename(x) for x in glob.glob(filepath)][0]
@@ -293,32 +198,6 @@ def mesonh_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Dat
     mesonh_xarray = xr.open_mfdataset(
         filepath, coords="all", concat_dim="time", combine="nested"
     )
-
-    if "mesonh" in CONFIG:
-
-        # Subset time based on user inputs
-        if (
-            "min_frame_index" in CONFIG["mesonh"]
-            or "max_frame_index" in CONFIG["mesonh"]
-        ):
-            min_frame = (
-                CONFIG["mesonh"]["min_frame_index"]
-                if "min_frame_index" in CONFIG["mesonh"]
-                else 0
-            )
-            max_frame = (
-                CONFIG["mesonh"]["max_frame_index"] + 1
-                if "max_frame_index" in CONFIG["mesonh"]
-                else mesonh_xarray.dims["time"]
-            )
-
-            mesonh_xarray = mesonh_xarray.isel(
-                time=np.arange(min_frame, max_frame), drop=True
-            )
-
-    else:
-        raise Exception('!=====CONFIG Missing "mesonh" field=====!')
-
     # Correct for 360 degree lat/lon system by subtracting 360 from values exceeding 180 degrees...correction for latitude may not be necessary
     mesonh_xarray = mesonh_xarray.assign_coords(
         lat=mesonh_xarray.lat.where(mesonh_xarray.lat <= 180, lambda lat: lat - 360),
@@ -382,39 +261,9 @@ def mesonh_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Dat
             altitude=("z", correct_alts)
         )
 
-    elif tracking_var.lower() == "pr":
-
-        # Brightness temperature is only 2d so no heights needed
-        mesonh_xarray["PR"] = mesonh_xarray["pcp_rate"]
-
-        mesonh_xarray["PR"].attrs["units"] = "mm/unit"
-
-        # Adjust dask chunks
-        mesonh_xarray["PR"] = mesonh_xarray["PR"].chunk(
-            mesonh_xarray["LWup_TOA"].chunksizes
-        )
-
     else:
-        # If not any of the above, try using user inputed value
-        try:
-
-            var_values = mesonh_xarray[tracking_var]
-
-            if len(var_values.shape) == 4:
-
-                # add correct altitude based off of average height at each height index
-                ht = mesonh_calculate_agl_z(mesonh_xarray)
-
-                correct_alts = [np.mean(h.values) for h in ht]
-
-                # Add altitude field for easier processing later
-                mesonh_xarray[tracking_var] = mesonh_xarray[tracking_var].assign_coords(
-                    altitude=("bottom_top", correct_alts)
-                )
-
-        except:
-            raise Exception(
-                f"!=====Invalid Tracking Variable. You Entered: {tracking_var}=====!"
-            )
+        raise Exception(
+            f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
+        )
 
     return mesonh_xarray.unify_chunks()

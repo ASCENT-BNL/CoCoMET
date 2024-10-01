@@ -11,67 +11,30 @@ Created on Mon Jun 10 16:28:49 2024
 # =============================================================================
 
 
-import glob
-import multiprocessing
-import os
-import warnings
-from functools import partial
-
-import cftime
-import iris
-import iris.cube
-import numpy as np
-import pyart
-import xarray as xr
-from tqdm import tqdm
-
 """
 Inputs:
-    path_to_files: 
-    save_location: 
-    tracking_var: 
-    CONFIG: 
-    parallel_processing: [True, False], 
-    max_cores: 
+    path_to_files: glob type path to the NEXRAD level 2 archive files
+    save_location: path to where the gridded NEXRAD files should be saved to, should be a directory and end with "/"
+    tracking_var: ["dbz"], variable which is going to be used for tracking--reflectivity
+    CONFIG: User configuration file
+    parallel_processing: [True, False], bool determinig whether to use parallel processing when gridding files
+    max_cores: Number of cores to use if parallel_processing == True
 """
 
 
 def gen_and_save_nexrad_grid(
-    path_to_files: str,
-    save_location: str,
-    tracking_var: str,
-    CONFIG: dict,
-    parallel_processing: bool = False,
-    max_cores: int | None = None,
-) -> None:
-    """
-
-
-    Parameters
-    ----------
-    path_to_files : str
-        Glob type path to the NEXRAD level 2 archive files.
-    save_location : str
-        Path to where the gridded NEXRAD files should be saved to, should be a directory and end with "/".
-    tracking_var : str
-        ["dbz"], variable which is going to be used for tracking--reflectivity.
-    CONFIG : dict
-        User configuration file.
-    parallel_processing : bool, optional
-        Bool determinig whether to use parallel processing when gridding files. The default is False.
-    max_cores : int, optional
-        Number of cores to use if parallel_processing == True. The default is None.
-
-    Raises
-    ------
-    Exception
-        Exception if no files to grid or invalid tracking variables.
-
-    Returns
-    -------
-    None
-
-    """
+    path_to_files,
+    save_location,
+    tracking_var,
+    CONFIG,
+    parallel_processing=False,
+    max_cores=None,
+):
+    import os
+    import glob
+    import pyart
+    import numpy as np
+    from tqdm import tqdm
 
     # Get all archive files and iterate over them
     files = np.sort(glob.glob(path_to_files))
@@ -124,10 +87,14 @@ def gen_and_save_nexrad_grid(
     return
 
 
+"""
+Helper Function for Parallel Processing
+"""
+
+
 def create_and_save_grid_single(file, save_location, tracking_var, CONFIG):
-    """
-    Helper Function for Parallel Processing
-    """
+    import os
+    import pyart
 
     if tracking_var.lower() == "dbz":
         # Create radar object including only field of interest
@@ -156,34 +123,22 @@ def create_and_save_grid_single(file, save_location, tracking_var, CONFIG):
         return
 
 
+"""
+Inputs:
+    files: list containing all paths to NEXRAD level 2 archive files
+    save_location: path to where the gridded NEXRAD files should be saved to
+    tracking_var: ["dbz"], variable which is going to be used for tracking--reflectivity
+    CONFIG: User configuration file
+    max_cores: Number of cores to use for parallel processing
+"""
+
+
 def gen_and_save_nexrad_grid_multi(
-    files: list[str],
-    save_location: str,
-    tracking_var: str,
-    CONFIG: dict,
-    max_cores: int,
-) -> None:
-    """
-
-
-    Parameters
-    ----------
-    files : list[str]
-        List containing all paths to NEXRAD level 2 archive files.
-    save_location : str
-        Path to where the gridded NEXRAD files should be saved to.
-    tracking_var : str
-        ["dbz"], variable which is going to be used for tracking--reflectivity.
-    CONFIG : dict
-        User configuration file.
-    max_cores : int
-        Number of cores to use for parallel processing
-
-    Returns
-    -------
-    None
-
-    """
+    files, save_location, tracking_var, CONFIG, max_cores
+):
+    import multiprocessing
+    from tqdm import tqdm
+    from functools import partial
 
     # Start a pool with max_cores and run the grid function
     with multiprocessing.Pool(max_cores) as multi_pool:
@@ -205,37 +160,28 @@ def gen_and_save_nexrad_grid_multi(
     return
 
 
+"""
+Inputs:
+    path_to_files: Glob path to input files, either archival or grided netcdf--i.e. "/data/usr/KVNX*_V06.ar2v"
+    file_type: ["ar2v", "nc"] type of input file--either archival or netcdf
+    tracking_var: ["dbz"], variable which is going to be used for tracking--reflectivity.
+    CONFIG: User configuration file
+    save_location: Where to save gridded NEXRAD data to if file_type=="ar2v"
+Outputs:
+    cube: iris cube continaing gridded reflectivity data ready for tobac tracking 
+    nexrad_xarray: Xarray dataset containing gridded NEXRAD archival data
+"""
+
+
 def nexrad_load_netcdf_iris(
-    path_to_files: str,
-    file_type: str,
-    tracking_var: str,
-    CONFIG: dict,
-    save_location: str | None = None,
-) -> tuple[iris.cube.Cube, xr.DataArray]:
-    """
-
-
-    Parameters
-    ----------
-    path_to_files : str
-        Glob path to input files, either archival or grided netcdf--i.e. "/data/usr/KVNX*_V06.ar2v".
-    file_type : str
-        ["ar2v", "nc"] type of input file--either archival or netcdf.
-    tracking_var : str
-        ["dbz"], variable which is going to be used for tracking--reflectivity.
-    CONFIG : dict
-        User configuration file.
-    save_location : str, optional
-        Where to save gridded NEXRAD data to if file_type=="ar2v". The default is None.
-
-    Returns
-    -------
-    cube : iris.cube.Cube
-        Iris cube continaing gridded reflectivity data ready for tobac tracking.
-    nexrad_xarray : xarray.core.dataarray.DataArray
-        Xarray DataArray containing gridded NEXRAD archival data.
-
-    """
+    path_to_files, file_type, tracking_var, CONFIG, save_location=None
+):
+    import glob
+    import pyart
+    import cftime
+    import warnings
+    import numpy as np
+    import xarray as xr
 
     # If data is archival, perform gridding
     if file_type.lower() == "ar2v":
@@ -269,32 +215,8 @@ def nexrad_load_netcdf_iris(
             nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity
             del radar_objects
 
-            # Subset location and time of interest
+            # Subset location of interest
             if "nexrad" in CONFIG:
-
-                # Subset time based on user inputs
-                if (
-                    "min_frame_index" in CONFIG["nexrad"]
-                    or "max_frame_index" in CONFIG["nexrad"]
-                ):
-                    min_frame = (
-                        CONFIG["nexrad"]["min_frame_index"]
-                        if "min_frame_index" in CONFIG["nexrad"]
-                        else 0
-                    )
-                    max_frame = (
-                        CONFIG["nexrad"]["max_frame_index"] + 1
-                        if "max_frame_index" in CONFIG["nexrad"]
-                        else nexrad_xarray.dims["time"]
-                    )
-
-                    nexrad_xarray = nexrad_xarray.isel(
-                        time=np.arange(
-                            min_frame,
-                            max_frame,
-                        ),
-                        drop=True,
-                    )
 
                 if "bounds" in CONFIG["nexrad"]:
 
@@ -388,32 +310,8 @@ def nexrad_load_netcdf_iris(
             nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity
             del radar_objects
 
-            # Subset location and time of interest
+            # Subset location of interest
             if "nexrad" in CONFIG:
-
-                # Subset time based on user inputs
-                if (
-                    "min_frame_index" in CONFIG["nexrad"]
-                    or "max_frame_index" in CONFIG["nexrad"]
-                ):
-                    min_frame = (
-                        CONFIG["nexrad"]["min_frame_index"]
-                        if "min_frame_index" in CONFIG["nexrad"]
-                        else 0
-                    )
-                    max_frame = (
-                        CONFIG["nexrad"]["max_frame_index"] + 1
-                        if "max_frame_index" in CONFIG["nexrad"]
-                        else nexrad_xarray.dims["time"]
-                    )
-
-                    nexrad_xarray = nexrad_xarray.isel(
-                        time=np.arange(
-                            min_frame,
-                            max_frame,
-                        ),
-                        drop=True,
-                    )
 
                 if "bounds" in CONFIG["nexrad"]:
 
@@ -495,35 +393,27 @@ def nexrad_load_netcdf_iris(
         return
 
 
+"""
+Inputs:
+    path_to_files: Glob path to input files, either archival or grided netcdf--i.e. "/data/usr/KVNX*_V06.ar2v"
+    file_type: ["ar2v", "nc"] type of input file--either archival or netcdf
+    tracking_var: ["dbz"], variable which is going to be used for tracking--reflectivity.
+    CONFIG: User configuration file
+    save_location: Where to save gridded NEXRAD data to if file_type=="ar2v"
+Outputs:
+    nexrad_xarray: Xarray dataset containing gridded NEXRAD archival data
+"""
+
+
 def nexrad_load_netcdf(
-    path_to_files: str,
-    file_type: str,
-    tracking_var: str,
-    CONFIG: dict,
-    save_location: str | None = None,
-) -> xr.DataArray:
-    """
-
-
-    Parameters
-    ----------
-    path_to_files : str
-        Glob path to input files, either archival or grided netcdf--i.e. "/data/usr/KVNX*_V06.ar2v".
-    file_type : str
-        ["ar2v", "nc"] type of input file--either archival or netcdf.
-    tracking_var : str
-        ["dbz"], variable which is going to be used for tracking--reflectivity.
-    CONFIG : dict
-        User configuration file.
-    save_location : str, optional
-        Where to save gridded NEXRAD data to if file_type=="ar2v". The default is None.
-
-    Returns
-    -------
-    nexrad_xarray : xarray.core.dataarray.DataArray
-        Xarray DataArray containing gridded NEXRAD archival data.
-
-    """
+    path_to_files, file_type, tracking_var, CONFIG, save_location=None
+):
+    import glob
+    import pyart
+    import cftime
+    import warnings
+    import numpy as np
+    import xarray as xr
 
     # If data is archival, perform gridding
     if file_type.lower() == "ar2v":
@@ -558,32 +448,8 @@ def nexrad_load_netcdf(
             nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity
             del radar_objects
 
-            # Subset location and time of interest
+            # Subset location of interest
             if "nexrad" in CONFIG:
-
-                # Subset time based on user inputs
-                if (
-                    "min_frame_index" in CONFIG["nexrad"]
-                    or "max_frame_index" in CONFIG["nexrad"]
-                ):
-                    min_frame = (
-                        CONFIG["nexrad"]["min_frame_index"]
-                        if "min_frame_index" in CONFIG["nexrad"]
-                        else 0
-                    )
-                    max_frame = (
-                        CONFIG["nexrad"]["max_frame_index"] + 1
-                        if "max_frame_index" in CONFIG["nexrad"]
-                        else nexrad_xarray.dims["time"]
-                    )
-
-                    nexrad_xarray = nexrad_xarray.isel(
-                        time=np.arange(
-                            min_frame,
-                            max_frame,
-                        ),
-                        drop=True,
-                    )
 
                 if "bounds" in CONFIG["nexrad"]:
 
@@ -669,32 +535,8 @@ def nexrad_load_netcdf(
             nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity
             del radar_objects
 
-            # Subset location and time of interest
+            # Subset location of interest
             if "nexrad" in CONFIG:
-
-                # Subset time based on user inputs
-                if (
-                    "min_frame_index" in CONFIG["nexrad"]
-                    or "max_frame_index" in CONFIG["nexrad"]
-                ):
-                    min_frame = (
-                        CONFIG["nexrad"]["min_frame_index"]
-                        if "min_frame_index" in CONFIG["nexrad"]
-                        else 0
-                    )
-                    max_frame = (
-                        CONFIG["nexrad"]["max_frame_index"] + 1
-                        if "max_frame_index" in CONFIG["nexrad"]
-                        else nexrad_xarray.dims["time"]
-                    )
-
-                    nexrad_xarray = nexrad_xarray.isel(
-                        time=np.arange(
-                            min_frame,
-                            max_frame,
-                        ),
-                        drop=True,
-                    )
 
                 if "bounds" in CONFIG["nexrad"]:
 

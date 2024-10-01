@@ -11,98 +11,30 @@ Created on Mon Jun 10 14:55:16 2024
 # =============================================================================
 # TODO: Create CoMET-UDAF Specification for return object, Update strings to be proper doc strings (type """ then press enter at top of function)
 
-import ast
-import multiprocessing
-import multiprocessing.queues
-import os
-import time
 
-import numpy as np
-import yaml
-
-from CoMET.analysis.analysis_object import Analysis_Object
-from CoMET.analysis.calc_var import calc_var
-
-from .goes_load import goes_load_netcdf_iris
-from .goes_tobac import (
-    goes_tobac_feature_id,
-    goes_tobac_linking,
-    goes_tobac_segmentation,
-)
-from .mesonh_load import mesonh_load_netcdf_iris
-from .mesonh_moaap import mesonh_run_moaap
-from .mesonh_tobac import (
-    mesonh_tobac_feature_id,
-    mesonh_tobac_linking,
-    mesonh_tobac_segmentation,
-)
-from .multi_nexrad_load import multi_nexrad_load_netcdf_iris
-from .multi_nexrad_tobac import (
-    multi_nexrad_tobac_feature_id,
-    multi_nexrad_tobac_linking,
-    multi_nexrad_tobac_segmentation,
-)
-from .nexrad_load import nexrad_load_netcdf_iris
-from .nexrad_tobac import (
-    nexrad_tobac_feature_id,
-    nexrad_tobac_linking,
-    nexrad_tobac_segmentation,
-)
-from .standard_radar_load import standard_radar_load_netcdf_iris
-from .standard_radar_tobac import (
-    standard_radar_tobac_feature_id,
-    standard_radar_tobac_linking,
-    standard_radar_tobac_segmentation,
-)
-from .tracker_output_translation_layer import (
-    bulk_moaap_to_UDAF,
-    feature_id_to_UDAF,
-    linking_to_UDAF,
-    segmentation_to_UDAF,
-)
-from .wrf_load import wrf_load_netcdf_iris
-from .wrf_moaap import wrf_run_moaap
-from .wrf_tobac import wrf_tobac_feature_id, wrf_tobac_linking, wrf_tobac_segmentation
-
-__all__ = [
-    "CoMET_start",
-    "CoMET_load",
-    "run_goes",
-    "run_mesonh",
-    "run_multi_nexrad",
-    "run_nexrad",
-    "run_standard_radar",
-    "run_wrf",
-]
-
-
-def CoMET_start(path_to_config: str | None = None, CONFIG: dict | None = None) -> dict:
+def CoMET_start(path_to_config=None, manual_mode=False, CONFIG=None):
+    """
+    Inputs:
+        path_to_config: Path to a config.yml file containing all details of the CoMET run. See boilerplate.yml for how the file should be setup
+        manual_mode: [True, False] Whether CoMET should run all functions idenpendetly or should just return CONFIG for user to run functions independently
+        CONFIG: Optional to just pass a config dict object instead of filepath
     """
 
-
-    Parameters
-    ----------
-    path_to_config : str | None, optional
-        Path to a config.yml file containing all details of the CoMET run. See boilerplate.yml for how the file should be setup. The default is None.
-    CONFIG : dict | None, optional
-        Optional to just pass a config dict object instead of filepath. The default is None.
-
-    Returns
-    -------
-    dict
-        Default CoMET output following CoMET-UDAF specification.
-
-    """
+    import time
 
     # Load CONFIG if not present
     if CONFIG is None:
         CONFIG = CoMET_load(path_to_config)
 
+    # if manual_mode = True, just return the loaded CONFIG, otherwise, go through defined setups and run them
+    if manual_mode:
+        return CONFIG
+
     # If parallelization is True, run the multiprocessing version instead
     if CONFIG["parallel_processing"]:
+        import os
 
         if CONFIG["max_cores"] is not None:
-            # TODO: I have no idea if this actually works hah, need to test
             os.environ["OMP_NUM_THREADS"] = str(
                 CONFIG["max_cores"] * 2
             )  # Take advantage of hyper threading
@@ -110,15 +42,12 @@ def CoMET_start(path_to_config: str | None = None, CONFIG: dict | None = None) -
         # Return CoMET multi processes output which should be a dictionary
         multi_output = CoMET_start_multi(CONFIG)
 
-        # Reset environmental lock when done
-        os.environ["OMP_NUM_THREADS"] = str(multiprocessing.cpu_count() * 2)
-
         return multi_output
 
     start_time = time.perf_counter()
 
     # Create empty dictionaries for each data type
-    wrf_data = mesonh_data = nexrad_data = multi_nexrad_data = standard_radar_data = (
+    wrf_data = mesonh_data = nexrad_data = multi_nexrad_data = standard_radar_data = rams_data = (
         goes_data
     ) = {}
 
@@ -157,6 +86,12 @@ def CoMET_start(path_to_config: str | None = None, CONFIG: dict | None = None) -
 
         # Call run goes function to handle all goes tasks
         goes_data = run_goes(CONFIG)
+    
+    # Handle RAMS data
+    if "rams" in CONFIG:
+
+        # Call run rams function to handle all rams tasks
+        rams_data = run_rams(CONFIG)
 
     end_time = time.perf_counter()
 
@@ -167,35 +102,37 @@ def CoMET_start(path_to_config: str | None = None, CONFIG: dict | None = None) -
 
     # Return dict at end
     return (
-        wrf_data
+        rams_data
         | mesonh_data
         | nexrad_data
         | multi_nexrad_data
         | standard_radar_data
         | goes_data
+        | wrf_data
     )
 
 
-def CoMET_start_multi(CONFIG: dict) -> dict:
+def CoMET_start_multi(CONFIG):
+    """
+    Inputs:
+        CONFIG: User defined configuration data
+    Outputs:
+        return_dict: Dictionary designed according to the CoMET-UDAF standard
     """
 
-
-    Parameters
-    ----------
-    CONFIG : dict
-        User configuration file.
-
-    Returns
-    -------
-    dict
-        Dictionary designed according to the CoMET-UDAF standard.
-
-    """
+    import time
+    import multiprocessing
 
     # This is necessary for python reasons I suppose may need to check this after some kind of release
     if __name__ == "CoMET.user_interface_layer":
 
         start_time = time.perf_counter()
+
+        # Keep track of active core count. Should start at one.
+        active_process_count = 1
+
+        # Keep track of for when doing gridding
+        inital_max_cores = CONFIG["max_cores"]
 
         # Start a queue so processes can finish at different times
         queue = multiprocessing.Queue()
@@ -206,13 +143,33 @@ def CoMET_start_multi(CONFIG: dict) -> dict:
         # if wrf is present in CONFIG, run the necessary wrf functions
         if "wrf" in CONFIG:
 
+            # Check to make sure max core count has not been exceeded
+            if (
+                CONFIG["max_cores"] is not None
+                and active_process_count + 1 > CONFIG["max_cores"]
+            ):
+                raise Exception(
+                    "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
+                )
+
             # Call run wrf function to handle all wrf tasks
             wrf_process = multiprocessing.Process(target=run_wrf, args=(CONFIG, queue))
             processes.append(wrf_process)
             wrf_process.start()
 
+            active_process_count += 1
+
         # Handle MesoNH data
         if "mesonh" in CONFIG:
+
+            # Check to make sure max core count has not been exceeded
+            if (
+                CONFIG["max_cores"] is not None
+                and active_process_count + 1 > CONFIG["max_cores"]
+            ):
+                raise Exception(
+                    "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
+                )
 
             # Call run MesoNH function to handle all MesoNH tasks
             mesonh_process = multiprocessing.Process(
@@ -221,8 +178,19 @@ def CoMET_start_multi(CONFIG: dict) -> dict:
             processes.append(mesonh_process)
             mesonh_process.start()
 
+            active_process_count += 1
+
         # Handle GOES data
         if "goes" in CONFIG:
+
+            # Check to make sure max core count has not been exceeded
+            if (
+                CONFIG["max_cores"] is not None
+                and active_process_count + 1 > CONFIG["max_cores"]
+            ):
+                raise Exception(
+                    "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
+                )
 
             # Call run goes function to handle all goes tasks
             goes_process = multiprocessing.Process(
@@ -231,8 +199,28 @@ def CoMET_start_multi(CONFIG: dict) -> dict:
             processes.append(goes_process)
             goes_process.start()
 
+            active_process_count += 1
+
         # Handle NEXRAD data
         if "nexrad" in CONFIG:
+
+            # Check to make sure max core count has not been exceeded
+            if (
+                CONFIG["max_cores"] is not None
+                and active_process_count + 1 > CONFIG["max_cores"]
+            ):
+                raise Exception(
+                    "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
+                )
+
+            # If gridding is enabled, make sure doing so will not exceed the max number of cores and adjust the CONFIG values accordingly
+            if CONFIG["max_cores"] is not None and "gridding" in CONFIG["nexrad"]:
+                CONFIG["max_cores"] = CONFIG["max_cores"] - active_process_count - 1
+
+                if CONFIG["max_cores"] <= 0:
+                    raise Exception(
+                        "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
+                    )
 
             # Call run nexrad function to handle all nexrad tasks
             nexrad_process = multiprocessing.Process(
@@ -241,8 +229,28 @@ def CoMET_start_multi(CONFIG: dict) -> dict:
             processes.append(nexrad_process)
             nexrad_process.start()
 
+            active_process_count += 1
+
         # Handle Multi NEXRAD data
         if "multi_nexrad" in CONFIG:
+
+            # Check to make sure max core count has not been exceeded
+            if (
+                CONFIG["max_cores"] is not None
+                and active_process_count + 1 > CONFIG["max_cores"]
+            ):
+                raise Exception(
+                    "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
+                )
+
+            # If gridding is enabled, make sure doing so will not exceed the max number of cores and adjust the CONFIG values accordingly
+            if CONFIG["max_cores"] is not None and "gridding" in CONFIG["multi_nexrad"]:
+                CONFIG["max_cores"] = CONFIG["max_cores"] - active_process_count - 1
+
+                if CONFIG["max_cores"] <= 0:
+                    raise Exception(
+                        "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
+                    )
 
             # Call run nexrad function to handle all nexrad tasks
             multi_nexrad_process = multiprocessing.Process(
@@ -251,8 +259,19 @@ def CoMET_start_multi(CONFIG: dict) -> dict:
             processes.append(multi_nexrad_process)
             multi_nexrad_process.start()
 
+            active_process_count += 1
+
         # Handle standard radar data
         if "standard_radar" in CONFIG:
+
+            # Check to make sure max core count has not been exceeded
+            if (
+                CONFIG["max_cores"] is not None
+                and active_process_count + 1 > CONFIG["max_cores"]
+            ):
+                raise Exception(
+                    "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
+                )
 
             # Call run goes function to handle all goes tasks
             radar_process = multiprocessing.Process(
@@ -261,47 +280,67 @@ def CoMET_start_multi(CONFIG: dict) -> dict:
             processes.append(radar_process)
             radar_process.start()
 
+            active_process_count += 1
+        
+        # Handle rams data
+        if "rams" in CONFIG:
+
+            # Check to make sure max core count has not been exceeded
+            if (
+                CONFIG["max_cores"] is not None
+                and active_process_count + 1 > CONFIG["max_cores"]
+            ):
+                raise Exception(
+                    "!=====Insufficent Number of Cores (max_cores should equal (# of input data types) + >=1 if gridding NEXRAD)=====!"
+                )
+
+            # Call run goes function to handle all goes tasks
+            rams_process = multiprocessing.Process(
+                target=run_rams, args=(CONFIG, queue)
+            )
+            processes.append(rams_process)
+            rams_process.start()
+
+            active_process_count += 1
+
         for p in processes:
             responses.append(queue.get())
 
         for p in processes:
             p.join()
+            active_process_count -= 1
 
         return_dict = {}
 
         for ii in range(len(responses)):
             return_dict = return_dict | responses[ii]
 
+        # Reset CONFIG max cores if necessary
+        CONFIG["max_cores"] = inital_max_cores
+
         end_time = time.perf_counter()
 
         if CONFIG["verbose"]:
             print(
-                f"""=====CoMET Performance Diagonistics=====\n$ Total Process Time: {"%.2f Seconds" % (end_time-start_time)}\n$ Allocated Resources: Cores = {CONFIG["max_cores"]}, Threads = {CONFIG["max_cores"] * 2}"""
+                f"""=====CoMET Performance Diagonistics=====\n$ Total Process Time: {"%.2f Seconds" % (end_time-start_time)}\n$ Allocated Resources: Cores = {CONFIG["max_cores"]}"""
             )
 
         # Return dict at end
         return return_dict
 
 
-def CoMET_load(
-    path_to_config: str | None = None, CONFIG_string: str | None = None
-) -> dict:
+def CoMET_load(path_to_config=None, CONFIG_string=None):
+    """
+    Inputs:
+        path_to_config: Path to a config.yml file containing all details of the CoMET run. See boilerplate.yml for how the file should be setup
+        CONFIG_string: String of yaml data if not using a file
+    Outputs:
+        CONFIG: dictionary object containing all user-defined parameters
     """
 
-
-    Parameters
-    ----------
-    path_to_config : str | None, optional
-        Path to a config.yml file containing all details of the CoMET run. See boilerplate.yml for how the file should be setup. The default is None.
-    CONFIG_string : str | None, optional
-        String of yaml data if not using a file. The default is None.
-
-    Returns
-    -------
-    CONFIG : dict
-        Dictionary object containing all user-defined parameters.
-
-    """
+    import ast
+    import yaml
+    import numpy as np
 
     if CONFIG_string is None:
 
@@ -312,6 +351,17 @@ def CoMET_load(
     else:
 
         CONFIG = yaml.safe_load(CONFIG_string)
+    
+    # Check that the analysis variables are all uppercase
+    for var in CONFIG.keys():
+        if var in ['verbose', 'parallel_processing', 'max_cores']: # if the key is not a dataset then don't worry about it
+            continue
+        for trckr in CONFIG[var].keys():
+            if 'analysis' in CONFIG[var][trckr]:
+                if 'max_height' in CONFIG[var][trckr]['analysis']:
+                    CONFIG[var][trckr]['analysis']['max_height']['variable'] = CONFIG[var][trckr]['analysis']['max_height']['variable'].upper()
+                if 'eth' in CONFIG[var][trckr]['analysis']:
+                    CONFIG[var][trckr]['analysis']['eth']['variable'] = CONFIG[var][trckr]['analysis']['eth']['variable'].upper()
 
     # Check for default setup parameters, add them if not present
     if "verbose" not in CONFIG:
@@ -321,59 +371,17 @@ def CoMET_load(
         CONFIG["parallel_processing"] = False
 
     # Go through each potential option and determine which functions need to run
-    if "wrf" in CONFIG:
+    if "wrf" in CONFIG and CONFIG["verbose"]:
+        print("=====WRF Setup Found in CONFIG=====")
 
-        if CONFIG["verbose"]:
-            print("=====WRF Setup Found in CONFIG=====")
-
-        # Auto capitalize if one of CoMET's computed variables
-        CONFIG["wrf"]["feature_tracking_var"] = (
-            CONFIG["wrf"]["feature_tracking_var"].upper()
-            if CONFIG["wrf"]["feature_tracking_var"].lower()
-            in ["dbz", "wa", "tb", "wr"]
-            else CONFIG["wrf"]["feature_tracking_var"]
-        )
-        CONFIG["wrf"]["segmentation_var"] = (
-            CONFIG["wrf"]["segmentation_var"].upper()
-            if CONFIG["wrf"]["segmentation_var"].lower() in ["dbz", "wa", "tb", "wr"]
-            else CONFIG["wrf"]["segmentation_var"]
-        )
-
-    if "mesonh" in CONFIG:
-
-        if CONFIG["verbose"]:
-            print("=====MesoNH Setup Found in CONFIG=====")
-
-        # Auto capitalize if one of CoMET's computed variables
-        CONFIG["mesonh"]["feature_tracking_var"] = (
-            CONFIG["mesonh"]["feature_tracking_var"].upper()
-            if CONFIG["mesonh"]["feature_tracking_var"].lower()
-            in ["dbz", "wa", "tb", "wr"]
-            else CONFIG["mesonh"]["feature_tracking_var"]
-        )
-        CONFIG["mesonh"]["segmentation_var"] = (
-            CONFIG["mesonh"]["segmentation_var"].upper()
-            if CONFIG["mesonh"]["segmentation_var"].lower() in ["dbz", "wa", "tb", "wr"]
-            else CONFIG["mesonh"]["segmentation_var"]
-        )
+    if "mesonh" in CONFIG and CONFIG["verbose"]:
+        print("=====MesoNH Setup Found in CONFIG=====")
 
     # if nexrad present, check for tuples
     if "nexrad" in CONFIG:
 
         if CONFIG["verbose"]:
             print("=====NEXRAD Setup Found in CONFIG=====")
-
-        # Auto capitalize valid variables
-        CONFIG["nexrad"]["feature_tracking_var"] = (
-            CONFIG["nexrad"]["feature_tracking_var"].upper()
-            if CONFIG["nexrad"]["feature_tracking_var"].lower() in ["dbz"]
-            else CONFIG["nexrad"]["feature_tracking_var"]
-        )
-        CONFIG["nexrad"]["segmentation_var"] = (
-            CONFIG["nexrad"]["segmentation_var"].upper()
-            if CONFIG["nexrad"]["segmentation_var"].lower() in ["dbz"]
-            else CONFIG["nexrad"]["segmentation_var"]
-        )
 
         # If nexrad gridding is needed, change grid shapes and limits back to tuples
         if "gridding" in CONFIG["nexrad"]:
@@ -398,18 +406,6 @@ def CoMET_load(
         if CONFIG["verbose"]:
             print("=====Multi-NEXRAD Setup Found in CONFIG=====")
 
-        # Auto capitalize valid variables
-        CONFIG["multi_nexrad"]["feature_tracking_var"] = (
-            CONFIG["multi_nexrad"]["feature_tracking_var"].upper()
-            if CONFIG["multi_nexrad"]["feature_tracking_var"].lower() in ["dbz"]
-            else CONFIG["multi_nexrad"]["feature_tracking_var"]
-        )
-        CONFIG["multi_nexrad"]["segmentation_var"] = (
-            CONFIG["multi_nexrad"]["segmentation_var"].upper()
-            if CONFIG["multi_nexrad"]["segmentation_var"].lower() in ["dbz"]
-            else CONFIG["multi_nexrad"]["segmentation_var"]
-        )
-
         # If nexrad gridding is needed, change grid shapes and limits back to tuples
         if "gridding" in CONFIG["multi_nexrad"]:
 
@@ -431,39 +427,14 @@ def CoMET_load(
             CONFIG["multi_nexrad"]["gridding"]["grid_shape"] = grid_shape
             CONFIG["multi_nexrad"]["gridding"]["grid_limits"] = grid_limits
 
-    if "standard_radar" in CONFIG:
+    if "standard_radar" in CONFIG and CONFIG["verbose"]:
+        print("=====RADAR Setup Found in CONFIG")
 
-        if CONFIG["verbose"]:
-            print("=====RADAR Setup Found in CONFIG=====")
-
-        # Auto capitalize valid variables
-        CONFIG["standard_radar"]["feature_tracking_var"] = (
-            CONFIG["standard_radar"]["feature_tracking_var"].upper()
-            if CONFIG["standard_radar"]["feature_tracking_var"].lower() in ["dbz"]
-            else CONFIG["standard_radar"]["feature_tracking_var"]
-        )
-        CONFIG["standard_radar"]["segmentation_var"] = (
-            CONFIG["standard_radar"]["segmentation_var"].upper()
-            if CONFIG["standard_radar"]["segmentation_var"].lower() in ["dbz"]
-            else CONFIG["standard_radar"]["segmentation_var"]
-        )
-
-    if "goes" in CONFIG:
-
-        if CONFIG["verbose"]:
-            print("=====GOES Setup Found in CONFIG=====")
-
-        # Auto capitalize valid variables
-        CONFIG["goes"]["feature_tracking_var"] = (
-            CONFIG["goes"]["feature_tracking_var"].upper()
-            if CONFIG["goes"]["feature_tracking_var"].lower() in ["tb"]
-            else CONFIG["goes"]["feature_tracking_var"]
-        )
-        CONFIG["goes"]["segmentation_var"] = (
-            CONFIG["goes"]["segmentation_var"].upper()
-            if CONFIG["goes"]["segmentation_var"].lower() in ["tb"]
-            else CONFIG["goes"]["segmentation_var"]
-        )
+    if "goes" in CONFIG and CONFIG["verbose"]:
+        print("=====GOES Setup Found in CONFIG=====")
+    
+    if "rams" in CONFIG and CONFIG["verbose"]:
+        print("=====RAMS Setup Found in CONFIG=====")
 
     return CONFIG
 
@@ -472,26 +443,272 @@ def CoMET_load(
 # This section is for running individual data types
 # =============================================================================
 
+def run_rams(CONFIG, queue=None):
+    """
+    Inputs:
+        CONFIG: User configuration file
+    Outputs:
+        user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
+    """
+    from .tracker_output_translation_layer import (
+        feature_id_to_UDAF,
+        linking_to_UDAF,
+        segmentation_to_UDAF,
+        bulk_moaap_to_UDAF,
+    )
+    from CoMET.analysis.analysis_object import Analysis_Object
+    from .rams_load import rams_load_netcdf_iris
 
-def run_wrf(
-    CONFIG: dict, queue: multiprocessing.queues.Queue | None = None
-) -> dict | None:
+    if CONFIG["verbose"]:
+        print("=====Loading RAMS Data=====")
+
+    rams_tracking_cube, rams_tracking_xarray = rams_load_netcdf_iris(
+        CONFIG["rams"]["path_to_data"], CONFIG["rams"]["feature_tracking_var"], 
+        CONFIG["rams"]["path_to_header"], CONFIG
+    )
+
+    # if tracking and segmentation variables are different, load seperately
+    if CONFIG["rams"]["feature_tracking_var"] != CONFIG["rams"]["segmentation_var"]:
+
+        rams_segmentation_cube, rams_segmentation_xarray = rams_load_netcdf_iris(
+            CONFIG["rams"]["path_to_data"], CONFIG["rams"]["segmentation_var"],
+            CONFIG["rams"]["path_to_header"], CONFIG
+        )
+
+    else:
+        rams_segmentation_cube = rams_tracking_cube
+        rams_segmentation_xarray = rams_tracking_xarray
+
+    # Add xarrays and cubes to return dict
+    user_return_dict = {}
+
+    user_return_dict["rams"] = {
+        # "tracking_xarray": rams_tracking_xarray,
+        # "tracking_cube": rams_tracking_cube,
+        # "segmentation_xarray": rams_segmentation_xarray,
+        # "segmentation_cube": rams_segmentation_cube,
+    }
+    # now determine which tracker(s) to use
+    if "tobac" in CONFIG["rams"]:
+        from .rams_tobac import (
+            rams_tobac_feature_id,
+            rams_tobac_linking,
+            rams_tobac_segmentation,
+        )
+
+        rams_features = None
+        rams_tracks = None
+        rams_segmentation2d = (None, None)
+        rams_segmentation3d = (None, None)
+        rams_tobac_analysis_data = {}
+
+        # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
+        if "feature_id" in CONFIG["rams"]["tobac"]:
+
+            if CONFIG["verbose"]:
+                print("=====Starting RAMS tobac Feature ID=====")
+
+            rams_features = rams_tobac_feature_id(rams_tracking_cube, CONFIG)
+
+        if "linking" in CONFIG["rams"]["tobac"]:
+
+            if CONFIG["verbose"]:
+                print("=====Starting RAMS tobac Feature Linking=====")
+
+            rams_tracks = rams_tobac_linking(rams_tracking_cube, rams_features, CONFIG)
+
+        if "segmentation_2d" in CONFIG["rams"]["tobac"]:
+
+            if CONFIG["verbose"]:
+                print("=====Starting RAMS tobac 2D Segmentation=====")
+
+            rams_segmentation2d = rams_tobac_segmentation(
+                rams_segmentation_cube,
+                rams_features,
+                "2d",
+                CONFIG,
+                CONFIG["rams"]["tobac"]["segmentation_2d"]["height"],
+            )
+
+        if "segmentation_3d" in CONFIG["rams"]["tobac"]:
+
+            if CONFIG["verbose"]:
+                print("=====Starting RAMS tobac 3D Segmentation=====")
+
+            rams_segmentation3d = rams_tobac_segmentation(
+                rams_segmentation_cube, rams_features, "3d", CONFIG
+            )
+
+        # Create analysis object values
+        UDAF_features = feature_id_to_UDAF(rams_features, "tobac")
+        UDAF_tracks = linking_to_UDAF(rams_tracks, "tobac")
+        UDAF_segmentation_2d = segmentation_to_UDAF(
+            rams_segmentation2d[0], UDAF_tracks, "tobac"
+        )
+        UDAF_segmentation_3d = segmentation_to_UDAF(
+            rams_segmentation3d[0], UDAF_tracks, "tobac"
+        )
+
+        # Create analysis object
+        analysis_object = Analysis_Object(
+            rams_tracking_xarray,
+            rams_segmentation_xarray,
+            UDAF_features,
+            UDAF_tracks,
+            UDAF_segmentation_2d,
+            UDAF_segmentation_3d,
+
+            rams_segmentation_3d=rams_segmentation3d[1],
+        )
+
+        if "analysis" in CONFIG["rams"]["tobac"]:
+            from CoMET.analysis.calc_var import calc_var
+
+            if CONFIG["rams"]["tobac"]["analysis"] is None:
+                CONFIG["rams"]["tobac"]["analysis"] = {}
+
+            if CONFIG["verbose"]:
+                print("=====Starting RAMS tobac Analysis Calculations=====")
+
+            # Calcaulte each variable of interest and append to analysis data array
+            for var in CONFIG["rams"]["tobac"]["analysis"].keys():
+
+                # Add default tracking featured_id variable in place of variable if not present
+                if "variable" not in CONFIG["rams"]["tobac"]["analysis"][var]:
+                    CONFIG["rams"]["tobac"]["analysis"][var]["variable"] = CONFIG["rams"][
+                        "feature_tracking_var"
+                    ].upper()
+
+                # This allows us to have multiple copies of the same variable by adjoining a dash
+                proper_var_name = var.lower().split("-")[0]
+
+                rams_tobac_analysis_data[var] = calc_var(
+                    analysis_object,
+                    proper_var_name,
+                    **CONFIG["rams"]["tobac"]["analysis"][var],
+                )
+
+        if CONFIG["verbose"]:
+            print("=====Converting RAMS tobac Output to CoMET-UDAF=====")
+
+        # Add all products to return dict
+        user_return_dict["rams"]["tobac"] = {
+            # "feature_id": rams_features,
+            # "UDAF_features": feature_id_to_UDAF(rams_features, "tobac"),
+            # "linking": rams_tracks,
+            "UDAF_linking": UDAF_tracks,
+            # "segmentation_2d": rams_segmentation2d,
+            "UDAF_segmentation_2d": UDAF_segmentation_2d,
+            # "segmentation_3d": rams_segmentation3d,
+            "UDAF_segmentation_3d": UDAF_segmentation_3d,
+            "analysis": rams_tobac_analysis_data,
+            "analysis_object": analysis_object,
+        }
+
+        if CONFIG["verbose"]:
+            print("=====RAMS tobac Tracking Complete=====")
+
+    # Run MOAAP if present
+    if "moaap" in CONFIG["rams"]:
+        from .rams_moaap import rams_moaap
+
+        rams_moaap_analysis_data = {}
+
+        if CONFIG["verbose"]:
+            print("=====Starting RAMS MOAAP Tracking=====")
+
+        # Run MOAAP
+        mask_output = rams_moaap(rams_tracking_xarray, CONFIG)
+
+        # Calculate UDAF values
+        UDAF_values = bulk_moaap_to_UDAF(
+            mask_output,
+            rams_tracking_xarray.PROJX.values,
+            rams_tracking_xarray.PROJY.values,
+            convert_type=CONFIG["rams"]["moaap"]["analysis_type"],
+        )
+
+        if UDAF_values is None:
+            UDAF_values = [None, None, None]
+
+        # Create analysis object
+        analysis_object = Analysis_Object(
+            rams_tracking_xarray,
+            rams_tracking_xarray,
+            UDAF_values[0],
+            UDAF_values[1],
+            UDAF_values[2],
+            None,
+        )
+
+        # Run analysis on MOAAP output
+        if "analysis" in CONFIG["rams"]["moaap"]:
+            from CoMET.analysis.calc_var import calc_var
+
+            if CONFIG["rams"]["moaap"]["analysis"] is None:
+                CONFIG["rams"]["moaap"]["analysis"] = {}
+
+            if CONFIG["verbose"]:
+                print("=====Starting RAMS MOAAP Analysis Calculations=====")
+
+            # Calcaulte each variable of interest and append to analysis data array
+            for var in CONFIG["rams"]["moaap"]["analysis"].keys():
+
+                if UDAF_values == [None, None, None]:
+                    continue
+
+                # Add default tracking featured_id variable in place of variable if not present
+                if "variable" not in CONFIG["rams"]["moaap"]["analysis"][var]:
+                    CONFIG["rams"]["moaap"]["analysis"][var]["variable"] = CONFIG["rams"][
+                        "feature_tracking_var"
+                    ].upper()
+
+                # This allows us to have multiple copies of the same variable by adjoining a dash
+                proper_var_name = var.lower().split("-")[0]
+
+                rams_moaap_analysis_data[var] = calc_var(
+                    analysis_object,
+                    proper_var_name,
+                    **CONFIG["rams"]["moaap"]["analysis"][var],
+                )
+
+        user_return_dict["rams"]["moaap"] = {
+            # "mask_xarray": mask_output,
+            # "UDAF_features": UDAF_values[0],
+            "UDAF_linking": UDAF_values[1],
+            "UDAF_segmentation_2d": UDAF_values[2],
+            "analysis": rams_moaap_analysis_data,
+            "analysis_object": analysis_object,
+        }
+
+        if CONFIG["verbose"]:
+            print("=====RAMS MOAAP Tracking Complete=====")
+
+    # Send return dict to queue if there is a queue object passed
+    if queue is not None:
+        queue.put(user_return_dict)
+        return None
+
+    # Return dictionary
+    return user_return_dict
+
+
+def run_wrf(CONFIG, queue=None):
+    """
+    Inputs:
+        CONFIG: User configuration file
+    Outputs:
+        user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
     """
 
-
-    Parameters
-    ----------
-    CONFIG : dict
-        User configuration file.
-    queue : multiprocessing.queues.Queue | None, optional
-        Multiprocessing queue to pass the output dict to for parallelization. The default is None.
-
-    Returns
-    -------
-    user_return_dict : dict
-        A dictionary object which contanis all tobac and CoMET-UDAF standard outputs.
-
-    """
+    from .tracker_output_translation_layer import (
+        feature_id_to_UDAF,
+        linking_to_UDAF,
+        segmentation_to_UDAF,
+        bulk_moaap_to_UDAF,
+    )
+    from CoMET.analysis.analysis_object import Analysis_Object
+    from .wrf_load import wrf_load_netcdf_iris
 
     if CONFIG["verbose"]:
         print("=====Loading WRF Data=====")
@@ -524,6 +741,11 @@ def run_wrf(
 
     # now determine which tracker(s) to use
     if "tobac" in CONFIG["wrf"]:
+        from .wrf_tobac import (
+            wrf_tobac_feature_id,
+            wrf_tobac_linking,
+            wrf_tobac_segmentation,
+        )
 
         wrf_features = None
         wrf_tracks = None
@@ -551,18 +773,12 @@ def run_wrf(
             if CONFIG["verbose"]:
                 print("=====Starting WRF tobac 2D Segmentation=====")
 
-            height = (
-                CONFIG["wrf"]["tobac"]["segmentation_2d"]["height"]
-                if "height" in CONFIG["wrf"]["tobac"]["segmentation_2d"]
-                else None
-            )
-
             wrf_segmentation2d = wrf_tobac_segmentation(
                 wrf_segmentation_cube,
                 wrf_features,
                 "2d",
                 CONFIG,
-                height,
+                CONFIG["wrf"]["tobac"]["segmentation_2d"]["height"],
             )
 
         if "segmentation_3d" in CONFIG["wrf"]["tobac"]:
@@ -595,6 +811,7 @@ def run_wrf(
         )
 
         if "analysis" in CONFIG["wrf"]["tobac"]:
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["wrf"]["tobac"]["analysis"] is None:
                 CONFIG["wrf"]["tobac"]["analysis"] = {}
@@ -609,7 +826,7 @@ def run_wrf(
                 if "variable" not in CONFIG["wrf"]["tobac"]["analysis"][var]:
                     CONFIG["wrf"]["tobac"]["analysis"][var]["variable"] = CONFIG["wrf"][
                         "feature_tracking_var"
-                    ]
+                    ].upper()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -642,6 +859,7 @@ def run_wrf(
 
     # Run MOAAP if present
     if "moaap" in CONFIG["wrf"]:
+        from .wrf_moaap import wrf_moaap
 
         wrf_moaap_analysis_data = {}
 
@@ -649,7 +867,7 @@ def run_wrf(
             print("=====Starting WRF MOAAP Tracking=====")
 
         # Run MOAAP
-        mask_output = wrf_run_moaap(wrf_tracking_xarray, CONFIG)
+        mask_output = wrf_moaap(wrf_tracking_xarray, CONFIG)
 
         # Calculate UDAF values
         UDAF_values = bulk_moaap_to_UDAF(
@@ -674,6 +892,7 @@ def run_wrf(
 
         # Run analysis on MOAAP output
         if "analysis" in CONFIG["wrf"]["moaap"]:
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["wrf"]["moaap"]["analysis"] is None:
                 CONFIG["wrf"]["moaap"]["analysis"] = {}
@@ -691,7 +910,7 @@ def run_wrf(
                 if "variable" not in CONFIG["wrf"]["moaap"]["analysis"][var]:
                     CONFIG["wrf"]["moaap"]["analysis"][var]["variable"] = CONFIG["wrf"][
                         "feature_tracking_var"
-                    ]
+                    ].upper()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -723,25 +942,22 @@ def run_wrf(
     return user_return_dict
 
 
-def run_mesonh(
-    CONFIG: dict, queue: multiprocessing.queues.Queue | None = None
-) -> dict | None:
+def run_mesonh(CONFIG, queue=None):
+    """
+    Inputs:
+        CONFIG: User configuration file
+    Outputs:
+        user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
     """
 
-
-    Parameters
-    ----------
-    CONFIG : dict
-        User configuration file.
-    queue : multiprocessing.queues.Queue | None, optional
-        Multiprocessing queue to pass the output dict to for parallelization. The default is None.
-
-    Returns
-    -------
-    user_return_dict : dict
-        A dictionary object which contanis all tobac and CoMET-UDAF standard outputs.
-
-    """
+    from .tracker_output_translation_layer import (
+        feature_id_to_UDAF,
+        linking_to_UDAF,
+        segmentation_to_UDAF,
+        bulk_moaap_to_UDAF,
+    )
+    from CoMET.analysis.analysis_object import Analysis_Object
+    from .mesonh_load import mesonh_load_netcdf_iris
 
     if CONFIG["verbose"]:
         print("=====Loading MesoNH Data=====")
@@ -778,6 +994,11 @@ def run_mesonh(
 
     # now determine which tracker to use
     if "tobac" in CONFIG["mesonh"]:
+        from .mesonh_tobac import (
+            mesonh_tobac_feature_id,
+            mesonh_tobac_linking,
+            mesonh_tobac_segmentation,
+        )
 
         mesonh_features = None
         mesonh_tracks = None
@@ -807,14 +1028,12 @@ def run_mesonh(
             if CONFIG["verbose"]:
                 print("=====Starting MesoNH tobac 2D Segmentation=====")
 
-            height = (
-                CONFIG["mesonh"]["tobac"]["segmentation_2d"]["height"]
-                if "height" in CONFIG["mesonh"]["tobac"]["segmentation_2d"]
-                else None
-            )
-
             mesonh_segmentation2d = mesonh_tobac_segmentation(
-                mesonh_segmentation_cube, mesonh_features, "2d", CONFIG, height
+                mesonh_segmentation_cube,
+                mesonh_features,
+                "2d",
+                CONFIG,
+                CONFIG["mesonh"]["tobac"]["segmentation_2d"]["height"],
             )
 
         if "segmentation_3d" in CONFIG["mesonh"]["tobac"]:
@@ -847,6 +1066,7 @@ def run_mesonh(
         )
 
         if "analysis" in CONFIG["mesonh"]["tobac"]:
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["mesonh"]["tobac"]["analysis"] is None:
                 CONFIG["mesonh"]["tobac"]["analysis"] = {}
@@ -861,7 +1081,7 @@ def run_mesonh(
                 if "variable" not in CONFIG["mesonh"]["tobac"]["analysis"][var]:
                     CONFIG["mesonh"]["tobac"]["analysis"][var]["variable"] = CONFIG[
                         "mesonh"
-                    ]["feature_tracking_var"]
+                    ]["feature_tracking_var"].lower()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -894,6 +1114,7 @@ def run_mesonh(
 
     # Run MOAAP if present
     if "moaap" in CONFIG["mesonh"]:
+        from .mesonh_moaap import mesonh_moaap
 
         messonh_moaap_analysis_data = {}
 
@@ -901,7 +1122,7 @@ def run_mesonh(
             print("=====Starting MesoNH MOAAP Tracking=====")
 
         # Run MOAAP
-        mask_output = mesonh_run_moaap(mesonh_tracking_xarray, CONFIG)
+        mask_output = mesonh_moaap(mesonh_tracking_xarray, CONFIG)
 
         # Calculate UDAF values
         UDAF_values = bulk_moaap_to_UDAF(
@@ -926,6 +1147,7 @@ def run_mesonh(
 
         # Run analysis on MOAAP output
         if "analysis" in CONFIG["mesonh"]["moaap"]:
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["mesonh"]["moaap"]["analysis"] is None:
                 CONFIG["mesonh"]["moaap"]["analysis"] = {}
@@ -943,7 +1165,7 @@ def run_mesonh(
                 if "variable" not in CONFIG["mesonh"]["moaap"]["analysis"][var]:
                     CONFIG["mesonh"]["moaap"]["analysis"][var]["variable"] = CONFIG[
                         "mesonh"
-                    ]["feature_tracking_var"]
+                    ]["feature_tracking_var"].lower()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -975,25 +1197,21 @@ def run_mesonh(
     return user_return_dict
 
 
-def run_nexrad(
-    CONFIG: dict, queue: multiprocessing.queues.Queue | None = None
-) -> dict | None:
+def run_nexrad(CONFIG, queue=None):
+    """
+    Inputs:
+        CONFIG: User configuration file
+    Outputs:
+        user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
     """
 
-
-    Parameters
-    ----------
-    CONFIG : dict
-        User configuration file.
-    queue : multiprocessing.queues.Queue | None, optional
-        Multiprocessing queue to pass the output dict to for parallelization. The default is None.
-
-    Returns
-    -------
-    user_return_dict : dict
-        A dictionary object which contanis all tobac and CoMET-UDAF standard outputs.
-
-    """
+    from .tracker_output_translation_layer import (
+        feature_id_to_UDAF,
+        linking_to_UDAF,
+        segmentation_to_UDAF,
+    )
+    from CoMET.analysis import Analysis_Object
+    from .nexrad_load import nexrad_load_netcdf_iris
 
     if CONFIG["verbose"]:
         print("=====Loading NEXRAD Data=====")
@@ -1031,6 +1249,11 @@ def run_nexrad(
 
     # determine which tracker to use
     if "tobac" in CONFIG["nexrad"]:
+        from .nexrad_tobac import (
+            nexrad_tobac_feature_id,
+            nexrad_tobac_linking,
+            nexrad_tobac_segmentation,
+        )
 
         nexrad_features = None
         nexrad_tracks = None
@@ -1060,18 +1283,12 @@ def run_nexrad(
             if CONFIG["verbose"]:
                 print("=====Starting NEXRAD tobac 2D Segmentation=====")
 
-            height = (
-                CONFIG["nexrad"]["tobac"]["segmentation_2d"]["height"]
-                if "height" in CONFIG["nexrad"]["tobac"]["segmentation_2d"]
-                else None
-            )
-
             nexrad_segmentation2d = nexrad_tobac_segmentation(
                 nexrad_tracking_cube,
                 nexrad_features,
                 "2d",
                 CONFIG,
-                height,
+                CONFIG["nexrad"]["tobac"]["segmentation_2d"]["height"],
             )
 
         if "segmentation_3d" in CONFIG["nexrad"]["tobac"]:
@@ -1104,6 +1321,7 @@ def run_nexrad(
         )
 
         if "analysis" in CONFIG["nexrad"]["tobac"]:
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["nexrad"]["tobac"]["analysis"] is None:
                 CONFIG["nexrad"]["tobac"]["analysis"] = {}
@@ -1118,7 +1336,7 @@ def run_nexrad(
                 if "variable" not in CONFIG["nexrad"]["tobac"]["analysis"][var]:
                     CONFIG["nexrad"]["tobac"]["analysis"][var]["variable"] = CONFIG[
                         "nexrad"
-                    ]["feature_tracking_var"]
+                    ]["feature_tracking_var"].upper()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
@@ -1158,25 +1376,21 @@ def run_nexrad(
     return user_return_dict
 
 
-def run_multi_nexrad(
-    CONFIG: dict, queue: multiprocessing.queues.Queue | None = None
-) -> dict | None:
+def run_multi_nexrad(CONFIG, queue=None):
+    """
+    Inputs:
+        CONFIG: User configuration file
+    Outputs:
+        user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
     """
 
-
-    Parameters
-    ----------
-    CONFIG : dict
-        User configuration file.
-    queue : multiprocessing.queues.Queue | None, optional
-        Multiprocessing queue to pass the output dict to for parallelization. The default is None.
-
-    Returns
-    -------
-    user_return_dict : dict
-        A dictionary object which contanis all tobac and CoMET-UDAF standard outputs.
-
-    """
+    from .tracker_output_translation_layer import (
+        feature_id_to_UDAF,
+        linking_to_UDAF,
+        segmentation_to_UDAF,
+    )
+    from CoMET.analysis.analysis_object import Analysis_Object
+    from .multi_nexrad_load import multi_nexrad_load_netcdf_iris
 
     if CONFIG["verbose"]:
         print("=====Loading Multi-NEXRAD Data=====")
@@ -1218,6 +1432,11 @@ def run_multi_nexrad(
 
     # determine which tracker to use
     if "tobac" in CONFIG["multi_nexrad"]:
+        from .multi_nexrad_tobac import (
+            multi_nexrad_tobac_feature_id,
+            multi_nexrad_tobac_linking,
+            multi_nexrad_tobac_segmentation,
+        )
 
         multi_nexrad_features = None
         multi_nexrad_tracks = None
@@ -1249,18 +1468,12 @@ def run_multi_nexrad(
             if CONFIG["verbose"]:
                 print("=====Starting Multi-NEXRAD tobac 2D Segmentation=====")
 
-            height = (
-                CONFIG["multi_nexrad"]["tobac"]["segmentation_2d"]["height"]
-                if "height" in CONFIG["multi_nexrad"]["tobac"]["segmentation_2d"]
-                else None
-            )
-
             multi_nexrad_segmentation2d = multi_nexrad_tobac_segmentation(
                 multi_nexrad_tracking_cube,
                 multi_nexrad_features,
                 "2d",
                 CONFIG,
-                height,
+                CONFIG["multi_nexrad"]["tobac"]["segmentation_2d"]["height"],
             )
 
         if "segmentation_3d" in CONFIG["multi_nexrad"]["tobac"]:
@@ -1293,6 +1506,7 @@ def run_multi_nexrad(
         )
 
         if "analysis" in CONFIG["multi_nexrad"]["tobac"]:
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["multi_nexrad"]["tobac"]["analysis"] is None:
                 CONFIG["multi_nexrad"]["tobac"]["analysis"] = {}
@@ -1306,7 +1520,7 @@ def run_multi_nexrad(
                 # Add default tracking featured_id variable in place of variable if not present
                 if "variable" not in CONFIG["multi_nexrad"]["tobac"]["analysis"][var]:
                     CONFIG["multi_nexrad"]["tobac"]["analysis"][var]["variable"] = (
-                        CONFIG["multi_nexrad"]["feature_tracking_var"]
+                        CONFIG["multi_nexrad"]["feature_tracking_var"].upper()
                     )
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
@@ -1347,25 +1561,21 @@ def run_multi_nexrad(
     return user_return_dict
 
 
-def run_standard_radar(
-    CONFIG: dict, queue: multiprocessing.queues.Queue | None = None
-) -> dict | None:
+def run_standard_radar(CONFIG, queue=None):
+    """
+    Inputs:
+        CONFIG: User configuration file
+    Outputs:
+        user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
     """
 
-
-    Parameters
-    ----------
-    CONFIG : dict
-        User configuration file.
-    queue : multiprocessing.queues.Queue | None, optional
-        Multiprocessing queue to pass the output dict to for parallelization. The default is None.
-
-    Returns
-    -------
-    user_return_dict : dict
-        A dictionary object which contanis all tobac and CoMET-UDAF standard outputs.
-
-    """
+    from .tracker_output_translation_layer import (
+        feature_id_to_UDAF,
+        linking_to_UDAF,
+        segmentation_to_UDAF,
+    )
+    from CoMET.analysis.analysis_object import Analysis_Object
+    from .standard_radar_load import standard_radar_load_netcdf_iris
 
     if CONFIG["verbose"]:
         print("=====Loading RADAR Data=====")
@@ -1388,6 +1598,11 @@ def run_standard_radar(
 
     # determine which tracker to use
     if "tobac" in CONFIG["standard_radar"]:
+        from .standard_radar_tobac import (
+            standard_radar_tobac_feature_id,
+            standard_radar_tobac_linking,
+            standard_radar_tobac_segmentation,
+        )
 
         radar_features = None
         radar_tracks = None
@@ -1459,6 +1674,7 @@ def run_standard_radar(
         )
 
         if "analysis" in CONFIG["standard_radar"]["tobac"]:
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["standard_radar"]["tobac"]["analysis"] is None:
                 CONFIG["standard_radar"]["tobac"]["analysis"] = {}
@@ -1472,7 +1688,7 @@ def run_standard_radar(
                 # Add default tracking featured_id variable in place of variable if not present
                 if "variable" not in CONFIG["standard_radar"]["tobac"]["analysis"][var]:
                     CONFIG["standard_radar"]["tobac"]["analysis"][var]["variable"] = (
-                        CONFIG["standard_radar"]["feature_tracking_var"]
+                        CONFIG["standard_radar"]["feature_tracking_var"].upper()
                     )
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
@@ -1513,15 +1729,21 @@ def run_standard_radar(
     return user_return_dict
 
 
-def run_goes(
-    CONFIG: dict, queue: multiprocessing.queues.Queue | None = None
-) -> dict | None:
+def run_goes(CONFIG, queue=None):
     """
     Inputs:
         CONFIG: User configuration file
     Outputs:
         user_return_dict: A dictionary object which contanis all tobac and CoMET-UDAF standard outputs
     """
+
+    from .tracker_output_translation_layer import (
+        feature_id_to_UDAF,
+        linking_to_UDAF,
+        segmentation_to_UDAF,
+    )
+    from CoMET.analysis.analysis_object import Analysis_Object
+    from .goes_load import goes_load_netcdf_iris
 
     if CONFIG["verbose"]:
         print("=====Loading GOES Data=====")
@@ -1542,6 +1764,11 @@ def run_goes(
 
     # determine which tracker to use
     if "tobac" in CONFIG["goes"]:
+        from .goes_tobac import (
+            goes_tobac_feature_id,
+            goes_tobac_linking,
+            goes_tobac_segmentation,
+        )
 
         goes_features = None
         goes_tracks = None
@@ -1592,6 +1819,7 @@ def run_goes(
         )
 
         if "analysis" in CONFIG["goes"]["tobac"]:
+            from CoMET.analysis.calc_var import calc_var
 
             if CONFIG["goes"]["tobac"]["analysis"] is None:
                 CONFIG["goes"]["tobac"]["analysis"] = {}
@@ -1606,7 +1834,7 @@ def run_goes(
                 if "variable" not in CONFIG["goes"]["tobac"]["analysis"][var]:
                     CONFIG["goes"]["tobac"]["analysis"][var]["variable"] = CONFIG[
                         "goes"
-                    ]["feature_tracking_var"]
+                    ]["feature_tracking_var"].upper()
 
                 # This allows us to have multiple copies of the same variable by adjoining a dash
                 proper_var_name = var.lower().split("-")[0]
