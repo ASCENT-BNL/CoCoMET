@@ -23,59 +23,72 @@ max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None 
 #           analysis_variables
 
 # WRF
-# wrf:
-#     #path_to_data: "/D3/data/diewang/idealized_mcs_5min/03_2011-07-16_CTRL_Midwest_-Loc2_MCS_Storm-Nr_JJA-8-TH5/4000/*"
-#     path_to_data: "/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*"
+wrf:
+    #path_to_data: "/D3/data/diewang/idealized_mcs_5min/03_2011-07-16_CTRL_Midwest_-Loc2_MCS_Storm-Nr_JJA-8-TH5/4000/*"
+    # path_to_data: "/share/D3/data/hweiner/WRF/TestingPurposesOnly/*"
+    path_to_data: "/share/D3/data/hweiner/WRF/Travis_Data/*"
+
     
-#     is_idealized: False
-#     #min_frame_index: 10 # 0-based indexing, inclusive
-#     #max_frame_index: 70 # 0-based indexing, inclusive
+    is_idealized: False
+    #min_frame_index: 10 # 0-based indexing, inclusive
+    #max_frame_index: 70 # 0-based indexing, inclusive
 
-#     feature_tracking_var: "DBZ" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
-#     segmentation_var: "DBZ"
+    feature_tracking_var: "dbz" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
+    segmentation_var: "dbz"
 
-#     tobac:
-#         feature_id:
-#             threshold: [30,40,50,60]
-#             target: "maximum"
-#             position_threshold: "weighted_diff"
-#             sigma_threshold: 0.5
-#             n_min_threshold: 4
+    tobac:
+        feature_id:
+            threshold: [20, 30, 40]
+            target: "maximum"
+            position_threshold: "weighted_diff"
+            sigma_threshold: 0.5
+            n_min_threshold: 4
         
-#         linking: 
-#             method_linking: "predict"
-#             adaptive_stop: 0.2
-#             adaptive_step: 0.95
-#             order: 1
-#             subnetwork_size: 10
-#             memory: 1
-#             v_max: 20
+        linking: 
+            method_linking: "predict"
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 1
+            v_max: 20
         
-#         segmentation_2d:
-#             height: 2 # km
-#             method: "watershed"
-#             threshold: 15
+        segmentation_2d:
+            height: 2 # km
+            method: "watershed"
+            threshold: 20
             
-#         segmentation_3d:
-#             method: "watershed"
-#             threshold: 15
+        segmentation_3d:
+            method: "watershed"
+            threshold: 20
     
-#         analysis: # Optional
-#             # merge_split: { variable: "DBZ" }
-#             # var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
-#             area-low: { height: 2 }
-#             # area-high: { height: 4, threshold: 15 }
-#             # volume: { threshold: 15 }
-#             # volume-high: { threshold: 30 }
-            
-#     moaap:
-#         tracking_save_path: "/D3/data/thahn/wrf/wrfout_2023_07_09/moaap_test/"
-#         MinTimePR: 0.5
-#         MinAreaPR: 10
-        
-#         analysis:
-#             # None yet
+        analysis: # Optional
+            merge_split: { variable: "DBZ" }
+            eth: { variable: "DBZ", cell_footprint_height: 2, threshold: 20 }
+            area-low: { height: 2 }
+            area-high: { height: 4, threshold: 20 }
+            volume: { threshold: 20 }
+            # volume-high: { threshold: 30 }
+            max_intensity: { variable : "DBZ", cell_footprint_height : 2}
+            velocity: {}
+            perimeter: {}
+            cell_growth: {}
+            irregularity: {irregularity_metrics: ['convexity', 'sphericity']}
 
+    # moaap:
+    #     tracking_save_path: "/share/D3/data/hweiner/MOAAP_out/"
+    #     MinTimePR: 0.5
+    #     MinAreaPR: 10
+        
+    #     analysis:
+    #         # None yet
+    # tams:
+    #     ctt_threshold: 235
+    #     ctt_core_threshold: 219
+    #     u_projection: 0
+    #     parallel: False # there is something weird when you have CoMET parallel processing and TAMS parallel processing at the same time
+
+    #     analysis_type: "cloud"
 
 # #MesoNH
 # mesonh:
@@ -116,6 +129,68 @@ max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None 
 #             area: { height: 2 }
 #             # volume: {}
 
+# RAMS
+# rams:
+#     path_to_data: "/share/D3/data/hweiner/RAMS/TestingPurposesOnly/tograbandgo/*-g3.h5"
+#     path_to_header: "/share/D3/data/hweiner/RAMS/TestingPurposesOnly/tograbandgo/*-head.txt"
+
+#     feature_tracking_var: "dbz" #DBZ, TB, WA, PR
+#     segmentation_var: "dbz"
+
+#     tobac:
+#         feature_id:
+#             threshold: [30, 40, 50]
+#             target: "maximum"
+#             position_threshold: "weighted_diff"
+#             sigma_threshold: 0.5
+#             n_min_threshold: 4
+        
+#         linking: 
+#             method_linking: "predict"
+#             adaptive_stop: 0.2
+#             adaptive_step: 0.95
+#             order: 1
+#             subnetwork_size: 10
+#             memory: 1
+#             v_max: 20
+        
+#         segmentation_2d:
+#             height: 2 # km
+#             method: "watershed"
+#             threshold: 30
+            
+#         segmentation_3d:
+#             method: "watershed"
+#             threshold: 30
+    
+#         analysis: # Optional
+#             merge_split: { variable: "DBZ" }
+#             eth: {variable : "DBZ", cell_footprint_height : 2, threshold : 30}
+#             # max_height: {variable: "DBZ", cell_footprint_height: 2000, threshold: 30}
+#             max_intensity: { variable : "DBZ", cell_footprint_height : 2}
+#             velocity: {}
+#             perimeter: {}
+#             cell_growth: {}
+#             area-low: { height: 2 }
+#             area-high: { height: 6 }
+#             volume: {}
+#             irregularity: {irregularity_metrics: ['convexity', 'sphericity']}
+            
+    # moaap:
+    #     tracking_save_path: "/share/D3/data/hweiner/MOAAP_out"
+    #     MinTimePR: 0.5 
+    #     MinAreaPR: 10
+        
+    #     analysis:
+    #         analysis_type: "MCS"
+    
+    # tams:
+    #     ctt_threshold: 235
+    #     ctt_core_threshold: 219
+    #     u_projection: 0
+    #     parallel: False # there is something weird when you have CoMET parallel processing and TAMS parallel processing at the same time
+
+    #     analysis_type: "cloud"
 
 # NEXRAD
 # nexrad:
