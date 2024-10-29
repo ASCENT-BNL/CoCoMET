@@ -71,7 +71,7 @@ def extract_arm_product(
     for var in variable_names:
         vap_info[var] = []
 
-    frame_groups = analysis_object["UDAF_linking"].groupby("frame")
+    frame_groups = analysis_object["UDAF_tracks"].groupby("frame")
 
     # If 1D input data, don't use heights
     if len(vap.dims) == 1:
@@ -269,7 +269,7 @@ def calculate_convective_indices(
     }
 
     init_groups = (
-        analysis_object["UDAF_linking"].query("lifetime_percent==0").groupby("cell_id")
+        analysis_object["UDAF_tracks"].query("lifetime_percent==0").groupby("cell_id")
     )
 
     # Loop over cell initations

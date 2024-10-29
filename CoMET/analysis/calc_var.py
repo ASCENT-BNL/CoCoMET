@@ -14,11 +14,17 @@ from CoMET.analysis.analysis_object import Analysis_Object
 
 from .calculate_arm_products import calculate_convective_indices, extract_arm_product
 from .calculate_bulk_cell_statistics import (
-    calculate_area,
-    calculate_var_max_height,
-    calculate_volume,
-)
-from .merge_split_detection import merge_split_tracking
+        calculate_ETH,
+        calculate_area,
+        calculate_volume,
+        calculate_max_height,
+        calculate_max_intensity,
+        calculate_velocity,
+        calculate_perimeter,
+        calculate_cell_growth,
+        calculate_irregularity,
+    )
+from .merge_split_detection import merge_split
 
 
 def calc_var(analysis_object: Analysis_Object, var: str, **args: dict):
@@ -46,23 +52,33 @@ def calc_var(analysis_object: Analysis_Object, var: str, **args: dict):
 
     Valid Variables
     ---------------
-    "var_max_height",
-    "area",
-    "volume",
-    "merge_split",
-    "arm",
-    "convective_indices"
+        "eth",
+        "max_height",
+        "max_intensity",
+        "area",
+        "volume",
+        "velocity",
+        "perimeter",
+        "cell_growth",
+        "merge_split",
+        "arm",
 
     """
 
     # Map the correct functions to the proper variables. This is a list of all the calculatable variables as well.
+    # Map the correct functions to the proper variables. This is a list of all the calculatable variables as well.
     variable_call_mechanism = {
-        "var_max_height": calculate_var_max_height,
+        "eth": calculate_ETH,
+        "max_height" : calculate_max_height,
+        "max_intensity" : calculate_max_intensity,
         "area": calculate_area,
         "volume": calculate_volume,
-        "merge_split": merge_split_tracking,
+        "velocity": calculate_velocity,
+        "perimeter": calculate_perimeter,
+        "cell_growth": calculate_cell_growth,
+        "irregularity": calculate_irregularity,
+        "merge_split": merge_split,
         "arm": extract_arm_product,
-        "convective_indices": calculate_convective_indices,
     }
 
     # Check for valid variables

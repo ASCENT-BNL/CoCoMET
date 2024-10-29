@@ -19,6 +19,36 @@ import xarray as xr
 from dask.array import isin
 from tqdm import tqdm
 
+from .irregularity.projection_calc_3d import (
+    calc_3d_perim, 
+    calculate_volume, 
+    create_gridded_bounds,
+)
+
+def merge_split(
+        analysis_object: dict, 
+        **args: dict,
+) -> tuple[pd.DataFrame, pd.DataFrame] | None:
+    """
+
+    A wrapper function to call either 2D or 3D merging and splitting
+
+    Raises
+    ------
+    Exception
+        Exception if missing segmentation input.
+    """
+
+    if analysis_object['UDAF_segmentation_3d'] is not None:
+        merge_df, split_df = _merge_split_3d(analysis_object, **args)
+    elif analysis_object['UDAF_segmentation_2d'] is not None:
+        merge_df, split_df = _merge_split_2d(analysis_object, **args)
+    else:
+        raise Exception("!=====Missing Segmentation Input=====!")
+    
+    # TODO: do something with the merge and split df to get them to match the format of the analysis
+    
+    return merge_df, split_df
 
 # Calculate nearest item in list to given pivot
 def find_nearest(array, pivot):
@@ -27,7 +57,7 @@ def find_nearest(array, pivot):
     return idx
 
 
-def merge_split_tracking(
+def _merge_split_2d(
     analysis_object: dict,
     variable: str,
     invert: bool = False,
@@ -89,7 +119,7 @@ def merge_split_tracking(
 
     # TODO: Rewrite this to be more efficent / better in general
 
-    Tracks = analysis_object["UDAF_linking"]
+    Tracks = analysis_object["UDAF_tracks"]
 
     # If input variable field is 2D return None. Also, if DataArray, use those values for calculations. If Dataset, use tracking_var to get variable
     if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
@@ -449,6 +479,376 @@ def merge_split_tracking(
             "parent_cells": output_init_cells_merge,
             "merged_cell": output_merged_cells,
         }
+    )
+    split_df = pd.DataFrame(
+        data={
+            "frame": output_frame_list_split,
+            "split_cell": output_init_cells_split,
+            "child_cells": output_split_cells,
+        }
+    )
+
+    return (merged_df, split_df)
+
+def _merge_split_3d(
+        analysis_dict: dict,
+        variable: str | None  =None,
+        invert: bool = False,
+        touching_threshold: float = 0.2,
+        flood_background: float = 20,
+        radius_multiplyer: float = 0.1,
+        score_threshold: float = 0,
+        score_weight_1: float = 1,
+        score_weight_2: float = 1,
+        overlap_threshold: float = 0.5,
+        **args: dict, 
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Parameters
+    ----------
+    analysis_dict : dict
+        A CoMET-UDAF standard analysis object containing at least UDAF_segmentation_3d, UDAF_tracks, and segmentation_xarray.
+    variable : str
+        The variable which defines the background field.
+    invert : bool, optional
+        If we care about tracking lower values such as brightness temperature (i.e. we want to flood fill stuff less than a threshold), we need to invert the data so we can use the same algorithm. Will also invert background value. The default is False.    For fields where we care about tracking minimums    
+    touching_threshold : float, optional
+        The percentage of cell border which must be shared by two cells. The default is 0.20.
+    flood_background : float, optional
+        The minimum background value for area calculation. The default is 20.
+    score_threshold : float, optional
+        The minimum value of the score function to be considered a part of the cell. The default is 0.
+    score_weight_1 : float, optional
+        The weighting of the relative strength of the cell. The default is 1.
+    score_weight_2 : float, optional
+        The weighting of the relative distance of the cell. The default is 1.
+    radius_multiplyer : float, optional
+        The multiplyer to increase the search radius by. Is equal to 1 + radius_multiplyer. The default is 0.1.
+    overlap_threshold : float, optional
+        The amount two cells need to overlap [0 to 1]. The default is 0.5.
+    **args : dict
+        Throw away params.
+
+    Raises
+    ------
+    Exception
+        Exception if missing 3D segmentation input.
+
+    Returns
+    -------
+    merged_df : pandas.DataFrame
+        Dataframe with the following columns: 
+        frame: Tuple of frames before and after the merger
+        parent_cells: Tuple of two parent cell ids. The first entry of the tuple is the cell that survives the merger
+        merged_cell: the cell id that survived the merger
+    split_df : pandas.DataFrame
+        Dataframe with the following columns:
+        frame: Tuple of frames before and after the split
+        split_cell: cell id of the original cell
+        child_cells: tuple of cell ids of the 2 child cells. The first entry of the tuple is the original cell, and seconds is the cell that was created from the split. 
+
+    assumptions (will be expanded later): 3d input 
+    """
+
+
+    Tracks = analysis_dict['UDAF_tracks'].copy()
+
+    variable_field = analysis_dict['segmentation_xarray'][variable]
+
+    footprint_data = analysis_dict['UDAF_segmentation_3d'].Feature_Segmentation
+
+
+    if invert:
+
+        variable_field = -1 * variable_field
+        flood_background = -1 * flood_background
+
+    #inner_Tracks = Tracks.loc[(Tracks['frame'] != 0) & (Tracks['frame'] != max(Tracks['frame'].tolist()))] #remove all rows for the first and last frame
+    cells = Tracks['cell_id']
+    frames = Tracks['frame']
+    final_frame_indices = frames[frames == max(frames.tolist())].index.tolist() #indeces of Tracks with the last frame
+    first_frame_indices = frames[frames == 0].index.tolist() #indeces with the first frame
+    temp = [] #list of Tracks indices where a cell appeared for the last time (these might be where mergers occured)
+    for cell_id in np.unique(cells.tolist()):
+        if cell_id == -1:
+            continue
+        temp.append(cells.where(cells==cell_id).last_valid_index())
+    last_appearances = [i for i in temp if i not in final_frame_indices] #ignore any last appearances on the final frame
+
+    temp = []
+    for cell_id in np.unique(cells.tolist()):
+        if cell_id == -1:
+            continue
+        temp.append(cells.where(cells==cell_id).first_valid_index())
+    first_appearences = [i for i in temp if i not in first_frame_indices] #ignore any first appearances on the first frame
+
+    output_frame_list_merge = []
+    output_init_cells_merge = []
+    output_merged_cells = []
+
+    output_frame_list_split = []
+    output_init_cells_split = []
+    output_split_cells = []
+
+    fi = [] #feature ids
+    sa = [] #surface areas
+    sad = [] #surface area dictionaries (from calc_perim_3d function)
+    merge_or_split_list = []
+
+    #use one loop for both the merging and the splitting, but there are a few changes that need to be made, so this merge_split_bool is defined
+    #True indicates we are doing mergers and false indicates splits
+    for i, index_list in enumerate([last_appearances, first_appearences]):
+        if i == 0:
+            merge_split_bool = True
+            desc = '=====Calculating Merger Edges====='
+        else:
+            merge_split_bool = False
+            desc = '=====Calculating Split Edges====='
+
+        for i in tqdm(index_list, desc=desc, total=len(index_list)): #loop over every feature's final frame (1 cell per loop)
+
+            row = Tracks.iloc[i]
+            feature_id = row['feature_id']
+            frame = row['frame']
+            cell_id = row['feature_id']
+            position = (row['projection_x'], row['projection_y'], row['altitude'])
+            #velocity = need to think about how to get this. maybe import my velocity calculation or find if comet calculates it somewhere
+
+            #this is a dictionary with keys equal to what the cell is touching (-1 for empty space and feature_id for other cells)
+            #values are the total surface area that is touching that thing
+            surface_dict = calc_3d_perim(footprint_data, frame, feature_id)
+            if surface_dict == -1:
+                continue
+            total_surface_area = sum(surface_dict.values())
+    
+            fi.append(feature_id)
+            sa.append(total_surface_area)
+            sad.append(surface_dict)
+
+            if merge_split_bool:
+                merge_or_split_list.append('merge')
+            else:
+                merge_or_split_list.append('split')
+
+    cell_info_df = pd.DataFrame(
+        data={"feature_id": fi, "Surface_Area": sa, "Surface_Area_Dict": sad, "Merge_or_Split": merge_or_split_list}
+    )
+
+    cell_info_copy = cell_info_df.copy() #iterate over this to avoid issues
+
+    valid_touching_cell_sets = []
+    # As long as one of the cells exceeds out threshold of touching, it will get added to tracked list, so no need to do anything more complex
+    for i, cell in tqdm(cell_info_copy.iterrows(), desc='=====Filtering By Touching %=====', total=len(cell_info_copy)): #iterates over rows of dataframe and returns (index, series) pairs
+        #cell[1] is just the row of the dataframe
+
+        total_surface = cell.Surface_Area
+
+        for touching_featureid, touching_area in cell.Surface_Area_Dict.items(): #loop through surface area dictionary
+            
+            changing_cell = Tracks[Tracks['feature_id'] == cell.feature_id]['cell_id'].values[0]
+
+            if touching_featureid == -1:
+                continue
+            
+            constant_cell = Tracks[Tracks['feature_id'] == touching_featureid]['cell_id'].values[0] #define the two cell ids involved in the potential merge/split
+            
+            if constant_cell == -1 or changing_cell == -1:
+                continue
+
+            frame = Tracks[Tracks['feature_id'] == touching_featureid]['frame'].values[0]
+
+            touching_cell_surface_dict = calc_3d_perim(footprint_data, frame, touching_featureid)
+            if touching_cell_surface_dict == -1:
+                continue
+            touching_cell_surface_area = sum(touching_cell_surface_dict.values())
+            
+
+            # If touching by over a certain percent threshold, add to valid touching set
+            if (touching_area / total_surface) > touching_threshold or (touching_area/touching_cell_surface_area) > touching_threshold:
+                
+                #this if statement is to avoid the case where 2 cells are touching but the both disappear on the next frame, which would not be a merge
+                if cell.Merge_or_Split == 'merge' and Tracks.iloc[cells.where(cells==changing_cell).last_valid_index()]['frame'] == Tracks.iloc[cells.where(cells==constant_cell).last_valid_index()]['frame']:
+                    continue
+                #same here if 2 cells suddenly appear on the same frame then that isn't a split
+                if cell.Merge_or_Split == 'split' and Tracks.iloc[cells.where(cells==changing_cell).first_valid_index()]['frame'] == Tracks.iloc[cells.where(cells==constant_cell).first_valid_index()]['frame']:
+                    continue
+
+                #add the touching cell to the cell info df
+                #we only need the number of edges, so the other values are just set to -1
+
+                cell_info_df.loc[len(cell_info_df.index)] = [touching_featureid, touching_cell_surface_area, touching_cell_surface_dict, -1]
+
+                #(constant cell, changing cell, merge/split)
+                touching_tuple = (touching_featureid, cell.feature_id, cell.Merge_or_Split)
+                valid_touching_cell_sets.append(touching_tuple) #tuple of touching cells, so (1, 2) means feature_id 1 and 2 are touching
+                
+    valid_overlap_cell_sets = []
+    for cell_set in tqdm(valid_touching_cell_sets, desc='=====Calculating Overlap=====', total=len(valid_touching_cell_sets)):
+    
+        # Cell 1 and 2 checks
+        cell1_data = Tracks[Tracks['feature_id'] == cell_set[0]] #find rows in frame[1] where cell_id == cell_set[0/1]. cell_set is a pair of touching cells
+        cell2_data = Tracks[Tracks['feature_id'] == cell_set[1]]
+
+        # Check if data is 3D
+        if (
+            len(variable_field.shape) == 4
+            and analysis_dict['UDAF_segmentation_3d'] is not None
+        ):
+            
+            variable_data = deepcopy(
+                variable_field[cell1_data.frame.values[0]] 
+            ).values
+
+        else:
+
+            raise Exception("!=====Data has wrong dimension=====!")
+
+        # flood fill cell 1
+
+        #doesnt this section find the top left corner of a cell when it should be finding the center
+        #No, south_north only contains one value which is the value of the feature, so this is actually correct. 
+        row_1 = int(np.round(cell1_data.up_down.values[0])) 
+        col_1 = int(np.round(cell1_data.south_north.values[0]))
+        depth_1 = int(np.round(cell1_data.west_east.values[0]))
+        
+        
+
+        # Calculate the cell adjusted variable field, radius and then get the max distance of the search radius
+        adj_Rmax_1 = np.round(variable_data[row_1, col_1, depth_1] - flood_background) #variable at the feature minus the background. Still need to implement the feature location
+        cell_1_radius = (
+            np.sqrt(cell_info_df[cell_info_df['feature_id']==cell_set[0]].Surface_Area.values[0]
+            / (4 * np.pi))
+        )
+        cell_1_radius = ((1 + radius_multiplyer) * cell_1_radius)
+        max_dist_1 = np.sqrt(3) * cell_1_radius
+        segmented_1_points = []
+        # Loop over search radius
+
+        center_proj_1 = (cell1_data.altitude.values[0] , cell1_data.projection_y.values[0] , cell1_data.projection_x.values[0])
+        zbounds_1, ybounds_1, xbounds_1 = create_gridded_bounds(footprint_data, center_proj_1, cell_1_radius)
+        for mx in range(xbounds_1[0], xbounds_1[1]):
+
+            for my in range(ybounds_1[0], ybounds_1[1]):
+
+                for mz in range(zbounds_1[0], zbounds_1[1]):
+
+                    try:
+
+                        # Calculate score function
+                        R_adj = variable_data[mz, my, mx] - flood_background
+                        dis = np.sqrt((my - col_1) ** 2 + (mz - row_1) ** 2 + (mx - depth_1) ** 2)
+
+                        # If the adjusted variable field value is not finite, skip it (i guess reflectivity could be NaN)
+                        if not np.isfinite(R_adj): 
+                            continue
+
+                        # If the cell is the center of the search radius, will be a part of the cell
+                        if dis == 0:
+                            segmented_1_points.append((mz, my, mx))
+                            continue
+
+                        # If the maximum variable value or maximum distance is 0, just skip since every data cell would be counted
+                        if adj_Rmax_1 == 0 or max_dist_1 == 0:
+                            continue #need to check for divide by zero errors any time a division happens (below)
+
+                        # Calculate the score and see if it exceeds the threshold
+                        score = score_weight_1 * (
+                            R_adj / adj_Rmax_1
+                        ) - score_weight_2 * (dis / max_dist_1)
+
+                        if score > score_threshold:
+                            segmented_1_points.append((mz, my, mx))
+
+                    except:
+                        continue
+
+        segmented_1_area = calculate_volume(footprint_data, segmented_1_points)
+
+        # flood fill cell 2
+        row_2 = int(np.round(cell2_data.up_down.values[0])) 
+        col_2 = int(np.round(cell2_data.south_north.values[0]))
+        depth_2 = int(np.round(cell2_data.west_east.values[0]))
+
+        # Calculate adjusted max variable, radius values and then max distance
+        adj_Rmax_2 = np.round(variable_data[row_2, col_2, depth_2] - flood_background)
+        cell_2_radius = np.ceil(
+            np.sqrt(cell_info_df[cell_info_df['feature_id']==cell_set[1]].Surface_Area.values[0]
+            / (4 * np.pi))
+        )
+        cell_2_radius = int(np.ceil(1.1 * cell_2_radius))
+        max_dist_2 = np.sqrt(3) * cell_2_radius
+        segmented_2_points = []
+        
+        center_proj_2 = (cell1_data.altitude.values[0] , cell1_data.projection_y.values[0] , cell1_data.projection_x.values[0])
+        zbounds_2, ybounds_2, xbounds_2 = create_gridded_bounds(footprint_data, center_proj_2, cell_2_radius)
+        for mx in range(xbounds_2[0], xbounds_2[1]):
+
+            for my in range(ybounds_2[0], ybounds_2[1]):
+
+                for mz in range(zbounds_2[0], zbounds_2[1]):
+
+                    try:
+
+                        # Repeat same process but for the second cell in the pair
+                        R_adj = variable_data[mz, my, mx] - flood_background
+                        dis = np.sqrt((my - col_2) ** 2 + (mz - row_2) ** 2 + (mx - depth_2) ** 2)
+
+                        if not np.isfinite(R_adj):
+                            continue
+
+                        if dis == 0:
+                            segmented_2_points.append((mz, my, mx))
+                            continue
+
+                        if adj_Rmax_2 == 0 or max_dist_2 == 0:
+                            continue
+
+                        score = score_weight_1 * (R_adj / adj_Rmax_2) - score_weight_2 * (dis / max_dist_2) #im assuming score weights should go here aswell
+
+                        if score > score_threshold:
+                            segmented_2_points.append((mz, my, mx))
+
+                    except:
+                        continue
+
+        segmented_2_area = calculate_volume(footprint_data, segmented_2_points)
+
+        overlap_points = list(set(segmented_1_points) & set(segmented_2_points))
+        overlap_mask_area = calculate_volume(footprint_data, overlap_points)
+
+        if segmented_1_area == 0 or segmented_2_area == 0:
+            continue
+
+        max_ol_p = np.max(
+            (
+                overlap_mask_area / segmented_1_area,
+                overlap_mask_area / segmented_2_area,
+            )
+        )
+
+        if max_ol_p > overlap_threshold:
+            valid_overlap_cell_sets.append(cell_set)
+
+    # Loop through all remaining cells and add them to the ouput
+    for cell_set in tqdm(valid_overlap_cell_sets, desc='=====Creating Output Dataframe=====', total=len(valid_overlap_cell_sets)):
+        frame = Tracks[Tracks['feature_id'] == cell_set[0]]['frame'].values[0]
+        cell_id1 = Tracks[Tracks['feature_id'] == cell_set[0]]['cell_id'].values[0]
+        cell_id2 = Tracks[Tracks['feature_id'] == cell_set[1]]['cell_id'].values[0]
+        if cell_set[2] == 'merge':
+            output_frame_list_merge.append((frame, frame+1))
+            output_init_cells_merge.append((cell_id1, cell_id2))
+            output_merged_cells.append(cell_id1)
+        else:
+            output_frame_list_split.append((frame-1, frame))
+            output_init_cells_split.append(cell_id1)
+            output_split_cells.append((cell_id1, cell_id2))
+        
+    merged_df = pd.DataFrame(
+    data={
+        "frame": output_frame_list_merge,
+        "parent_cells": output_init_cells_merge,
+        "merged_cell": output_merged_cells,
+    }
     )
     split_df = pd.DataFrame(
         data={

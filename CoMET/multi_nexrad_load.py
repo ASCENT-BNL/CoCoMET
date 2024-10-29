@@ -200,9 +200,10 @@ def gen_and_save_multi_nexrad_grid(
         )
 
         # Save radar grid to save_location as a netcdf file
+        shortest_radar_time_ii = shortest_radar_time_list[ii].strftime("%Y_%m_%d_%H:%M:%S")
         pyart.io.write_grid(
             save_location
-            + f"combined_grid_{shortest_radar_time_list[ii].strftime("%Y_%m_%d_%H:%M:%S")}.nc",
+            + f"combined_grid_{shortest_radar_time_ii}.nc",
             combined_grid,
             arm_alt_lat_lon_variables=True,
             write_point_x_y_z=True,

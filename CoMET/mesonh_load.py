@@ -112,6 +112,7 @@ def mesonh_load_netcdf_iris(
     ------
     Exception
         Exception if entered invalid tracking variable.
+        Exception if the input files are not at continuous time intervals.
 
     Returns
     -------
@@ -127,7 +128,7 @@ def mesonh_load_netcdf_iris(
     mesonh_xarray = xr.open_mfdataset(
         filepath, coords="all", concat_dim="time", combine="nested"
     )
-
+    
     if "mesonh" in CONFIG:
 
         # Subset time based on user inputs
