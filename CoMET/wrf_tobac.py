@@ -10,45 +10,28 @@ Created on Wed Jun  5 17:26:17 2024
 # This defines the methods for running tobac on WRF data processed using wrf_load.py
 # =============================================================================
 
-import logging
-from copy import deepcopy
-
-import geopandas as gpd
-import iris.cube
-import numpy as np
-import tobac
-import xarray as xr
-
 
 # Calculate nearest item in list to given pivot
 def find_nearest(array, pivot):
+    import numpy as np
+
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx
 
 
-def wrf_tobac_feature_id(cube: iris.cube.Cube, CONFIG: dict) -> gpd.GeoDataFrame | None:
+def wrf_tobac_feature_id(cube, CONFIG):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        CONFIG: User configuration file
+    Outputs:
+        wrf_geopd: geodataframe containing all default tobac feature id outputs
     """
 
-
-    Parameters
-    ----------
-    cube : iris.cube.Cube
-        Iris cube containing the variable to be tracked.
-    CONFIG : dict
-        User configuration file.
-
-    Raises
-    ------
-    Exception
-        Exception if out-of-bounds height.
-
-    Returns
-    -------
-    wrf_geopd : geopandas.geodataframe.GeoDataFrame
-        Geodataframe containing all default tobac feature id outputs.
-
-    """
+    import tobac
+    import geopandas as gpd
+    from copy import deepcopy
 
     feat_cube = deepcopy(cube)
     inCONFIG = deepcopy(CONFIG)
@@ -57,27 +40,27 @@ def wrf_tobac_feature_id(cube: iris.cube.Cube, CONFIG: dict) -> gpd.GeoDataFrame
 
         # Ensure segmentation_height is a proper number before running
         if (
-            inCONFIG["wrf"]["tobac"]["feature_id"]["height"] is None
+            inCONFIG["wrf"]["tobac"]["feature_id"]["height"] == None
             or type(inCONFIG["wrf"]["tobac"]["feature_id"]["height"]) == str
             or type(CONFIG["wrf"]["tobac"]["feature_id"]["height"]) == bool
         ):
             raise Exception(
-                f"""!=====Invalid Feature Identification Height. You Entered: {inCONFIG["wrf"]["tobac"]["feature_id"]["height"]}=====!"""
+                f"!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG['wrf']['tobac']['feature_id']['height'] .lower()}=====!"
             )
         if (
-            inCONFIG["wrf"]["tobac"]["feature_id"]["height"] * 1000
+            inCONFIG["wrf"]["tobac"]["feature_id"]["height"]
             > cube.coord("altitude").points.max()
-            or inCONFIG["wrf"]["tobac"]["feature_id"]["height"] * 1000
+            or inCONFIG["wrf"]["tobac"]["feature_id"]["height"]
             < cube.coord("altitude").points.min()
         ):
             raise Exception(
-                f"""!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG["wrf"]["tobac"]["feature_id"]["height"]}=====!"""
+                f"!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG['wrf']['tobac']['feature_id']['height'] .lower()}=====!"
             )
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
         height_index = find_nearest(
             cube.coord("altitude").points,
-            inCONFIG["wrf"]["tobac"]["feature_id"]["height"] * 1000,
+            inCONFIG["wrf"]["tobac"]["feature_id"]["height"],
         )
 
         feat_cube = feat_cube[:, height_index]
@@ -108,27 +91,19 @@ def wrf_tobac_feature_id(cube: iris.cube.Cube, CONFIG: dict) -> gpd.GeoDataFrame
     return wrf_geopd
 
 
-def wrf_tobac_linking(
-    cube: iris.cube.Cube, radar_features: gpd.GeoDataFrame, CONFIG: dict
-) -> gpd.GeoDataFrame | None:
+def wrf_tobac_linking(cube, radar_features, CONFIG):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        radar_features: tobac radar features from wrf_tobac_feature_id output
+        CONFIG: User configuration file
+    Outputs:
+        wrf_geopd_tracks: geodataframe containing all default tobac tracking outputs
     """
 
-
-    Parameters
-    ----------
-    cube : iris.cube.Cube
-        Iris cube containing the variable to be tracked.
-    radar_features : gpd.GeoDataFrame
-        Tobac radar features from wrf_tobac_feature_id output.
-    CONFIG : dict
-        User configuration file.
-
-    Returns
-    -------
-    wrf_geopd_tracks : geopandas.geodataframe.GeoDataFrame
-        Geodataframe containing all default tobac tracking outputs.
-
-    """
+    import tobac
+    import logging
+    import geopandas as gpd
 
     if radar_features is None:
         return None
@@ -161,47 +136,30 @@ def wrf_tobac_linking(
 
 
 def wrf_tobac_segmentation(
-    cube: iris.cube.Cube,
-    radar_features: gpd.GeoDataFrame,
-    segmentation_type: str,
-    CONFIG: dict,
-    segmentation_height: float | None = None,
-) -> tuple[xr.DataArray, gpd.GeoDataFrame]:
+    cube, radar_features, segmentation_type, CONFIG, segmentation_height=None
+):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        radar_features: tobac radar features from wrf_tobac_feature_id output
+        segmentation_type: ['2D', '3D'], whether to perform 2d segmentation or 3d segmentation
+        CONFIG: User configuration file
+        segmentation_height: height, in meters, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var != tb or pr
+    Outputs:
+        (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
     """
 
-
-    Parameters
-    ----------
-    cube : iris.cube.Cube
-        Iris cube containing the variable to be tracked.
-    radar_features : gpd.GeoDataFrame
-        tobac radar features from wrf_tobac_feature_id output.
-    segmentation_type : str
-        ["2D", "3D"], whether to perform 2d segmentation or 3d segmentation.
-    CONFIG : dict
-        User configuration file.
-    segmentation_height : float | None, optional
-        height, in meters, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var is not 2D. The default is None.
-
-    Raises
-    ------
-    Exception
-        Exception if out-of-bounds height.
-
-    Returns
-    -------
-    segment_array : xarray.core.dataarray.DataArray
-        Xarray DataArray containing segmented data.
-    segment_features : geopandas.geodataframe.GeoDataFrame
-        Geodataframe with ncells column.
-
-    """
+    import tobac
+    import xarray as xr
+    from copy import deepcopy
 
     if radar_features is None:
         return (None, None)
 
-    # Enforce 2D tracking only for 2D variables
-    if (len(cube.shape) == 3) and not segmentation_type.lower() == "2d":
+    # Enforce 2D tracking only for brightness temperature and precip rate tracking
+    if (
+        cube.name().lower() == "tb" or cube.name().lower() == "pr"
+    ) and not segmentation_type.lower() == "2d":
         raise Exception(
             f"!=====Invalid Segmentation Type. You Entered: {segmentation_type.lower()}. TB and PR Tracking Restricted to 2D Segmentation=====!"
         )
@@ -217,8 +175,8 @@ def wrf_tobac_segmentation(
 
         # If altitude and/or model level number is present, remove it
 
-        # If tracking var is 2d, bypass height
-        if len(cube.shape) == 3:
+        # If tracking var is tb or pr, bypass height
+        if cube.name().lower() == "tb" or cube.name().lower() == "pr":
             # Perform the 2d segmentation at the height_index and return the segmented cube and new geodataframe
             segment_cube, segment_features = tobac.segmentation_2D(
                 radar_features,
@@ -249,14 +207,14 @@ def wrf_tobac_segmentation(
             or type(segmentation_height) == bool
         ):
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
             )
         if (
-            segmentation_height * 1000 > cube.coord("altitude").points.max()
-            or segmentation_height * 1000 < cube.coord("altitude").points.min()
+            segmentation_height > cube.coord("altitude").points.max()
+            or segmentation_height < cube.coord("altitude").points.min()
         ):
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
             )
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights

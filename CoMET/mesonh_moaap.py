@@ -10,39 +10,30 @@ Created on Wed Jul 17 14:14:14 2024
 # This defines the methods for running MOAAP on WRF data processed using wrf_load.py
 # =============================================================================
 
-import numpy as np
-import pandas as pd
-import xarray as xr
-
-from CoMET.MOAAP import moaap
-
-from .mesonh_calculate_products import mesonh_calculate_brightness_temp
-
 
 # Calculate nearest item in list to given pivot
 def find_nearest(array, pivot):
+    import numpy as np
+
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx
 
 
-def mesonh_run_moaap(mesonh_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
+def mesonh_moaap(mesonh_xarray, CONFIG):
+    """
+    Inputs:
+        wrf_xarray: xarray Dataset containing WRF data calculated from wrf_load.py
+        CONFIG: User configuration file
+    Outputs:
+        mask: Default MOAAP output mask
     """
 
-
-    Parameters
-    ----------
-    mesonh_xarray : xarray.core.dataset.Dataset
-        xarray Dataset containing MesoNH data calculated from mesonh_load.py.
-    CONFIG : dict
-        User configuration file.
-
-    Returns
-    -------
-    mask_file : xarray.core.dataset.Dataset
-        Default MOAAP output mask.
-
-    """
+    import numpy as np
+    import pandas as pd
+    import xarray as xr
+    from .mesonh_calculate_products import mesonh_calculate_brightness_temp
+    from CoMET.MOAAP import moaap
 
     # Get basic setup variables including lat/lon, delta time, a pandas time range vector (TODO: adjust output to )
     latitudes = mesonh_xarray.lat[0].values
@@ -55,7 +46,7 @@ def mesonh_run_moaap(mesonh_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
     )
     mask = np.ones(latitudes.shape)
 
-    # TODO: Find out how to calculate geopotential heights
+    # TODO: Find out how to calculate geopotential heights and accumulated precipitation
     # Get all necessary variables from WRF output to input into MOAAP
 
     # Get pressure heights
@@ -96,9 +87,8 @@ def mesonh_run_moaap(mesonh_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
     # Get geopotential heights
     # geopt =
 
-    # Get precipitation rate
-    # Convert to per time unit, not per hour
-    pr = mesonh_xarray.pcp_rate / (60 / dt)
+    # Get accumulated precipitation
+    # pr = (wrf_xarray.RAINC+wrf_xarray.RAINNC)
 
     moaap(
         longitudes,
@@ -119,7 +109,7 @@ def mesonh_run_moaap(mesonh_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
         z500=None,
         v200=v_winds_200,
         u200=u_winds_200,
-        pr=pr,
+        pr=None,
         tb=tb,
         # Any user defined params
         **CONFIG["mesonh"]["moaap"],
