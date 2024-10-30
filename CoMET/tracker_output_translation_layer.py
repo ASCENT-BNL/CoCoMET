@@ -630,3 +630,308 @@ def bulk_moaap_to_UDAF(
     )
 
     return (UDAF_features, UDAF_linking, UDAF_segmentation_2d)
+
+def bulk_tams_to_UDAF(
+        output : gpd.GeoDataFrame,
+        latlon_coord_system : tuple[np.ndarray, np.ndarray],
+        projection_x_coords : np.ndarray,
+        projection_y_coords : np.ndarray,
+        convert_type : str = "cloud",
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame, xr.Dataset] | None:
+    """
+
+
+    Parameters
+    ----------
+    output : pd.DataFrame
+        A geodataframe with geometry of tracked cloud objects 
+    latlon_coord_system : tuple[np.ndarray, np.ndarray]
+        A tuple of the latitude and longitude coordinate numpy arrays
+    projection_x_coords : np.ndarray
+        A numpy array of the x projection coordinates.
+    projection_y_coords : np.ndarray
+        A numpy array of the y projection coordinates.
+    convert_type : str, optional 
+        ["MCS", "Cloud"] The type of tracking data to extract. The default is "cloud".
+
+    Raises
+    ------
+    Exception
+        Exception if invalid phenomena type entered.
+
+    Returns
+    -------
+    UDAF_features : geopandas.geodataframe.GeoDataFrame
+        Features geopandas dataframe following CoMET-UDAF specification.
+    UDAF_linking : geopandas.geodataframe.GeoDataFrame
+        Linking geopandas dataframe following CoMET-UDAF specification.
+    UDAF_segmentation_2d : xarray.core.dataset.Dataset
+        Segmentation xarray dataset following CoMET-UDAF specification.
+    """
+
+    # Get the numpy array that contains the object we care about's mask
+    if convert_type.lower() == "cloud":
+
+        tracked_elements = output
+
+    # TODO : fix this once you get gridding data aggregation working for TAMS. Also make it output[0] above
+    # elif convert_type.lower() == "mcs":
+
+    #     tracked_elements = output[1]
+
+    else:
+        raise Exception(
+            f"!=====Invalid Phenomena Type Selected. You Entered: {convert_type.lower()}!====="
+        )
+    
+    # Get dt
+    dt = np.median(tracked_elements['dtime'].dt.total_seconds().astype(int))
+    cell_mask = convert_df_to_mask(tracked_elements, latlon_coord_system)
+    feature_mask = convert_cell_mask_to_feature_mask(cell_mask)
+
+    frames = []
+    times = []
+    feature_ids = [-1]
+    cell_ids = []
+    lifetimes = []
+    lifetime_percents = []
+    south_norths = []
+    west_easts = []
+    lats = []
+    lons = []
+    new_proj_x = []
+    new_proj_y = []
+
+    lifetime_dict = {}
+
+    # Iterate through each timestep
+    for ii in tqdm(range(len(tracked_elements)),
+                   desc='=====Converting TAMS to UDAF=====',
+                   total=len(tracked_elements)):
+        frame = tracked_elements['itime'][ii]
+        frames.append(frame)
+        times.append(tracked_elements['time'][ii])
+
+        cell_id = tracked_elements['mcs_id'][ii]
+        cell_ids.append(tracked_elements['mcs_id'][ii])
+
+        lat = tracked_elements['geometry'][ii].centroid.y
+        lon = tracked_elements['geometry'][ii].centroid.x
+        lats.append(lat)
+        lons.append(lon)
+
+        latcoords = latlon_coord_system[0][frames[-1]].values
+        loncoords = latlon_coord_system[1][frames[-1]].values
+
+        # TODO: find a way to interpolate the grid coordinates from the latitude and longitude arrays
+        # currently, _find_closest_latlon snaps to the closest grid coordinate for a given latitude and longitude coordiante
+        closest_point = _find_closest_latlon(lat, lon, latcoords, loncoords)
+
+        feature_ids.append(feature_mask[frame, *closest_point])
+
+        south_norths.append(closest_point[1])
+        west_easts.append(closest_point[0])
+
+        new_proj_x.append(projection_x_coords[west_easts[-1]])
+        new_proj_y.append(projection_y_coords[south_norths[-1]])
+
+        # If cell has not yet been tracked, add it to the lifetime_dict
+        if int(cell_id) not in lifetime_dict:
+            lifetime_dict[int(cell_id)] = {
+                "frame": [frame],
+                "lifetime": [pd.Timedelta(0)],
+            }
+            lifetimes.append(pd.Timedelta(0))
+
+        else:
+            new_time = lifetime_dict[int(cell_id)]["lifetime"][-1] + (
+                pd.Timedelta(minutes=dt)
+                * (frame - lifetime_dict[int(cell_id)]["frame"][-1])
+            )
+            lifetime_dict[int(cell_id)]["lifetime"].append(new_time)
+            lifetime_dict[int(cell_id)]["frame"].append(frame)
+            lifetimes.append(new_time)
+
+    temp_linking = pd.DataFrame(data={"lifetime": lifetimes, "cell_id": cell_ids})
+
+    # Loop over rows to calculate lifetime percents
+    for row in tqdm(
+        temp_linking.iterrows(),
+        desc="=====Processing TAMS Cell Lifetimes====",
+        total=temp_linking.shape[0],
+    ):
+
+        cell_max_life = temp_linking.query(
+            "cell_id==@row[1].cell_id"
+        ).lifetime.values.max()
+
+        # If only tracked one time, add -1 to lifetime_percent
+        if cell_max_life == 0:
+            lifetime_percents.append(-1)
+        else:
+            lifetime_percents.append(row[1].lifetime / cell_max_life) 
+
+    # Create all dataframs and convert them to geodataframes
+    UDAF_features = pd.DataFrame(
+        data={
+            "frame": frames,
+            "time": times,
+            "feature_id": feature_ids[1:],
+            "south_north": south_norths,
+            "west_east": west_easts,
+            "up_down": np.repeat(np.nan, len(frames)),
+            "latitude": lats,
+            "longitude": lons,
+            "projection_x": new_proj_x,
+            "projection_y": new_proj_y,
+            "altitude": np.repeat(np.nan, len(frames)),
+        }
+    )
+
+    UDAF_features = gpd.GeoDataFrame(
+        UDAF_features,
+        geometry=gpd.points_from_xy(UDAF_features.longitude, UDAF_features.latitude),
+        crs="EPSG:4326",
+    )
+
+    UDAF_linking = pd.DataFrame(
+        data={
+            "frame": frames,
+            "time": times,
+            "lifetime": lifetimes,
+            "lifetime_percent": lifetime_percents,
+            "feature_id": feature_ids[1:],
+            "cell_id": cell_ids,
+            "south_north": south_norths,
+            "west_east": west_easts,
+            "up_down": np.repeat(np.nan, len(frames)),
+            "latitude": lats,
+            "longitude": lons,
+            "projection_x": new_proj_x,
+            "projection_y": new_proj_y,
+            "altitude": np.repeat(np.nan, len(frames)),
+        }
+    )
+
+    UDAF_linking = gpd.GeoDataFrame(
+        UDAF_linking,
+        geometry=gpd.points_from_xy(UDAF_linking.longitude, UDAF_linking.latitude),
+        crs="EPSG:4326",
+    )
+
+    
+    # Now perform segmentation conversion
+    UDAF_segmentation_2d = xr.Dataset(
+        coords=dict(
+            time=np.arange(latlon_coord_system[0].shape[0]),
+            south_north=np.arange(latlon_coord_system[0].shape[1]),
+            west_east=np.arange(latlon_coord_system[0].shape[2]),
+            projection_y_coordinate=("south_north", projection_y_coords),
+            projection_x_coordinate=("west_east", projection_x_coords),
+            latitude=(["south_north", "west_east"], latlon_coord_system[0][0].values),
+            longitude=(["south_north", "west_east"], latlon_coord_system[1][0].values),
+        ),
+        data_vars=dict(
+            Feature_Segmentation=(
+                ["time", "south_north", "west_east"],
+                convert_cell_mask_to_feature_mask(cell_mask),
+            ),
+            Cell_Segmentation=(["time", "south_north", "west_east"], cell_mask),
+        ),
+        attrs=dict(description="Mask for tracked objects from TAMS"),
+    )
+
+    return (UDAF_features, UDAF_linking, UDAF_segmentation_2d)
+
+
+##################################################################################
+################################################################################## 
+# Extra functions for converting TAMS dataframe into a mask
+
+def _find_closest_latlon(lat_true, lon_true, lat_arr, lon_arr):
+    import numpy as np
+
+    diff_arr_lat = np.abs(lat_arr - lat_true)
+    diff_arr_lon = np.abs(lon_arr - lon_true)
+    squared_diff_arr = diff_arr_lat**2 + diff_arr_lon**2
+    closest_point = (np.unravel_index(squared_diff_arr.argmin(), squared_diff_arr.shape))
+    return closest_point
+
+def _points_from_polygons(polygons):
+    from shapely.geometry import MultiPolygon
+
+    points = []
+    for mpoly in polygons:
+        if isinstance(mpoly, MultiPolygon):
+            polys = list(mpoly)
+        else:
+            polys = [mpoly]
+        for polygon in polys:
+            for point in polygon.exterior.coords:
+                points.append(point)
+            for interior in polygon.interiors:
+                for point in interior.coords:
+                    points.append(point)
+    return points
+
+def _return_gridpoints(points, latlon_coord_system):
+    # geom = ce.geometry[0]
+    # grid = partition(geom, 0.1)
+    # points = points_from_polygons(grid)
+    gridpoints = []
+    latcoords = latlon_coord_system[0].values[0]
+    loncoords = latlon_coord_system[1].values[0]
+    for ilon, ilat in points:
+        # print(f'ilat is {ilat} and ilon is {ilon}')
+        gridpoints.append(_find_closest_latlon(ilat, ilon, latcoords, loncoords))
+
+    return gridpoints
+
+def convert_df_to_mask(ce, latlon_coord_system):
+    import numpy as np
+    from tqdm import tqdm
+    from matplotlib.path import Path
+
+    full_mask = np.zeros_like(latlon_coord_system[0].values)
+
+    print("=====Converting TAMS Dataframe to Mask=====")
+    for frame in np.unique(ce.itime):
+        id_groups = ce[ce.itime == frame].groupby('mcs_id')
+
+        for mcs_id, grouped_df in id_groups:
+            points = _points_from_polygons(grouped_df.geometry) # get the points in lat, lon
+            gridpoints = _return_gridpoints(points, latlon_coord_system) # convert the points to gridspace
+
+            ny, nx = latlon_coord_system[0].shape[1:]
+            poly_verts = gridpoints
+
+            x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+            x, y = x.flatten(), y.flatten()
+
+            points = np.vstack((x,y)).T
+
+            path = Path(poly_verts)
+            grid = path.contains_points(points)
+            grid = grid.reshape((ny,nx))
+
+            grid = np.array(grid, dtype=int) * mcs_id
+
+            non_zero_grid = grid != 0
+            full_mask_in_frame = full_mask[frame]
+            full_mask_in_frame[non_zero_grid] = grid[non_zero_grid]
+
+    full_mask[full_mask == 0] = -1
+    return full_mask
+
+def convert_cell_mask_to_feature_mask(cell_mask):
+    import numpy as np
+    from copy import deepcopy
+
+    feature_mask = deepcopy(cell_mask)
+    last_feature = 0
+    for t in range(feature_mask.shape[0]):
+        real_cell_bool = feature_mask[t] > -1
+        feature_mask[t][real_cell_bool] += last_feature
+        last_feature = np.max(feature_mask[t])
+
+    return feature_mask

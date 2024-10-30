@@ -55,7 +55,7 @@ def wrf_load_netcdf_iris(
     """
 
     wrf_xarray = xr.open_mfdataset(
-        filepath, coords="all", concat_dim="Time", combine="nested"
+        filepath, coords="all", concat_dim="Time", combine="nested", decode_times=True,
     )
 
     if "wrf" in CONFIG:

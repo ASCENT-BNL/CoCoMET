@@ -34,18 +34,22 @@ def wrf_calculate_reflectivity(wrf_xarray: xr.Dataset) -> xr.DataArray:
     """
 
     # Get variables from WRF
-    t = wrf_xarray["T"]
-    p = wrf_xarray["P"]
-    pb = wrf_xarray["PB"]
-    qv = wrf_xarray["QVAPOR"]
-    qr = wrf_xarray["QRAIN"]
-    qs = wrf_xarray["QSNOW"]
-    qg = wrf_xarray["QGRAUP"]
+    t = wrf_xarray["T"] # K
+    p = wrf_xarray["P"] # Pa
+    pb = wrf_xarray["PB"] # Pa
+    qv = wrf_xarray["QVAPOR"] # kg kg-1
+    qr = wrf_xarray["QRAIN"] # kg kg-1
+    qs = wrf_xarray["QSNOW"] # kg kg-1
+    qg = wrf_xarray["QGRAUP"] # kg kg-1
 
     # Calculate proper pressures and actual temperature
-    full_t = t + 300
-    full_p = p + pb
-    tmk = full_t * (full_p / 1e5) ** (287.0 / 1004.5)
+    full_t = t + 300 # K
+    full_p = p + pb # Pa
+
+    c = 2.0/7.0
+    tmk = t * np.power(p * .00001, c) # TODO : check if this is correct, it gives higher dbz values but maybe its not right
+
+    # tmk = full_t * (full_p / 1e5) ** (287.0 / 1004.5)
 
     # Supress divide by zero warnings
     with warnings.catch_warnings():
