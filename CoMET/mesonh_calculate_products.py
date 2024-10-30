@@ -10,28 +10,17 @@ Created on Mon Jul  8 17:18:18 2024
 # This file contains the functions used to calculate additional values from MesoNH output. Including reflectivity and altitudes
 # =============================================================================
 
-import warnings
 
-import numpy as np
-import xarray as xr
-from tqdm import tqdm
-
-
-def mesonh_calculate_reflectivity(mesonh_xarray: xr.Dataset) -> xr.DataArray:
+def mesonh_calculate_reflectivity(mesonh_xarray):
+    """
+    Inputs:
+        mesonh_xarray: xarray Dataset containing default MesoNH values
+    Ouputs:
+        dBZ: DataArray containing calculated reflectivity values
     """
 
-
-    Parameters
-    ----------
-    mesonh_xarray : xarray.core.dataset.Dataset
-        Xarray Dataset containing default MesoNH values.
-
-    Returns
-    -------
-    dBZ : xarray.core.dataarray.DataArray
-        DataArray containing calculated reflectivity values.
-
-    """
+    import warnings
+    import numpy as np
 
     # Get variables from MesoNH
     t = mesonh_xarray["T"]
@@ -93,24 +82,19 @@ def mesonh_calculate_reflectivity(mesonh_xarray: xr.Dataset) -> xr.DataArray:
         }
     )
 
-    return dBZ.chunk(t.unify_chunks().chunksizes)
+    return dBZ.chunk(t.chunksizes)
 
 
-def mesonh_calculate_brightness_temp(mesonh_xarray: xr.Dataset) -> np.ndarray:
+def mesonh_calculate_brightness_temp(mesonh_xarray):
+    """
+    Inputs:
+        mesonh_xarray:xarray Dataset containing default MesoNH values
+    Outputs:
+        TB: numpy array containing brightness temperature at each point and time--same dimension as input
     """
 
-
-    Parameters
-    ----------
-    mesonh_xarray : xarray.core.dataset.Dataset
-        Xarray Dataset containing default MesoNH values.
-
-    Returns
-    -------
-    TB : numpy.ndarray
-        Numpy array containing brightness temperature at each point and time--same dimension as input.
-
-    """
+    import numpy as np
+    from tqdm import tqdm
 
     OLR = mesonh_xarray["LWup_TOA"].values
 
@@ -131,20 +115,12 @@ def mesonh_calculate_brightness_temp(mesonh_xarray: xr.Dataset) -> np.ndarray:
     return TB
 
 
-def mesonh_calculate_agl_z(mesonh_xarray: xr.Dataset) -> xr.DataArray:
+def mesonh_calculate_agl_z(mesonh_xarray):
     """
-
-
-    Parameters
-    ----------
-    mesonh_xarray : xr.Dataset
-        Xarray Dataset containing default MesoNH values.
-
-    Returns
-    -------
-    geopt : xarray.core.dataarray.DataArray
-        Dataarray of heights AGL in m.
-
+    Inputs:
+        mesonh_xarray: xarray Dataset containing default MesoNH values
+    Outputs:
+        geopt: Dataarray of heights AGL in m
     """
 
     return mesonh_xarray.Z[0].squeeze()

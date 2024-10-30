@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# pylint: skip-file
 """
 Created on Tue Jul  9 13:02:43 2024
 
@@ -39,14 +38,11 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import vincenty
-from iris import Constraint, coord_systems, coords
-from iris.coords import AuxCoord
-from iris.util import promote_aux_coord_to_dim_coord
-from numpy import arange, array, transpose
-
 
 def load(mesonh_xarray, variable, filename):
+    from iris.util import promote_aux_coord_to_dim_coord
+    from iris.coords import AuxCoord
+    from iris import Constraint
 
     array = mesonh_xarray[variable]
     variable_dimensions = array.dims
@@ -135,6 +131,7 @@ def guess_horizontal_spacing(mesonh_xarray, filename):
         print(
             "!=====Non-Default MesoNH Filename Found, Estimating Distance Instead=====!"
         )
+        import vincenty
 
         # Guess x dimension by finding distance between two points offset by one x value
         x_dis = (
@@ -162,6 +159,7 @@ def guess_horizontal_spacing(mesonh_xarray, filename):
 
 def make_coord_system(attributes):
     return None
+    from iris import coord_systems
 
     #    :CEN_LAT = -3.212929f ;
     # 		:CEN_LON = -60.59799f ;
@@ -203,6 +201,8 @@ def make_coord_system(attributes):
 
 
 def make_westeast_coord(DX, WEST_EAST_PATCH_END_UNSTAG):
+    from iris import coords
+    from numpy import arange
 
     WEST_EAST = arange(0, WEST_EAST_PATCH_END_UNSTAG)
     west_east = coords.DimCoord(
@@ -220,6 +220,8 @@ def make_westeast_coord(DX, WEST_EAST_PATCH_END_UNSTAG):
 
 
 def make_westeast_stag_coord(DX, WEST_EAST_PATCH_END_STAG):
+    from iris import coords
+    from numpy import arange
 
     WEST_EAST_U = arange(0, WEST_EAST_PATCH_END_STAG)
     west_east_stag = coords.DimCoord(
@@ -237,6 +239,8 @@ def make_westeast_stag_coord(DX, WEST_EAST_PATCH_END_STAG):
 
 
 def make_southnorth_coord(DY, SOUTH_NORTH_PATCH_END_UNSTAG):
+    from iris import coords
+    from numpy import arange  # DY=attributes['DY']
 
     # SOUTH_NORTH_PATCH_END_UNSTAG=attributes['SOUTH-NORTH_PATCH_END_UNSTAG']
     SOUTH_NORTH = arange(0, SOUTH_NORTH_PATCH_END_UNSTAG)
@@ -255,6 +259,8 @@ def make_southnorth_coord(DY, SOUTH_NORTH_PATCH_END_UNSTAG):
 
 
 def make_southnorth_stag_coord(DY, SOUTH_NORTH_PATCH_END_STAG):
+    from iris import coords
+    from numpy import arange
 
     SOUTH_NORTH_V = arange(0, SOUTH_NORTH_PATCH_END_STAG)
     south_north_stag = coords.DimCoord(
@@ -272,6 +278,8 @@ def make_southnorth_stag_coord(DY, SOUTH_NORTH_PATCH_END_STAG):
 
 
 def make_bottom_top_coordinate(BOTTOM_TOP_PATCH_END_UNSTAG):
+    from iris import coords
+    from numpy import arange
 
     BOTTOM_TOP = arange(0, BOTTOM_TOP_PATCH_END_UNSTAG)
     bottom_top = coords.DimCoord(
@@ -289,6 +297,8 @@ def make_bottom_top_coordinate(BOTTOM_TOP_PATCH_END_UNSTAG):
 
 
 def make_bottom_top_stag_coordinate(BOTTOM_TOP_PATCH_END_STAG):
+    from iris import coords
+    from numpy import arange
 
     BOTTOM_TOP_W = arange(0, BOTTOM_TOP_PATCH_END_STAG)
     bottom_top_stag = coords.DimCoord(
@@ -306,6 +316,8 @@ def make_bottom_top_stag_coordinate(BOTTOM_TOP_PATCH_END_STAG):
 
 
 def make_model_level_number_coordinate(BOTTOM_TOP_PATCH_END):
+    from iris import coords
+    from numpy import arange
 
     MODEL_LEVEL_NUMBER = arange(0, BOTTOM_TOP_PATCH_END)
     model_level_number = coords.AuxCoord(
@@ -315,6 +327,8 @@ def make_model_level_number_coordinate(BOTTOM_TOP_PATCH_END):
 
 
 def make_x_coord(DX, WEST_EAST_PATCH_END_UNSTAG, coord_system):
+    from iris import coords
+    from numpy import arange, array, transpose
 
     X = DX * (arange(0, WEST_EAST_PATCH_END_UNSTAG) + 0.5)
     bounds = transpose(
@@ -340,6 +354,8 @@ def make_x_coord(DX, WEST_EAST_PATCH_END_UNSTAG, coord_system):
 
 
 def make_x_stag_coord(DX, WEST_EAST_PATCH_END_STAG, coord_system=None):
+    from iris import coords
+    from numpy import arange
 
     X_U = DX * (arange(0, WEST_EAST_PATCH_END_STAG) - 1)
     x_stag_coord = coords.AuxCoord(
@@ -357,6 +373,8 @@ def make_x_stag_coord(DX, WEST_EAST_PATCH_END_STAG, coord_system=None):
 
 
 def make_y_coord(DY, SOUTH_NORTH_PATCH_END_UNSTAG, coord_system=None):
+    from iris import coords
+    from numpy import arange, array, transpose  # DY=attributes['DY']
 
     Y = DY * (arange(0, SOUTH_NORTH_PATCH_END_UNSTAG) + 0.5)
     bounds = transpose(
@@ -382,6 +400,8 @@ def make_y_coord(DY, SOUTH_NORTH_PATCH_END_UNSTAG, coord_system=None):
 
 
 def make_y_stag_coord(DY, SOUTH_NORTH_PATCH_END_STAG, coord_system=None):
+    from iris import coords
+    from numpy import arange
 
     Y_V = DY * (arange(0, SOUTH_NORTH_PATCH_END_STAG) - 1)
     y_stag_coord = coords.AuxCoord(

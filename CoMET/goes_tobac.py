@@ -10,35 +10,18 @@ Created on Thu Jun 13 16:05:16 2024
 # This defines the methods for running tobac on GOES data processed using goes_load.py
 # =============================================================================
 
-import logging
 
-import geopandas as gpd
-import iris
-import iris.cube
-import numpy as np
-import tobac
-import xarray as xr
-
-
-def goes_tobac_feature_id(
-    cube: iris.cube.Cube, CONFIG: dict
-) -> gpd.GeoDataFrame | None:
+def goes_tobac_feature_id(cube, CONFIG):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        CONFIG: User configuration file
+    Outputs:
+        goes_geopd: geodataframe containing all default tobac feature id outputs
     """
 
-
-    Parameters
-    ----------
-    cube : iris.cube.Cube
-        Iris cube containing the variable to be tracked.
-    CONFIG : dict
-        User configuration file.
-
-    Returns
-    -------
-    goes_geopd : geopandas.geodataframe.GeoDataFrame
-        Geodataframe containing all default tobac feature id outputs.
-
-    """
+    import tobac
+    import geopandas as gpd
 
     # Get horozontal spacings in km then convert to m
     res = float(cube.attributes["spatial_resolution"].split("km")[0]) * 1000
@@ -50,7 +33,7 @@ def goes_tobac_feature_id(
         cube, dxy=dxy, **CONFIG["goes"]["tobac"]["feature_id"]
     )
 
-    if goes_radar_features is None:
+    if type(goes_radar_features) == None:
         return None
 
     goes_geopd = gpd.GeoDataFrame(
@@ -64,27 +47,20 @@ def goes_tobac_feature_id(
     return goes_geopd
 
 
-def goes_tobac_linking(
-    cube: iris.cube.Cube, radar_features: gpd.GeoDataFrame, CONFIG: dict
-) -> gpd.GeoDataFrame | None:
+def goes_tobac_linking(cube, radar_features, CONFIG):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        radar_features: tobac radar features from goes_tobac_feature_id output
+        CONFIG: User configuration file
+    Outputs:
+        goes_geopd_tracks: geodataframe containing all default tobac feature id outputs
     """
 
-
-    Parameters
-    ----------
-    cube : iris.cube.Cube
-        Iris cube containing the variable to be tracked.
-    radar_features : geopandas.geodataframe.GeoDataFrame
-        tobac radar features from goes_tobac_feature_id output.
-    CONFIG : dict
-        User configuration file.
-
-    Returns
-    -------
-    goes_geopd_tracks : geopandas.geodataframe.GeoDataFrame
-        Geodataframe containing all default tobac feature id outputs.
-
-    """
+    import tobac
+    import logging
+    import numpy as np
+    import geopandas as gpd
 
     if radar_features is None:
         return None
@@ -108,7 +84,7 @@ def goes_tobac_linking(
         radar_features, cube, dt=dt, dxy=dxy, **CONFIG["goes"]["tobac"]["linking"]
     )
 
-    if goes_tracks is None:
+    if type(goes_tracks) == None:
         return None
 
     goes_geopd_tracks = gpd.GeoDataFrame(
@@ -120,34 +96,18 @@ def goes_tobac_linking(
     return goes_geopd_tracks
 
 
-def goes_tobac_segmentation(
-    cube: iris.cube.Cube, radar_features: gpd.GeoDataFrame, CONFIG: dict
-) -> tuple[xr.DataArray, gpd.GeoDataFrame] | tuple[None, None]:
+def goes_tobac_segmentation(cube, radar_features, CONFIG):
+    """
+    Inputs:
+        cube: iris cube containing the variable to be tracked
+        radar_features: tobac radar features from goes_tobac_feature_id output
+        CONFIG: User configuration file
+    Outputs:
+        (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
     """
 
-
-    Parameters
-    ----------
-    cube : iris.cube.Cube
-        Iris cube containing the variable to be tracked.
-    radar_features : geopandas.geodataframe.GeoDataFrame
-        tobac radar features from goes_tobac_feature_id output.
-    CONFIG : dict
-        User configuration file.
-
-    Raises
-    ------
-    Exception
-        Exception if using invalid tracking variable.
-
-    Returns
-    -------
-    segment_xarray : xarray.core.dataarray.DataArray
-        Xarray DataArray containing default tobac segmented data.
-    segment_pd : geopandas.geodataframe.GeoDataFrame
-        Geodataframe with ncells row.
-
-    """
+    import tobac
+    import xarray as xr
 
     if radar_features is None:
         return (None, None)
@@ -163,7 +123,7 @@ def goes_tobac_segmentation(
 
     dxy = tobac.get_spacings(cube, grid_spacing=res)[0]
 
-    # Perform the 2d segmentation and return the segmented cube and new geodataframe
+    # Perform the 2d segmentation at the height_index and return the segmented cube and new geodataframe
     segment_cube, segment_features = tobac.segmentation_2D(
         radar_features, cube, dxy=dxy, **CONFIG["goes"]["tobac"]["segmentation_2d"]
     )

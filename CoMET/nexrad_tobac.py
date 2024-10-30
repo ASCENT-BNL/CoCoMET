@@ -10,48 +10,29 @@ Created on Tue Jun 11 17:36:27 2024
 # This defines the methods for running tobac on NEXRAD data processed using nexrad_load.py
 # =============================================================================
 
-import logging
-from copy import deepcopy
-
-import geopandas as gpd
-import iris
-import iris.cube
-import numpy as np
-import tobac
-import xarray as xr
-
 
 # Calculate nearest item in list to given pivot
 def find_nearest(array, pivot):
+    import numpy as np
+
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx
 
 
-def nexrad_tobac_feature_id(
-    cube: iris.cube.Cube, CONFIG: dict
-) -> gpd.GeoDataFrame | None:
-    """
+"""
+Inputs:
+    cube: iris cube containing the variable to be tracked
+    CONFIG: User configuration file
+Outputs:
+    nexrad_geopd: geodataframe containing all default tobac feature id outputs
+"""
 
 
-    Parameters
-    ----------
-    cube : iris.cube.Cube
-        Iris cube containing the variable to be tracked.
-    CONFIG : dict
-        User configuration file.
-
-    Raises
-    ------
-    Exception
-        Exception for out of bound heights.
-
-    Returns
-    -------
-    nexrad_geopd : geopandas.geodataframe.GeoDataFrame
-        geodataframe containing all default tobac feature id outputs.
-
-    """
+def nexrad_tobac_feature_id(cube, CONFIG):
+    import tobac
+    import geopandas as gpd
+    from copy import deepcopy
 
     feat_cube = deepcopy(cube)
     inCONFIG = deepcopy(CONFIG)
@@ -60,27 +41,29 @@ def nexrad_tobac_feature_id(
 
         # Ensure segmentation_height is a proper number before running
         if (
-            inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] is None
+            inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] == None
             or type(inCONFIG["nexrad"]["tobac"]["feature_id"]["height"]) == str
             or type(CONFIG["nexrad"]["tobac"]["feature_id"]["height"]) == bool
         ):
             raise Exception(
-                f"""!=====Invalid Feature Identification Height. You Entered: {inCONFIG["nexrad"]["tobac"]["feature_id"]["height"]}=====!"""
+                f"""!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
             )
+            return
         if (
-            inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] * 1000
+            inCONFIG["nexrad"]["tobac"]["feature_id"]["height"]
             > cube.coord("altitude").points.max()
-            or inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] * 1000
+            or inCONFIG["nexrad"]["tobac"]["feature_id"]["height"]
             < cube.coord("altitude").points.min()
         ):
             raise Exception(
-                f"""!=====Feature Identification Height Out of Bounds. You Entered: {inCONFIG["nexrad"]["tobac"]["feature_id"]["height"]}=====!"""
+                f"""!=====Segmentation Height Out of Bounds. You Entered: {inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] .lower()}=====!"""
             )
+            return
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
         height_index = find_nearest(
             cube.coord("altitude").points,
-            inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] * 1000,
+            inCONFIG["nexrad"]["tobac"]["feature_id"]["height"],
         )
 
         feat_cube = feat_cube[:, height_index]
@@ -124,27 +107,21 @@ def nexrad_tobac_feature_id(
     return nexrad_geopd
 
 
-def nexrad_tobac_linking(
-    cube: iris.cube.Cube, radar_features: gpd.GeoDataFrame, CONFIG: dict
-) -> gpd.GeoDataFrame | None:
-    """
+"""
+Inputs:
+    cube: iris cube containing the variable to be tracked
+    radar_features: tobac radar features from nexrad_tobac_feature_id output
+    CONFIG: User configuration file
+Outputs:
+    nexrad_geopd_tracks: geodataframe containing all default tobac feature id outputs
+"""
 
 
-    Parameters
-    ----------
-    cube : iris.cube.Cube
-        Iris cube containing the variable to be tracked.
-    radar_features : gpd.GeoDataFrame
-        tobac radar features from nexrad_tobac_feature_id output.
-    CONFIG : dict
-        User configuration file.
-
-    Returns
-    -------
-    nexrad_geopd_tracks : gpd.GeoDataFrame
-        Geodataframe containing all default tobac feature id outputs.
-
-    """
+def nexrad_tobac_linking(cube, radar_features, CONFIG):
+    import tobac
+    import logging
+    import numpy as np
+    import geopandas as gpd
 
     if radar_features is None:
         return None
@@ -198,42 +175,24 @@ def nexrad_tobac_linking(
     return nexrad_geopd_tracks
 
 
+"""
+Inputs:
+    cube: iris cube containing the variable to be tracked
+    radar_features: tobac radar features from nexrad_tobac_feature_id output
+    segmentation_type: ["2D", "3D"], whether to perform 2d segmentation or 3d segmentation
+    CONFIG: User configuration file
+    segmentation_height: height, in meters, to perform the updraft or reflectivity segmentation if 2d selected and tracking_var != tb
+Outputs:
+    (segment_array, segment_features): xarray DataArray containing segmented data and geodataframe with ncells row
+"""
+
+
 def nexrad_tobac_segmentation(
-    cube: iris.cube.Cube,
-    radar_features: gpd.GeoDataFrame,
-    segmentation_type: str,
-    CONFIG: dict,
-    segmentation_height: float = None,
-) -> tuple[xr.DataArray, gpd.GeoDataFrame] | tuple[None, None]:
-    """
-
-
-    Parameters
-    ----------
-    cube : iris.cube.Cube
-        Iris cube containing the variable to be tracked.
-    radar_features : geopandas.geodataframe.GeoDataFrame
-        tobac radar features from nexrad_tobac_feature_id output.
-    segmentation_type : str
-        ["2D", "3D"], whether to perform 2d segmentation or 3d segmentation.
-    CONFIG : dict
-        User configuration file.
-    segmentation_height : float, optional
-        Height, in kilometers, to perform the updraft or reflectivity segmentation if 2d selected. The default is None.
-
-    Raises
-    ------
-    Exception
-        Exception for invalid segmentation type or height.
-
-    Returns
-    -------
-    segment_xarray : xarray.core.dataarray.DataArray
-        Xarray DataArray containing default tobac segmented data.
-    segment_pd : geopandas.geodataframe.GeoDataFrame
-        Geodataframe with ncells row.
-
-    """
+    cube, radar_features, segmentation_type, CONFIG, segmentation_height=None
+):
+    import tobac
+    import xarray as xr
+    from copy import deepcopy
 
     if radar_features is None:
         return (None, None)
@@ -258,18 +217,18 @@ def nexrad_tobac_segmentation(
         # Ensure segmentation_height is a proper number before running
         if type(segmentation_height) == str or type(segmentation_height) == bool:
             raise Exception(
-                f"!=====Invalid Segmentation Height. You Entered: {segmentation_height}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
             )
             return
 
         if segmentation_height is not None and cube.coord("altitude").shape[0] > 1:
 
             if (
-                segmentation_height * 1000 > cube.coord("altitude").points.max()
-                or segmentation_height * 1000 < cube.coord("altitude").points.min()
+                segmentation_height > cube.coord("altitude").points.max()
+                or segmentation_height < cube.coord("altitude").points.min()
             ):
                 raise Exception(
-                    f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
+                    f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
                 )
                 return
 
@@ -279,14 +238,12 @@ def nexrad_tobac_segmentation(
 
         elif segmentation_height is None and cube.coord("altitude").shape[0] > 1:
             raise Exception(
-                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height}=====!"
+                f"!=====Segmentation Height Out of Bounds. You Entered: {segmentation_height.lower()}=====!"
             )
             return
 
         # Find the nearest model height to the entered segmentation height--bypasses precision issues and allows for selection of rounded heights
-        height_index = find_nearest(
-            cube.coord("altitude").points, segmentation_height * 1000
-        )
+        height_index = find_nearest(cube.coord("altitude").points, segmentation_height)
 
         # Remove 1 dimensional coordinates caused by taking only one altitude
         seg_cube = deepcopy(cube[:, height_index])

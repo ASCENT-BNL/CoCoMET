@@ -10,28 +10,17 @@ Created on Wed Jul  3 11:01:10 2024
 # This file contains the functions used to calculate additional values from wrf output. Including reflectivity, mass point updrafts, and altitudes
 # =============================================================================
 
-import warnings
 
-import numpy as np
-import xarray as xr
-from tqdm import tqdm
-
-
-def wrf_calculate_reflectivity(wrf_xarray: xr.Dataset) -> xr.DataArray:
+def wrf_calculate_reflectivity(wrf_xarray):
+    """
+    Inputs:
+        wrf_xarray: xarray Dataset containing default WRF values
+    Ouputs:
+        dBZ: DataArray containing calculated reflectivity values
     """
 
-
-    Parameters
-    ----------
-    wrf_xarray : xarray.core.dataset.Dataset
-        Xarray Dataset containing default WRF values.
-
-    Returns
-    -------
-    dBZ : xarray.core.dataarray.DataArray
-        DataArray containing calculated reflectivity values.
-
-    """
+    import warnings
+    import numpy as np
 
     # Get variables from WRF
     t = wrf_xarray["T"] # K
@@ -99,24 +88,19 @@ def wrf_calculate_reflectivity(wrf_xarray: xr.Dataset) -> xr.DataArray:
         }
     )
 
-    return dBZ.chunk(t.unify_chunks().chunksizes)
+    return dBZ.chunk(t.chunksizes)
 
 
-def wrf_calculate_brightness_temp(wrf_xarray: xr.Dataset) -> np.ndarray:
+def wrf_calculate_brightness_temp(wrf_xarray):
+    """
+    Inputs:
+        wrf_xarray:xarray Dataset containing default WRF values
+    Outputs:
+        TB: numpy array containing brightness temperature at each point and time--same dimension as input
     """
 
-
-    Parameters
-    ----------
-    wrf_xarray : xarray.core.dataset.Dataset
-        Xarray Dataset containing default WRF values.
-
-    Returns
-    -------
-    TB : numpy.ndarray
-        Numpy array containing brightness temperature at each point and time--same dimension as input.
-
-    """
+    import numpy as np
+    from tqdm import tqdm
 
     OLR = wrf_xarray["OLR"].values
 
@@ -137,20 +121,12 @@ def wrf_calculate_brightness_temp(wrf_xarray: xr.Dataset) -> np.ndarray:
     return TB
 
 
-def wrf_calculate_agl_z(wrf_xarray: xr.Dataset) -> xr.DataArray:
+def wrf_calculate_agl_z(wrf_xarray):
     """
-
-
-    Parameters
-    ----------
-    wrf_xarray : xarray.core.dataset.Dataset
-        Xarray Dataset containing default WRF values.
-
-    Returns
-    -------
-    geopt : xarray.core.dataarray.DataArray
-        Dataarray of heights AGL.
-
+    Inputs:
+        wrf_xarray: xarray Dataset containing default WRF values
+    Outputs:
+        geopt: Dataarray of heights AGL
     """
 
     ph = wrf_xarray["PH"]
@@ -168,20 +144,12 @@ def wrf_calculate_agl_z(wrf_xarray: xr.Dataset) -> xr.DataArray:
     return (geopt / 9.81) - hgt
 
 
-def wrf_calculate_wa(wrf_xarray: xr.Dataset) -> xr.DataArray:
+def wrf_calculate_wa(wrf_xarray):
     """
-
-
-    Parameters
-    ----------
-    wrf_xarray : xarray.core.dataset.Dataset
-        Xarray Dataset containing default WRF values.
-
-    Returns
-    -------
-    wa : xarray.core.dataarray.DataArray
-        Dataarray of vertical wind components at mass points.
-
+    Inputs:
+        wrf_xarray: xarray Dataset containing default WRF values
+    Outputs:
+        wa: Dataarray of vertical wind components at mass points
     """
 
     # Destagger vertical winds
@@ -200,21 +168,16 @@ def wrf_calculate_wa(wrf_xarray: xr.Dataset) -> xr.DataArray:
     return wa
 
 
-def wrf_calculate_precip_rate(wrf_xarray: xr.Dataset) -> np.ndarray:
+def wrf_calculate_precip_rate(wrf_xarray):
+    """
+    Inputs:
+        wrf_xarray: xarray Dataset containing default WRF values
+    Outputs:
+        pr: Numpy array of precipitation rate in mm/hr
     """
 
-
-    Parameters
-    ----------
-    wrf_xarray : xarray.core.dataset.Dataset
-        Xarray Dataset containing default WRF values.
-
-    Returns
-    -------
-    precip_rate : numpy.ndarray
-        Numpy array of precipitation rate in mm/hr.
-
-    """
+    import numpy as np
+    from tqdm import tqdm
 
     total_precip = (wrf_xarray.RAINC + wrf_xarray.RAINNC).values
     precip_rate = np.zeros(total_precip.shape)

@@ -57,7 +57,10 @@ def calculate_max_height(
 ) -> pd.DataFrame | None:
     """
 
+<<<<<<< HEAD
     
+=======
+>>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
     Parameters
     ----------
     analysis_object : dict
