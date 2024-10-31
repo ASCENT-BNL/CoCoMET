@@ -24,35 +24,19 @@ max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None 
 
 # WRF
 wrf:
-<<<<<<< HEAD
     # path_to_data: "/D3/data/diewang/idealized_mcs_5min/03_2011-07-16_CTRL_Midwest_-Loc2_MCS_Storm-Nr_JJA-8-TH5/4000/*"
     path_to_data: "/share/D3/data/hweiner/WRF/TestingPurposesOnly/*"
-=======
-    #path_to_data: "/D3/data/diewang/idealized_mcs_5min/03_2011-07-16_CTRL_Midwest_-Loc2_MCS_Storm-Nr_JJA-8-TH5/4000/*"
-    # path_to_data: "/share/D3/data/hweiner/WRF/TestingPurposesOnly/*"
-    path_to_data: "/share/D3/data/hweiner/WRF/Travis_Data/*"
-
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
     
 #     is_idealized: False
 #     #min_frame_index: 10 # 0-based indexing, inclusive
 #     #max_frame_index: 70 # 0-based indexing, inclusive
 
-<<<<<<< HEAD
     feature_tracking_var: "DBZ" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
     segmentation_var: "DBZ"
 
     tobac:
         feature_id:
             threshold: [30., 40., 50., 60.]
-=======
-    feature_tracking_var: "dbz" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
-    segmentation_var: "dbz"
-
-    tobac:
-        feature_id:
-            threshold: [20, 30, 40]
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
             target: "maximum"
             position_threshold: "weighted_diff"
             sigma_threshold: 0.5
@@ -70,19 +54,11 @@ wrf:
         segmentation_2d:
             height: 2 # km
             method: "watershed"
-<<<<<<< HEAD
             threshold: 30
             
         segmentation_3d:
             method: "watershed"
             threshold: 30
-=======
-            threshold: 20
-            
-        segmentation_3d:
-            method: "watershed"
-            threshold: 20
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
     
         analysis: # Optional
             merge_split: { variable: "DBZ" }
@@ -116,11 +92,7 @@ wrf:
 # mesonh:
 #     path_to_data: "/share/D3/data/hweiner/MesoNH/TestingPurposesOnly/*"
 
-<<<<<<< HEAD
 #     feature_tracking_var: "dbz" #DBZ, TB, WA, PR
-=======
-#     feature_tracking_var: "dbz" #DBZ, TB, WA
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 #     segmentation_var: "dbz"
 
 #     tobac:
@@ -175,11 +147,7 @@ wrf:
 
 #     tobac:
 #         feature_id:
-<<<<<<< HEAD
 #             threshold: [20, 30, 40]
-=======
-#             threshold: [30, 40, 50]
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 #             target: "maximum"
 #             position_threshold: "weighted_diff"
 #             sigma_threshold: 0.5
@@ -197,7 +165,6 @@ wrf:
 #         segmentation_2d:
 #             height: 2 # km
 #             method: "watershed"
-<<<<<<< HEAD
 #             threshold: 20
             
 #         # segmentation_3d:
@@ -215,25 +182,6 @@ wrf:
 #             area-low: { height: 2 }
 #             area-high: { height: 6 }
 #             volume: {threshold : 30}
-=======
-#             threshold: 30
-            
-#         segmentation_3d:
-#             method: "watershed"
-#             threshold: 30
-    
-#         analysis: # Optional
-#             merge_split: { variable: "DBZ" }
-#             eth: {variable : "DBZ", cell_footprint_height : 2, threshold : 30}
-#             # max_height: {variable: "DBZ", cell_footprint_height: 2000, threshold: 30}
-#             max_intensity: { variable : "DBZ", cell_footprint_height : 2}
-#             velocity: {}
-#             perimeter: {}
-#             cell_growth: {}
-#             area-low: { height: 2 }
-#             area-high: { height: 6 }
-#             volume: {}
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 #             irregularity: {irregularity_metrics: ['convexity', 'sphericity']}
             
     # moaap:
@@ -254,22 +202,22 @@ wrf:
 
 # NEXRAD
 # nexrad:
-#     # path_to_data: "/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v"
-#     path_to_data: "/D3/data/thahn/NEXRAD/HAS012527906/grids/*"
+#     path_to_data: "/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v"
+#     # path_to_data: "/D3/data/thahn/NEXRAD/HAS012527906/grids/*"
 
 #     bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max], OPTIONAL
 
-#     # gridding: # OPTIONAL only if gridding is needed 
-#     #     gridding_save_path: "/D3/data/thahn/NEXRAD/HAS012527906/grids/"
-#     #     grid_shape: (40, 401, 401)
-#     #     grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
+#     gridding: # OPTIONAL only if gridding is needed 
+#         gridding_save_path: "/D3/data/thahn/NEXRAD/HAS012527906/grids/"
+#         grid_shape: (40, 401, 401)
+#         grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
         
 #     feature_tracking_var: "dbz"
 #     segmentation_var: "dbz"
         
 #     tobac:
 #         feature_id:
-#             # height: 2000 # OPTIONAL meters
+#             # height: 2 # OPTIONAL kilometers
 #             threshold: [30, 40, 50, 60]
 #             target: "maximum"
 #             position_threshold: "weighted_diff"
@@ -290,18 +238,18 @@ wrf:
 #             threshold: 15
         
 #         segmentation_2d:
-#             height: 2000
+#             height: 2 #km
 #             method: "watershed"
 #             threshold: 15
             
 #         analysis:
 #             # merge_split: { variable: "DBZ" }
-#             # eth: { variable: "DBZ", cell_footprint_height: 2000, threshold: 15 }
-#             area-low: { height: 2000 }
-#             area-high: { height: 4000 }
+#             # var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
+#             # area-low: { height: 2 }
+#             # area-high: { height: 4 }
 #             # volume: {}
-#             interpsonde: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*", parcel: 3 }
-#             vdisquants: { path_to_files: "/D3/data/thahn/ARM/VDISQUANTS/*" }
+#             # convective_indices: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*", parcel: 3 }
+#             # vdisquants: { path_to_files: "/D3/data/thahn/ARM/VDISQUANTS/*" }
 
 # multi_nexrad: 
 #     # path_to_data: ["/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v","/D3/data/thahn/NEXRAD/HAS012535511/0003/*_V06.ar2v"]
@@ -318,7 +266,7 @@ wrf:
     
 #     tobac:
 #         feature_id:
-#             # height: 2000 # meters
+#             # height: 2 # OPTIONAL kilometers
 #             threshold: [50, 60]
 #             target: "maximum"
 #             position_threshold: "weighted_diff"
@@ -345,10 +293,10 @@ wrf:
             
 #         analysis:
 #             # merge_split: { variable: "DBZ" }
-#             # eth: { variable: "DBZ", cell_footprint_height: 2000, threshold: 15 }
-#             area: { height: 2000 }
+#             # var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
+#             area: { height: 2 }
 #             # volume: {}
-#             interpsonde: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*", parcel: 3 }
+#             convective_indices: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*", parcel: 3 }
 #             vdisquants: { path_to_files: "/D3/data/thahn/ARM/VDISQUANTS/*" }
 
 
@@ -377,14 +325,14 @@ wrf:
 #             v_max: 20
         
 #         segmentation_2d:
-#             height: 2000
+#             height: 2 #km
 #             method: "watershed"
 #             threshold: 15
             
 #         analysis:
-#             merge_split: { variable: "DBZ" }
-#             # eth: { variable: "DBZ", cell_footprint_height: 2000, threshold: 15 }
-#             area: { height: 2000 }
+#             # merge_split: { variable: "DBZ" }
+#             # var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
+#             # area: { height: 2 }
 #             # volume: {}
 
 
@@ -420,61 +368,9 @@ wrf:
 #             threshold: 250
             
 #         analysis:
-#             merge_split: { variable: "TB", invert: True, cell_footprint_height: 2000, touching_threshold: .20, flood_background: 250, score_threshold: 0, radius_multiplyer: .1, overlap_threshold: .5, steps_forward_back: 2 }
-#             # area: {}
-#             # interpsonde: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*", parcel: 2 }
-#             # arm-vdis: { path_to_files: "/D3/data/thahn/ARM/VDISQUANTS/*", variable_names: ["rain_rate","reflectivity_factor_xband20c"] }
-#             # arm-interp: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*", variable_names: "temp" }
-#             # ARM-arscl: {}
-
-# RAMS
-rams:
-    path_to_data: "/share/D3/data/thahn/RAMS/1min/CLN/*-g3.h5"
-    path_to_header: "/share/D3/data/thahn/RAMS/1min/CLN/*-head.txt"
-
-    feature_tracking_var: &feature_tracking_var "dbz" #DBZ, TB, WA, PR
-    segmentation_var: "dbz"
-    
-    tobac:
-        feature_id:
-            threshold: [30,40,50,60]
-            target: "maximum"
-            position_threshold: "weighted_diff"
-            sigma_threshold: 0.5
-            n_min_threshold: 4
-        
-        linking: 
-            method_linking: "predict"
-            adaptive_stop: 0.2
-            adaptive_step: 0.95
-            order: 1
-            subnetwork_size: 10
-            memory: 1
-            v_max: 20
-        
-        segmentation_2d:
-            height: 2000 # m
-            method: "watershed"
-            target: 'maximum'
-            threshold: 30
-            
-        segmentation_3d:
-            method: "watershed"
-            target: 'maximum'
-            threshold: 30
-    
-        analysis: # Optional
-            # merge_split: { variable: "DBZ" }
-            eth: { variable: "DBZ", cell_footprint_height: 2000, threshold: 30 }
-            # max_height : {variable : *feature_tracking_var, cell_footprint_height : 2000, threshold : 30}
-            area-low: { height: 200 }
-            area-high: { height: 2000 }
-            # volume: {}
-            
-    # moaap:
-    #     tracking_save_path: "/home/hweiner/Internship/RAMS-MAT/rams-mat/MOAAP_out"
-    #     MinTimePR: 0.5
-    #     MinAreaPR: 10
-        
-        # analysis:
-            # None yet
+            # merge_split: { variable: "TB", invert: True, touching_threshold: .20, flood_background: 250, score_threshold: 0, radius_multiplyer: .1, overlap_threshold: .5, steps_forward_back: 2 }
+            # area: {}
+            # convective_indices: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*", parcel: 2 }
+            # arm-vdis: { path_to_files: "/D3/data/thahn/ARM/VDISQUANTS/*", variable_names: ["rain_rate","reflectivity_factor_xband20c"] }
+            # arm-interp: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*", variable_names: "temp" }
+            # ARM-arscl: {}

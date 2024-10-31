@@ -66,7 +66,6 @@ def calc_var(analysis_object: Analysis_Object, var: str, **args: dict):
     """
 
     # Map the correct functions to the proper variables. This is a list of all the calculatable variables as well.
-    # Map the correct functions to the proper variables. This is a list of all the calculatable variables as well.
     variable_call_mechanism = {
         "eth": calculate_ETH,
         "max_height" : calculate_max_height,
@@ -79,6 +78,7 @@ def calc_var(analysis_object: Analysis_Object, var: str, **args: dict):
         "irregularity": calculate_irregularity,
         "merge_split": merge_split,
         "arm": extract_arm_product,
+        "convective_indices": calculate_convective_indices,
     }
 
     # Check for valid variables

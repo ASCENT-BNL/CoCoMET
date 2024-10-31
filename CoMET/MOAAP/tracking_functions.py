@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# pylint: skip-file
 """
 Copyright 2024, Andreas Prein, MOAAP Tracker:
 
@@ -689,38 +690,34 @@ Public License instead of this License.  But first, please read
 
 """
 
-import numpy as np
-from scipy import stats
-import matplotlib.pyplot as plt
-from netCDF4 import Dataset
+import datetime
 import glob
 import os
-from pdb import set_trace as stop
-from scipy.ndimage import gaussian_filter
-from scipy.ndimage import median_filter
-from scipy.ndimage import label
-from matplotlib import cm
-from scipy import ndimage
-import random
-import scipy
 import pickle
-import datetime
-import pandas as pd
+import random
 import subprocess
-import matplotlib.path as mplPath
 import sys
+import time
 from calendar import monthrange
 from itertools import groupby
-from tqdm import tqdm
-import time
+from pdb import set_trace as stop
+
+import matplotlib.path as mplPath
+import matplotlib.pyplot as plt
+import netCDF4
+import numpy as np
+import pandas as pd
+import scipy
 
 #### speed up interpolation
 import scipy.interpolate as spint
 import scipy.spatial.qhull as qhull
-import numpy as np
 import xarray as xr
-import netCDF4
-
+from matplotlib import cm
+from netCDF4 import Dataset
+from scipy import ndimage, stats
+from scipy.ndimage import gaussian_filter, label, median_filter
+from tqdm import tqdm
 
 ###########################################################
 ###########################################################
@@ -1020,9 +1017,6 @@ def ObjectCharacteristics(
 
     # ========
 
-    import scipy
-    import pickle
-
     nr_objectsUD = PR_objectsFull.max()
     rgiObjectsUDFull = PR_objectsFull
     if nr_objectsUD >= 1:
@@ -1116,10 +1110,11 @@ def ObjectCharacteristics(
 # ==============================================================
 # ==============================================================
 
+import numpy as np
+
 #### speed up interpolation
 import scipy.interpolate as spint
 import scipy.spatial.qhull as qhull
-import numpy as np
 import xarray as xr
 
 
@@ -1141,11 +1136,15 @@ def interpolate(values, vtx, wts):
     return np.einsum("nj,nj->n", np.take(values, vtx), wts)
 
 
+import metpy.calc as calc
+
 # ==============================================================
 # ==============================================================
 import numpy as np
 import scipy.ndimage.filters as filters
 import scipy.ndimage.morphology as morphology
+from metpy.units import units
+from scipy import ndimage
 
 
 def detect_local_minima(arr):
@@ -1194,7 +1193,6 @@ def Feature_Calculation(
     dT,  # time step in hours
     Gridspacing,
 ):  # grid spacing in m
-    from scipy import ndimage
 
     # 11111111111111111111111111111111111111111111111111
     # calculate vapor transport on pressure level
@@ -1227,8 +1225,6 @@ def Feature_Calculation(
     Fstar = PV * Tgrad
 
     Tgrad_zero = 0.45  # *100/(np.mean([dLon,dLat], axis=0)/1000.)  # 0.45 K/(100 km)
-    import metpy.calc as calc
-    from metpy.units import units
 
     CoriolisPar = calc.coriolis_parameter(np.deg2rad(Lat))
     Frontal_Diagnostic = np.array(Fstar / (CoriolisPar * Tgrad_zero))
@@ -1494,6 +1490,11 @@ def ReadERA5(
     return DataAll, Lat, Lon
 
 
+from calendar import monthrange
+
+from dateutil.relativedelta import relativedelta
+
+
 # =======================================================================================
 def ReadERA5_2D(
     TIME,  # Time period to read (this program will read hourly data)
@@ -1504,8 +1505,6 @@ def ReadERA5_2D(
     # ----------
     # This function reads hourly 2D ERA5 data.
     # ----------
-    from calendar import monthrange
-    from dateutil.relativedelta import relativedelta
 
     DayStart = datetime.datetime(TIME[0].year, TIME[0].month, TIME[0].day, TIME[0].hour)
     DayStop = datetime.datetime(
@@ -1943,10 +1942,11 @@ def interpolate_numba(arr, no_data=-32768):
 #              tropical wave classification
 # https://github.com/tmiyachi/mcclimate/blob/master/kf_filter.py
 
+import sys
+
 import numpy
 import scipy.fftpack as fftpack
 import scipy.signal as signal
-import sys
 
 gravitational_constant = 6.673e-11  # Nm^2/kg^2
 gasconst = 8.314e3  # JK^-1kmol^-1
@@ -2412,10 +2412,11 @@ class KFfilter:
         return filterd.real
 
 
+from math import atan2, cos, radians, sin, sqrt
+
+
 # from - https://stackoverflow.com/questions/19412462/getting-distance-between-two-points-based-on-latitude-longitude
 def DistanceCoord(Lo1, La1, Lo2, La2):
-
-    from math import sin, cos, sqrt, atan2, radians
 
     # approximate radius of earth in km
     R = 6373.0
@@ -2454,6 +2455,7 @@ def is_land(x, y):
 
 # https://stackoverflow.com/questions/13542855/algorithm-to-find-the-minimum-area-rectangle-for-given-points-in-order-to-comput/33619018#33619018
 import numpy as np
+from scipy.ndimage.interpolation import rotate
 from scipy.spatial import ConvexHull
 
 
@@ -2465,7 +2467,6 @@ def minimum_bounding_rectangle(points):
     :param points: an nx2 matrix of coordinates
     :rval: an nx2 matrix of coordinates
     """
-    from scipy.ndimage.interpolation import rotate
 
     pi2 = np.pi / 2.0
 
@@ -2519,6 +2520,9 @@ def minimum_bounding_rectangle(points):
     return rval
 
 
+from skimage.measure import regionprops
+
+
 ############################################################
 ###########################################################
 #### ======================================================
@@ -2526,7 +2530,6 @@ def MCStracking(pr_data, bt_data, times, Lon, Lat, nc_file, DataOutDir, DataName
     """Function to track MCS from precipitation and brightness temperature"""
 
     import mcs_config as cfg
-    from skimage.measure import regionprops
 
     start_time = time.time()
     # Reading tracking parameters
@@ -3348,6 +3351,9 @@ def frontal_identification(Frontal_Diagnostic, front_treshold, MinAreaFR, Area):
     return FR_objects
 
 
+import numpy as np
+
+
 def cy_acy_psl_tracking(
     slp,
     MaxPresAnCY,
@@ -3359,8 +3365,6 @@ def cy_acy_psl_tracking(
     connectLon,
     breakup="breakup",
 ):
-
-    import numpy as np
 
     print("        track cyclones")
     rgiObj_Struct = np.zeros((3, 3, 3))
@@ -4367,6 +4371,12 @@ def track_tropwaves(
     return mrg_objects, igw_objects, kelvin_objects, eig0_objects, er_objects
 
 
+import numpy as np
+from scipy import ndimage as ndi
+from skimage.feature import peak_local_max
+from skimage.segmentation import watershed
+
+
 # Watersheding can be used as an alternative to the breakup function
 # and helps to seperate long-lived/large clusters of objects into sub elements
 def watersheding(
@@ -4374,11 +4384,6 @@ def watersheding(
     min_dist,  # minimum distance between two objects [int]
     threshold,
 ):  # threshold to identify objects [float]
-
-    import numpy as np
-    from skimage.segmentation import watershed
-    from skimage.feature import peak_local_max
-    from scipy import ndimage as ndi
 
     if len(field_with_max.shape) == 2:
         conection = np.ones((3, 3))
@@ -4422,6 +4427,13 @@ def watersheding(
 # connects the resulting objects in 3D by searching for maximum overlaps
 
 
+import metpy.calc as calc
+from metpy.units import units
+from scipy import ndimage as ndi
+from skimage.feature import peak_local_max
+from skimage.segmentation import watershed
+
+
 def watershed_2d_overlap(
     data,  # 3D matrix with data for watershedding [np.array]
     object_threshold,  # float to created binary object mast [float]
@@ -4430,10 +4442,6 @@ def watershed_2d_overlap(
     dT,  # time interval in hours [int]
     mintime=24,
 ):  # minimum time an object has to exist in dT [int]
-
-    from scipy import ndimage as ndi
-    from skimage.feature import peak_local_max
-    from skimage.segmentation import watershed
 
     data_2d_watershed = np.copy(data)
     data_2d_watershed[:] = np.nan
@@ -5033,8 +5041,6 @@ def moaap(
         Tgrad_zero = (
             0.45  # *100/(np.mean([dLon,dLat], axis=0)/1000.)  # 0.45 K/(100 km)
         )
-        import metpy.calc as calc
-        from metpy.units import units
 
         CoriolisPar = np.array(calc.coriolis_parameter(np.deg2rad(Lat)))
         Frontal_Diagnostic = np.array(Fstar / (CoriolisPar * Tgrad_zero))

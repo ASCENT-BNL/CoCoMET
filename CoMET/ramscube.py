@@ -38,26 +38,18 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning, append=True)
 warnings.filterwarnings("ignore", category=RuntimeWarning, append=True)
 warnings.filterwarnings("ignore", category=FutureWarning, append=True)
-<<<<<<< HEAD
 from iris.cube import CubeList
 
 from iris.util import promote_aux_coord_to_dim_coord
 from iris.coords import AuxCoord
 from iris import Constraint
 from cf_units import Unit
-=======
-
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 
 def load(dataset, variable, mode="auto", **kwargs):
     return loadramscube_mult(dataset, variable)
 
 
 def loadramscubelist(filenames, variable_list, **kwargs):
-<<<<<<< HEAD
-=======
-    from iris.cube import CubeList
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 
     cubelist_out = CubeList()
     for variable in variable_list:
@@ -72,13 +64,6 @@ def loadramscube(dataset, variable, **kwargs):
 
 
 def loadramscube_mult(dataset, variable, constraint=None, add_coordinates=None):
-<<<<<<< HEAD
-=======
-    from iris.util import promote_aux_coord_to_dim_coord
-    from iris.coords import AuxCoord
-    from iris import Constraint
-    from cf_units import Unit
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 
     array = dataset[variable]
     variable_dimensions = array.dims
@@ -213,11 +198,7 @@ def loadramscube_mult(dataset, variable, constraint=None, add_coordinates=None):
 
 
 def deriveramscubelist(filenames, variable_list, **kwargs):
-<<<<<<< HEAD
 
-=======
-    from iris.cube import CubeList
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 
     cubelist_out = CubeList()
     for variable in variable_list:
@@ -236,11 +217,7 @@ def deriveramscubelist(filenames, variable_list, **kwargs):
 #    return variable_cube
 #
 # def deriveramscube_mult(filenames,variable,**kwargs):
-<<<<<<< HEAD
 #   
-=======
-#    from iris.cube import CubeList
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 #    cube_list=[]
 #    for i in range(len(filenames)):
 #        cube_list.append(deriveramscube_single(filenames[i],variable,**kwargs) )
@@ -559,11 +536,7 @@ def calculate_rams_airmass(filenames, **kwargs):
 
 
 def calculate_rams_volume(filenames, **kwargs):
-<<<<<<< HEAD
     
-=======
-    from iris.coords import AuxCoord
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 
     layer_height = deriveramscube(filenames, "layer_height", **kwargs)
     layer_height.add_aux_coord(
@@ -593,11 +566,7 @@ def calculate_rams_volume(filenames, **kwargs):
 
 def calculate_rams_area(filenames, **kwargs):
     from numpy import diff
-<<<<<<< HEAD
     
-=======
-    from iris.coords import AuxCoord
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 
     dummy = loadramscube(filenames, "OLR", **kwargs)
     dummy.data[:] = 1
@@ -624,11 +593,7 @@ def calculate_rams_area(filenames, **kwargs):
 
 
 def calculate_rams_layerheight(filenames, **kwargs):
-<<<<<<< HEAD
 
-=======
-    from iris import Constraint
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 
     zH = deriveramscube(filenames, "geopotential_height_stag", **kwargs)
     bottom_top_stag = zH.coord("bottom_top_stag").points
@@ -819,11 +784,7 @@ def calculate_rams_pressure(filenames, **kwargs):
 
 
 def calculate_rams_pressure_stag(filenames, **kwargs):
-<<<<<<< HEAD
 
-=======
-    from iris import Constraint
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 
     p = deriveramscube(filenames, "pressure", **kwargs)
     bottom_top = p.coord("bottom_top").points
@@ -835,11 +796,7 @@ def calculate_rams_pressure_stag(filenames, **kwargs):
 
 
 def calculate_rams_pressure_xstag(filenames, **kwargs):
-<<<<<<< HEAD
 
-=======
-    from iris import Constraint
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 
     p = deriveramscube(filenames, "pressure", **kwargs)
     west_east = p.coord("west_east").points
@@ -852,11 +809,7 @@ def calculate_rams_pressure_xstag(filenames, **kwargs):
 
 
 def calculate_rams_pressure_ystag(filenames, **kwargs):
-<<<<<<< HEAD
 
-=======
-    from iris import Constraint
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 
     p = deriveramscube(filenames, "pressure", **kwargs)
     south_north = p.coord("south_north").points
@@ -887,11 +840,7 @@ def calculate_rams_geopotential_height_stag(filenames, **kwargs):
 
 
 def calculate_rams_geopotential_height(filenames, **kwargs):
-<<<<<<< HEAD
 
-=======
-    from iris import Constraint
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 
     zH = deriveramscube(filenames, "geopotential_height_stag", **kwargs)
     bottom_top_stag = zH.coord("bottom_top_stag").points
@@ -1087,11 +1036,7 @@ def replacecoordinates(variable_cube, replace_cube):
 # def add_aux_coordinates_1dim(filenames, variable,variable_cube):#,add_coordinates=None):
 #    from netCDF4 import Dataset  # http://code.google.com/p/netcdf4-python/
 #    from iris import load_cube
-<<<<<<< HEAD
 #    
-=======
-#    from iris.coords import AuxCoord
->>>>>>> 45ba35c6cddc409c09d6d58d8c9b0ac173da32e6
 #    variable_cube_dim= load_cube(filenames, variable)
 #    attributes=variable_cube_dim.attributes
 #    nc_id=Dataset(filenames)

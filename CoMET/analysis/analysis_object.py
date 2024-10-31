@@ -21,8 +21,6 @@ class Analysis_Object:
         UDAF_tracks,
         UDAF_segmentation_2d,
         UDAF_segmentation_3d,
-
-        **kwargs
     ):
         self.tracking_xarray = tracking_xarray
         self.segmentation_xarray = segmentation_xarray
@@ -31,10 +29,7 @@ class Analysis_Object:
         self.UDAF_segmentation_2d = UDAF_segmentation_2d
         self.UDAF_segmentation_3d = UDAF_segmentation_3d
 
-        if 'rams_segmentation_3d' in kwargs:
-            self.rams_segmentation_3d = kwargs['rams_segmentation_3d']
-
-    def return_analysis_dictionary(self):
+    def return_analysis_dictionary(self) -> dict:
 
         return {
             "tracking_xarray": self.tracking_xarray,
@@ -43,6 +38,4 @@ class Analysis_Object:
             "UDAF_tracks": self.UDAF_tracks,
             "UDAF_segmentation_2d": self.UDAF_segmentation_2d,
             "UDAF_segmentation_3d": self.UDAF_segmentation_3d,
-
-            "second_3d_segmentation_variable" : self.rams_segmentation_3d
         }

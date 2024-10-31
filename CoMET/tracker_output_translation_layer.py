@@ -10,23 +10,47 @@ Created on Mon Jun 24 12:34:22 2024
 # Modifies tracking output into the CoMET-UDAF
 # =============================================================================
 
+from copy import deepcopy
+from datetime import datetime
 
-def feature_id_to_UDAF(features, tracker):
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+import xarray as xr
+from scipy.interpolate import interpn
+from scipy.ndimage import center_of_mass
+from tqdm import tqdm
+
+
+def feature_id_to_UDAF(
+    features: gpd.GeoDataFrame, tracker: str
+) -> gpd.GeoDataFrame | None:
     """
-    Inputs:
-        features: The output from the feature detection step of a given tracker
-        tracker: ["tobac"] The tracker used to generate the features
-    Outputs:
-        UDAF_features: A geodataframe matching the format of the CoMET-UDAF feature detection specification
+
+
+    Parameters
+    ----------
+    features : geopandas.geodataframe.GeoDataFrame
+        The output from the feature detection step of a given tracker.
+    tracker : str
+        ["tobac"] The tracker used to generate the features.
+
+    Raises
+    ------
+    Exception
+        Exception if invalid tracker entered.
+
+    Returns
+    -------
+    UDAF_features : geopandas.geodataframe.GeoDataFrame
+        A geodataframe matching the format of the CoMET-UDAF feature detection specification.
+
     """
 
     if features is None:
         return None
 
     if tracker.lower() == "tobac":
-        import numpy as np
-        import geopandas as gpd
-        from datetime import datetime
 
         # Extract values from features
         frames = features.frame.values
@@ -44,7 +68,7 @@ def feature_id_to_UDAF(features, tracker):
 
         # Include 3D coordinates if present. If not, set all alt values as NaN
         if "altitude" in features and "vdim" in features:
-            altitudes = features.altitude.values
+            altitudes = features.altitude.values / 1000
             up_downs = features.vdim.values
 
         else:
@@ -74,23 +98,35 @@ def feature_id_to_UDAF(features, tracker):
     raise Exception(f"!=====Invalid Tracker, You Entered: {tracker.lower()}=====!")
 
 
-def linking_to_UDAF(tracks, tracker):
+def linking_to_UDAF(tracks: gpd.GeoDataFrame, tracker: str) -> gpd.GeoDataFrame | None:
     """
-    Inputs:
-        tracks: The output from the linking/tracking step of a given tracker
-        tracker: ["tobac"] The tracker used to generate the features
-    Outputs:
-        UDAF_tracks: A geodataframe matching the format of the CoMET-UDAF linking specification
+
+
+    Parameters
+    ----------
+    tracks : geopandas.geodataframe.GeoDataFrame
+        The output from the linking/tracking step of a given tracker.
+    tracker : str
+        ["tobac"] The tracker used to generate the links.
+
+    Raises
+    ------
+    Exception
+        Exception if invalid tracker entered.
+
+    Returns
+    -------
+    UDAF_tracks : geopandas.geodataframe.GeoDataFrame
+        A geodataframe matching the format of the CoMET-UDAF linking specification.
+
     """
+
+    # TODO: figure out how to remove cells with -1 cell id
 
     if tracks is None:
         return None
 
     if tracker.lower() == "tobac":
-        import numpy as np
-        from tqdm import tqdm
-        import geopandas as gpd
-        from datetime import datetime
 
         # Extract values from features
         frames = tracks.frame.values
@@ -112,7 +148,7 @@ def linking_to_UDAF(tracks, tracker):
 
         # Include 3D coordinates if present. If not, set all alt values as NaN
         if "altitude" in tracks and "vdim" in tracks:
-            altitudes = tracks.altitude.values
+            altitudes = tracks.altitude.values / 1000
             up_downs = tracks.vdim.values
 
         else:
@@ -162,24 +198,37 @@ def linking_to_UDAF(tracks, tracker):
     raise Exception(f"!=====Invalid Tracker, You Entered: {tracker.lower()}=====!")
 
 
-def segmentation_to_UDAF(segmentation, UDAF_tracks, tracker):
+def segmentation_to_UDAF(
+    segmentation: xr.DataArray, UDAF_tracks: gpd.GeoDataFrame, tracker: str
+) -> xr.Dataset | None:
     """
-    Inputs:
-        segmentation: The output from the segmentation step of a given tracker
-        UDAF_tracks: UDAF standard tracking output
-        tracker: ["tobac"] The tracker used to generate the features
-    Outputs:
-        UDAF_segmentation: An xarray DataArray matching the format of the CoMET-UDAF segmentation specification
+
+
+    Parameters
+    ----------
+    segmentation : xarray.core.dataarray.DataArray
+        The output from the segmentation step of a given tracker.
+    UDAF_tracks : geopandas.geodataframe.GeoDataFrame
+        UDAF standard tracking output.
+    tracker : str
+        ["tobac"] The tracker used to generate the features.
+
+    Raises
+    ------
+    Exception
+        Exception if invalid tracker entered.
+
+    Returns
+    -------
+    xarray.core.dataset.Dataset
+        An xarray dataset matching the format of the CoMET-UDAF segmentation specification.
+
     """
 
     if segmentation is None or UDAF_tracks is None:
         return None
 
     if tracker.lower() == "tobac":
-        import numpy as np
-        import xarray as xr
-        from tqdm import tqdm
-        from copy import deepcopy
 
         feature_segmentation = (segmentation - 1).rename("Feature_Segmentation")
         cell_segmentation = deepcopy(feature_segmentation).rename("Cell_Segmentation")
@@ -346,25 +395,40 @@ def segmentation_to_UDAF(segmentation, UDAF_tracks, tracker):
 
 
 def bulk_moaap_to_UDAF(
-    mask, projection_x_coords, projection_y_coords, convert_type="cloud"
-):
-    """
-    Inputs:
-        mask: An xarray file which is the default output from MOAAP and contains the mask information for all tracked types
-        projection_x_coords: ...
-        projection_y_coords: ...
-        convert_type: The type of tracking data to extract. Either "MCS" or "Cloud"
-    Outputs:
-        return_tuple: A tuple containing the UDAF_features, UDAF_tracks, and UDAF_segmentation outputs
+    mask: xr.Dataset,
+    projection_x_coords: np.ndarray,
+    projection_y_coords: np.ndarray,
+    convert_type: str = "cloud",
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame, xr.Dataset] | None:
     """
 
-    import numpy as np
-    import pandas as pd
-    import xarray as xr
-    from tqdm import tqdm
-    import geopandas as gpd
-    from scipy.ndimage import center_of_mass
-    from scipy.interpolate import interpn
+
+    Parameters
+    ----------
+    mask : xarray.core.dataset.Dataset
+        An xarray file which is the default output from MOAAP and contains the mask information for all tracked types.
+    projection_x_coords : np.ndarray
+        Numpy array of projection x coordinates.
+    projection_y_coords : np.ndarray
+        Numpy array of projection y coordinates.
+    convert_type : str, optional
+        ["MCS", "Cloud"] The type of tracking data to extract. The default is "cloud".
+
+    Raises
+    ------
+    Exception
+        Exception if invalid phenomena type entered.
+
+    Returns
+    -------
+    UDAF_features : geopandas.geodataframe.GeoDataFrame
+        Features geopandas dataframe following CoMET-UDAF specification.
+    UDAF_linking : geopandas.geodataframe.GeoDataFrame
+        Linking geopandas dataframe following CoMET-UDAF specification.
+    UDAF_segmentation_2d : xarray.core.dataset.Dataset
+        Segmentation xarray dataset following CoMET-UDAF specification.
+
+    """
 
     # Get dt
     dt = np.median(np.diff(mask.time).astype("timedelta64[m]")).astype(int)
@@ -486,7 +550,7 @@ def bulk_moaap_to_UDAF(
     lats.extend(lat)
     lons.extend(lon)
 
-    # Create projection x and y coordinates by using a lat lon transformation
+    # Calculate projection x and y coordinates via interpolating again
     proj_x_coords = np.arange(0, mask.lat[0].shape[1])
     proj_y_coords = np.arange(0, mask.lat[0].shape[0])
 

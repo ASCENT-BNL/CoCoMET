@@ -10,33 +10,43 @@ Created on Wed Jul 10 12:29:56 2024
 # This defines the methods for running MOAAP on WRF data processed using wrf_load.py
 # =============================================================================
 
+import numpy as np
+import pandas as pd
+import xarray as xr
+
+from CoMET.MOAAP import moaap
+
+from .wrf_calculate_products import (
+    wrf_calculate_brightness_temp,
+    wrf_calculate_precip_rate,
+)
+
 
 # Calculate nearest item in list to given pivot
 def find_nearest(array, pivot):
-    import numpy as np
 
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx
 
 
-def wrf_moaap(wrf_xarray, CONFIG):
-    """
-    Inputs:
-        wrf_xarray: xarray Dataset containing WRF data calculated from wrf_load.py
-        CONFIG: User configuration file
-    Outputs:
-        mask_file: The xarray object containing the default MOAAP outputs
+def wrf_run_moaap(wrf_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
     """
 
-    import numpy as np
-    import pandas as pd
-    import xarray as xr
-    from .wrf_calculate_products import (
-        wrf_calculate_brightness_temp,
-        wrf_calculate_precip_rate,
-    )
-    from CoMET.MOAAP import moaap
+
+    Parameters
+    ----------
+    wrf_xarray : xarray.core.dataset.Dataset
+        Xarray Dataset containing WRF data calculated from wrf_load.py.
+    CONFIG : dict
+        User configuration file.
+
+    Returns
+    -------
+    mask_file : xarray.core.dataset.Dataset
+        The xarray object containing the default MOAAP outputs.
+
+    """
 
     # Get basic setup variables including lat/lon, delta time, a pandas time range vector (TODO: adjust output to )
     latitudes = wrf_xarray.XLAT[0].values
