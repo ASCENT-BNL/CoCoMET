@@ -2,15 +2,18 @@
 # This file contains the functions used to calculate additional values from rams output
 # =============================================================================
 
-def rams_calculate_brightness_temp(rams_xarray):
+import numpy as np
+from tqdm import tqdm
+import xarray as xr
+
+def rams_calculate_brightness_temp(rams_xarray : xr.Dataset) -> xr.DataArray:
     """
     Inputs:
         rams_xarray (xarray) - xarray Dataset containing default RAMS values
     Outputs:
         TB (numpy array) - array containing brightness temperature at each point and time--same dimension as input [K]
     """
-    import numpy as np
-    import xarray as xr
+
     rams_xarray["TOA_OLR"] = (['Time', 'south_north', 'west_east'], rams_xarray["LWUP"][:, -1, :, :].values) # the top of atmosphere surface radiation, needed to TB calculation
     TOA_OLR = rams_xarray["TOA_OLR"].values
 
@@ -27,15 +30,13 @@ def rams_calculate_brightness_temp(rams_xarray):
     TB_xarray = xr.DataArray(TB, dims=["Time", "south_north", "west_east"])
     return TB_xarray
 
-def rams_calculate_precip_rate(rams_xarray, pr_calc = 'integral'):
+def rams_calculate_precip_rate(rams_xarray : xr.Dataset, pr_calc : str = 'integral') -> xr.DataArray:
     """
     Inputs:
         rams_xarray: xarray Dataset containing default rams values
     Outputs:
         pr: Numpy array of precipitation rate in mm/hr
     """
-    import numpy as np
-    import xarray as xr
 
     if pr_calc == '3d':
         # Do you want to take the three dimensional rates and sum over them?
@@ -69,7 +70,7 @@ def rams_calculate_precip_rate(rams_xarray, pr_calc = 'integral'):
     total2D_precip_rate_xarray = xr.DataArray(total2D_precip_rate, dims=["Time", "south_north", "west_east"])
     return total2D_precip_rate_xarray
 
-def rams_calculate_wa(rams_xarray):
+def rams_calculate_wa(rams_xarray : xr.Dataset) -> xr.DataArray:
     """
     Inputs:
         rams_xarray: xarray Dataset containing default WRF values
@@ -88,11 +89,7 @@ def rams_calculate_wa(rams_xarray):
     )
     return wa
 
-def rams_calculate_reflectivity(rams_xarray):
-
-    import numpy as np
-    from tqdm import tqdm
-    import xarray as xr
+def rams_calculate_reflectivity(rams_xarray : xr.Dataset) -> xr.DataArray:
 
     # constants defined by RAMS
     p00 = 1.e5 # Pa
@@ -101,8 +98,10 @@ def rams_calculate_reflectivity(rams_xarray):
     cpor = cp / rgas
 
     # find temperature, pressure, and grid point density
-    T = rams_xarray["THETA"]
-    P = (rams_xarray["PI"] / cp)**cpor * p00 * 0.01 # convert to mb
+    T_pot = rams_xarray["THETA"] # potential temperature
+    PI = rams_xarray["PI"]
+    P = ((PI / cp)**cpor) * p00 * 0.01 # convert pressure to mb
+    T = T_pot *  PI / cp # temperature in K
     dens = (P * 100) / (T * rgas)
 
     # mass coefficients defined by RAMS
@@ -113,19 +112,19 @@ def rams_calculate_reflectivity(rams_xarray):
     alpha_ms=2.739e-3 #snow mass coeff
     alpha_ma=0.496    #aggregates mass coeff
 
-    # need mixing ratios and concentrations
-    rainMix = rams_xarray['RRP']
-    pris_iceMix = rams_xarray['RPP']
-    snowMix = rams_xarray['RSP']
-    aggregatesMix = rams_xarray['RAP']
-    graupelMix = rams_xarray['RGP']
-    hailMix = rams_xarray['RHP']
-    rainConc = rams_xarray['CRP']
-    pris_iceConc = rams_xarray['CPP']
-    snowConc = rams_xarray['CSP']
-    aggregatesConc = rams_xarray['CAP']
-    graupelConc = rams_xarray['CGP']
-    hailConc = rams_xarray['CHP']
+    # need mixing ratios and concentrations and ensure they are above 0
+    rainMix = xr.where(rams_xarray['RRP'] < 0, 0, rams_xarray['RRP'])
+    pris_iceMix = xr.where(rams_xarray['RPP'] < 0, 0, rams_xarray['RPP'])
+    snowMix = xr.where(rams_xarray['RSP'] < 0, 0, rams_xarray['RSP'])
+    aggregatesMix = xr.where(rams_xarray['RAP'] < 0, 0, rams_xarray['RAP'])
+    graupelMix = xr.where(rams_xarray['RGP'] < 0, 0, rams_xarray['RGP'])
+    hailMix = xr.where(rams_xarray['RHP'] < 0, 0, rams_xarray['RHP'])
+    rainConc = xr.where(rams_xarray['CRP'] < 0, 0, rams_xarray['CRP'])
+    pris_iceConc = xr.where(rams_xarray['CPP'] < 0, 0, rams_xarray['CPP'])
+    snowConc = xr.where(rams_xarray['CSP'] < 0, 0, rams_xarray['CSP'])
+    aggregatesConc = xr.where(rams_xarray['CAP'] < 0, 0, rams_xarray['CAP'])
+    graupelConc = xr.where(rams_xarray['CGP'] < 0, 0, rams_xarray['CGP'])
+    hailConc = xr.where(rams_xarray['CHP'] < 0, 0, rams_xarray['CHP'])
 
     # define the gamma shape parameters
     gamma = rams_xarray.gnu #in order: cld rain pris snow aggr graup hail driz
@@ -170,7 +169,7 @@ def rams_calculate_reflectivity(rams_xarray):
         if key in ['pris_ice', 'snow', 'aggregates']:
             factor = dicToIterateThrough[key][4]
             M = mixRatio / conc
-            D = (M / alpha)**(1 / factor)
+            D = (M / alpha)** (1 / factor)
             alpha = M / (D**3)
         tmp0 = mixRatio / alpha
         tmp1 = (tmp0**2) * dens * F_gnu

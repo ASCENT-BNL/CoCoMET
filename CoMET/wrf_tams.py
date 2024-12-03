@@ -46,15 +46,16 @@ def wrf_run_tams(wrf_xarray, CONFIG):
         wrf_for_tams_copy['pr'] = wrf_xarray['PR']
 
     # format the times into a list of datetime objects
-    dt = wrf_xarray.DT
-    start_date = wrf_xarray.SIMULATION_START_DATE
-    datetime_start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d_%H:%M:%S')
+    # dt = wrf_xarray.DT
+    # start_date = wrf_xarray.SIMULATION_START_DATE
+    # datetime_start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d_%H:%M:%S')
 
     time = []
-    for t in wrf_xarray.Time.values:
-        ds = dt * t
-        change = datetime.timedelta(seconds=ds)
-        time.append(datetime_start_date + change)
+    for t in wrf_xarray.XTIME.values:
+        time_str = t.astype("datetime64[s]").astype(str)
+        datetime_time = datetime.datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S')
+
+        time.append(datetime_time)
 
     # make the coordinates and rename the dimensions
     wrf_for_tams_copy = wrf_for_tams_copy.rename({"Time" : "time", "south_north" : "lat", "west_east" : "lon"}) # rename the dimensions

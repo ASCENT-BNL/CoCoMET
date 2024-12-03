@@ -724,8 +724,8 @@ def run_multi_nexrad(
     tracking_info = None
 
     # Determine which tracker(s) are in the CONFIG file
-    if 'tobac' in CONFIG['multi-nexrad']:
-        user_return_dict = run_tracker('multi-nexrad', 'tobac', user_return_dict, tracking_info, CONFIG)
+    if 'tobac' in CONFIG['multi_nexrad']:
+        user_return_dict = run_tracker('multi_nexrad', 'tobac', user_return_dict, tracking_info, CONFIG)
 
     # Send return dict to queue if there is a queue object passed
     if queue is not None:

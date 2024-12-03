@@ -255,7 +255,7 @@ def mesonh_tobac_segmentation(
             or type(segmentation_height) == bool
         ):
             raise Exception(
-                f"!=====Incalid Segmentation Height. You Entered: {segmentation_height}=====!"
+                f"!=====Invalid Segmentation Height. You Entered: {segmentation_height}=====!"
             )
             return
         if (

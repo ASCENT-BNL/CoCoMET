@@ -126,13 +126,13 @@ def wrf_run_moaap(wrf_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
     )[:, height_idx_850]
 
     # Get precipitation rate
-    pr = wrf_calculate_precip_rate(wrf_xarray) / (60 / wrf_xarray.DT)
+    pr = wrf_calculate_precip_rate(wrf_xarray) / (3600 / wrf_xarray.DT)
 
     moaap(
         longitudes,
         latitudes,
         times,
-        dt / 60,
+        dt / 3600,
         mask,
         DataName="CoMET_WRF_MOAAP_TRACKING",
         OutputFolder=CONFIG["wrf"]["moaap"]["tracking_save_path"],
@@ -162,7 +162,7 @@ def wrf_run_moaap(wrf_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
         + ".nc"
     )
     mask_file = xr.open_mfdataset(
-        output_filepath, coords="all", concat_dim="time", combine="nested"
+        output_filepath, coords="all", concat_dim="time", combine="nested", decode_times=False,
     )
 
     return mask_file

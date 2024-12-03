@@ -289,12 +289,12 @@ def _merge_split_2d(
                     analysis_object["UDAF_segmentation_3d"].altitude.values,
                     cell_footprint_height * 1000,
                 )
+
                 reflectivity_data = deepcopy(
                     variable_field[cell1_data.frame.min()]
                 ).values[height_index]
 
             else:
-
                 reflectivity_data = deepcopy(
                     variable_field[cell1_data.frame.min()].squeeze()
                 ).values

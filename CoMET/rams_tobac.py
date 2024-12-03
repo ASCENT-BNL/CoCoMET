@@ -95,6 +95,7 @@ def rams_tobac_feature_id(cube: iris.cube.Cube, CONFIG: dict) -> gpd.GeoDataFram
     )
 
     if rams_radar_features is None:
+        logging.warning("RAMS detected features is None")
         return None
 
     rams_geopd = gpd.GeoDataFrame(
@@ -149,6 +150,7 @@ def rams_tobac_linking(
     )
 
     if rams_tracks is None:
+        logging.warning("RAMS Tracks is None")
         return None
 
     rams_geopd_tracks = gpd.GeoDataFrame(
