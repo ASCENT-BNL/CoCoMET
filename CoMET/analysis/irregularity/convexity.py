@@ -146,7 +146,7 @@ def convexity(
                 convexity = convex_perim/perim
                 convexities.append(convexity)
 
-        convexity_df = pd.Dataframe(
+        convexity_df = pd.DataFrame(
             data = {'frame': frame_numbers, 'feature_id': feature_ids, 'cell_id': cell_ids, 'convexity': convexities}
         )
         return convexity_df

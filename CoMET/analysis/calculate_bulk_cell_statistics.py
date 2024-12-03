@@ -214,6 +214,7 @@ def calculate_max_intensity(
     ------
     Exception
         Exception if missing segmentation data from the analysis object.
+        Exception if there is more than one frame associated with a feature id
 
     Returns
     -------
@@ -258,12 +259,11 @@ def calculate_max_intensity(
     ):
         frame = feat_group['frame'].values[0]
         if len(feat_group['frame'].values) > 1:
-            print('error')
-            break
+            raise Exception("More than one frame found per feature")
         
         if feature_id in features_across_footprint:
             one_feat_array = np.where(segmentation[frame].values == feature_id, variable_field[frame].values, 0)
-            max_intensity = np.max(one_feat_array)
+            max_intensity = np.nanmax(one_feat_array)
         else:
             max_intensity = np.nan
 
@@ -525,7 +525,7 @@ def calculate_velocity(
     Parameters
     ----------
     analysis_object : dict
-        A CoMET-UDAF standard analysis object containing at least UDAF_tracks.
+        A CoMET-UDAF standard analysis object containing at least UDAF_tracks and tracking_xarray.
     variable : str, optional
         Variable to which we should apply the threshold. The default is None.
     threshold : float, optional
@@ -552,24 +552,31 @@ def calculate_velocity(
             )
     
     # Check if the code is 3D
-    if analysis_object['UDAF_tracks']['altitude'].all() is not np.NaN:
+    if analysis_object["UDAF_segmentation_3d"]is not None:
         dim = 3
-    else:
+    elif analysis_object["UDAF_segmentation_2d"] is not None:
         dim = 2
+    else:
+        raise Exception("!=====Missing Segmentation Input=====!")
 
     # Get dt
     if ("tracking_xarray" in analysis_object) and ("DT" in analysis_object['tracking_xarray'].attrs):
-        dt = analysis_object['tracking_xarray'].DT # in s
+        dt_from_tracking = analysis_object['tracking_xarray'].attrs["DT"] # in s
     else:
-        dt = 1.
+        dt_from_tracking = 1.
         logging.warning("Could not find DT in dataset, computing velocity in m/frame")
 
-    def calculate_row_velocity(row1, row2, dt, dim):
+    def calculate_row_velocity(row1, row2, dt_arr, dim):
         #given 2 rows of the tracks dataframe, compute the distance between the 2 in 3 components:
         x1 = row1['projection_x']
         x2 = row2['projection_x']
         y1 = row1['projection_y']
         y2 = row2['projection_y']
+
+        f2 = row1['frame']
+        f1 = row2['frame']
+
+        dt = np.sum(dt_arr[f1:f2]) # If a cell is not tracked for a frame, account for this (e.x. cell is in frame 1 and 3)
 
         distancecomps = ((y2-y1), (x2-x1))
         distance = np.sqrt(distancecomps[0]**2 + distancecomps[1]**2)
@@ -598,6 +605,14 @@ def calculate_velocity(
         "speed": [], # in m / s
     }
 
+    # Make dt into an array
+    if type(dt_from_tracking) == list or type(dt_from_tracking) == np.ndarray:
+        # Check that the number of frames and the number of dt's are the same
+        dt_array = list(dt_from_tracking) # append the last value from the list
+        dt_array.append(dt_from_tracking[-1])
+    else:
+        dt_array = np.ones( len(np.unique(Tracks['frame'])) + 1) * dt_from_tracking
+        
     for i in tqdm(Tracks.index,
                   desc='=====Calculating Cell Velocities=====',
                   total=len(Tracks.index)
@@ -611,7 +626,7 @@ def calculate_velocity(
         velocity_info['feature_id'].append(feature_id)
         velocity_info['cell_id'].append(cell_id)
 
-        if Tracks.iloc[i]['frame'] ==  np.min(Tracks['frame']):
+        if Tracks.iloc[i]['frame'] ==  np.min(Tracks['frame']) and cell_id != -1:
             velocity_info['velocity'].append(tuple(np.zeros(dim)))
             velocity_info['speed'].append(0)
 
@@ -633,18 +648,24 @@ def calculate_velocity(
                     target_velocity = velocity_info['velocity'][j]
                     target_speed = velocity_info['speed'][j]
 
-                distance = calculate_row_velocity(Tracks.iloc[i], target_row, dt, dim)[1]
+                distance = calculate_row_velocity(Tracks.iloc[i], target_row, dt_array, dim)[1]
                 if distance < min_distance:
                     min_distance = distance
                     closest_vel = target_velocity
                     closest_speed = target_speed
 
-            velocity_info['velocity'].append(closest_vel)
-            velocity_info['speed'].append(closest_speed)
+            # If there are no other cells in the frame, append 0
+            if min_distance == np.inf:
+                velocity_info['velocity'].append(tuple(np.zeros(dim)))
+                velocity_info['speed'].append(0)
+            else:
+                velocity_info['velocity'].append(closest_vel)
+                velocity_info['speed'].append(closest_speed)
+
         else:
             #if the cell is not new, determine velocity from the change in position from previous frame
             index = np.argwhere(Tracks[:i]['cell_id'].values == cell_id)[-1][0] #index of previous row with same cell id
-            velocity_speed = calculate_row_velocity(Tracks.iloc[i], Tracks.iloc[index], dt, dim)[2:]
+            velocity_speed = calculate_row_velocity(Tracks.iloc[i], Tracks.iloc[index], dt_array, dim)[2:]
             velocity_info['velocity'].append(velocity_speed[0])
             velocity_info['speed'].append(velocity_speed[1])
 
@@ -708,7 +729,7 @@ def calculate_cell_growth(
     Returns
     -------
     pandas.core.frame.DataFrame
-        A pandas dataframe with the following rows: frame, feature_id, cell_id, cell_growth where cell_growth is in dbz/s.
+        A pandas dataframe with the following rows: frame, feature_id, cell_id, cell_growth where cell_growth is in m^3 / s.
 
     """
 
@@ -717,57 +738,46 @@ def calculate_cell_growth(
             "!=====Tracks Data is Required for Velocity Calculation=====!"
         )
 
-    # Check if ETH information is given in the arguments, if not then recalculate it
-    if 'eth' in args:
-        ETH = args['eth']['eth']
+    # Check if volume information is given in the arguments, if not then recalculate it
+    if 'volume' in args:
+        vol = args['volume']['volume']
     else:
-        # TODO: figure out how to ask the user for this input
-        typical_eth_params = {
-            "threshold" : 30,
-            "variable" : "DBZ",
-            "cell_footprint_height" : 2,
-            "quantile" : 0.95,
-            }
-        ETH = calculate_ETH(analysis_object, **typical_eth_params)['eth']
+        vol = calculate_volume(analysis_object, **args)['volume']
 
     Tracks = analysis_object['UDAF_tracks']
-    Tracks_with_ETH = deepcopy(Tracks).join(ETH)
+    Tracks_with_vol = deepcopy(Tracks).join(vol)
 
     # Cell Growth Rate
     cell_growth_info = {'frame' : [], 'feature_id' : [], 'cell_id' : [], 'cell_growth' : []}
 
     # List all of the unique cells and make sure there are no non-physical cells
-    cells = np.unique(Tracks_with_ETH['cell_id'])
-    cells = cells[cells != -1]
+    cell_groups = Tracks_with_vol.groupby("cell_id")
 
-    for cell_id in tqdm(cells,
+    for cell_id, cell_g in tqdm(cell_groups,
                             desc="=====Calculating Cell Growth Rates=====",
-                            total=len(cells)):
+                            total=len(cell_groups)):
         
-        # TODO: I realized this is the same thing as groupby('cell_id'), I would just need to do something like 
-            # curr_cell_arr = [cell_id] * len(curr_feature_arr) or something like that
-        only_this_cell = Tracks_with_ETH['cell_id'] == cell_id
-        curr_feature_arr = np.array(Tracks_with_ETH[only_this_cell]['feature_id']).tolist()
-        curr_frame_arr = np.array(Tracks_with_ETH[only_this_cell]['frame']).tolist()
-        curr_cell_arr = np.array(Tracks_with_ETH[only_this_cell]['cell_id']).tolist()
-        curr_eth_arr = np.array(Tracks_with_ETH[only_this_cell]['eth'])
-        curr_lifetime_arr = np.array(Tracks_with_ETH[only_this_cell]['lifetime'].astype(int) * 1e-9) # convert from ns to s
+        cell_feature_arr = np.array(cell_g['feature_id']).tolist()
+        cell_frame_arr = np.array(cell_g['frame']).tolist()
+        cell_arr = [cell_id] * len(cell_frame_arr)
+        cell_vol_arr = np.array(cell_g['volume'])
+        cell_lifetime_arr = np.array(cell_g['lifetime'].astype(int) * 1e-9) # convert from ns to s
 
         # If the cell only lives for one frame, make sure each other array is also one frame, then append nan
-        if len(curr_lifetime_arr) == 1:
-            assert len(curr_frame_arr) == 1
-            assert len(curr_feature_arr) == 1
-            assert len(curr_cell_arr) == 1
+        if len(cell_lifetime_arr) == 1:
+            assert len(cell_frame_arr) == 1
+            assert len(cell_feature_arr) == 1
+            assert len(cell_arr) == 1
             
-            cell_growth_info['frame'].append(curr_frame_arr[0])
-            cell_growth_info['feature_id'].append(curr_feature_arr[0])
-            cell_growth_info['cell_id'].append(curr_cell_arr[0])
+            cell_growth_info['frame'].append(cell_frame_arr[0])
+            cell_growth_info['feature_id'].append(cell_feature_arr[0])
+            cell_growth_info['cell_id'].append(cell_arr[0])
             cell_growth_info['cell_growth'].append(np.nan)
             continue
 
         # If the cell lasts for more than one frame, calculate delta eth and delta t
-        deth = curr_eth_arr[1:] - curr_eth_arr[:-1]
-        dt = curr_lifetime_arr[1:] - curr_lifetime_arr[:-1]
+        deth = cell_vol_arr[1:] - cell_vol_arr[:-1]
+        dt = cell_lifetime_arr[1:] - cell_lifetime_arr[:-1]
 
         # The eth/t slope is the growth rate
         slope = deth / dt
@@ -775,9 +785,9 @@ def calculate_cell_growth(
         slope.append(slope[-1])
 
         # Iterate through each element and append them to the info array
-        cell_growth_info['frame'].extend(curr_frame_arr)
-        cell_growth_info['feature_id'].extend(curr_feature_arr)
-        cell_growth_info['cell_id'].extend(curr_cell_arr)
+        cell_growth_info['frame'].extend(cell_frame_arr)
+        cell_growth_info['feature_id'].extend(cell_feature_arr)
+        cell_growth_info['cell_id'].extend(cell_arr)
         cell_growth_info['cell_growth'].extend(slope)
 
     cell_growth_df = pd.DataFrame(cell_growth_info)
@@ -921,12 +931,12 @@ def calculate_perimeter(
 
                 for mx in (nx - 1, nx + 1):
 
-                    if mx in range(feature_seg_in_frame.shape[2]) and feature_seg_in_frame[nz, ny, mx] != feature_id:
+                    if mx in range(feature_seg_in_frame.shape[1]) and feature_seg_in_frame[ny, mx] != feature_id:
                         perims += y_dim_sizes[ny]
 
                 for my in (ny - 1, ny + 1):
 
-                    if my in range(feature_seg_in_frame.shape[1]) and feature_seg_in_frame[nz, my, nx] != feature_id:
+                    if my in range(feature_seg_in_frame.shape[0]) and feature_seg_in_frame[my, nx] != feature_id:
                         perims += x_dim_sizes[nx]
 
             perimeter_info["frame"].append(frame)
@@ -986,7 +996,7 @@ def calculate_irregularity(
     KeyError
         KeyError if there are no found implemented irregularity metrics.
     Exception
-        Exception if the segmentation data is not 3D.
+        Exception if no segmentation data is found.
 
     Returns
     -------
@@ -999,6 +1009,7 @@ def calculate_irregularity(
         sphericity,
     )
     
+
     if type(irregularity_metrics) != list:
         irregularity_metrics =[irregularity_metrics]
     
@@ -1034,18 +1045,19 @@ def calculate_irregularity(
 
     # Enforce the threshold
 
-    uncut_feature_list = np.unique(analysis_object[f"UDAF_segmentation_3d"].Feature_Segmentation)[1:] # don't use -1
+    if analysis_object["UDAF_segmentation_3d"] is not None:
+        uncut_feature_list = np.unique(analysis_object[f"UDAF_segmentation_3d"].Feature_Segmentation)[1:] # don't use -1
+    elif analysis_object["UDAF_segmentation_2d"] is not None:
+        uncut_feature_list = np.unique(analysis_object["UDAF_segmentation_2d"].Feature_Segmentation[1:])
+    else:
+        raise Exception("!=====Segmentation Not Found=====!")
+    
     if threshold is not None:
         # Load background varaible
         if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
             variable_field = analysis_object["segmentation_xarray"]
         else:
             variable_field = analysis_object["segmentation_xarray"][variable]
-
-        if len(variable_field.shape) != 4 and len(variable_field.shape) != 3:
-            raise Exception(
-                "=====The segmentation must be 3D====="
-            )
         
         feature_mask = analysis_object[f"UDAF_segmentation_3d"].Feature_Segmentation
         feature_mask.values[variable_field.values < threshold] = -1
