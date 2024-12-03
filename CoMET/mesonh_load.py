@@ -18,6 +18,7 @@ import iris.cube
 import numpy as np
 import vincenty
 import xarray as xr
+import datetime
 
 from .mesonh_calculate_products import (
     mesonh_calculate_agl_z,
@@ -112,6 +113,7 @@ def mesonh_load_netcdf_iris(
     ------
     Exception
         Exception if entered invalid tracking variable.
+        ValueError if the simulation times are not continuous.
 
     Returns
     -------
@@ -152,6 +154,16 @@ def mesonh_load_netcdf_iris(
 
     else:
         raise Exception('!=====CONFIG Missing "mesonh" field=====!')
+
+    # Get the time differences 
+    datetime_times = [datetime.datetime.strptime(str(time), '%Y-%m-%dT%H:%M:%S.%f000') for time in mesonh_xarray['time'].values]
+    dt_datetimes = np.diff(datetime_times)
+    dt_seconds = [s.total_seconds() for s in dt_datetimes]
+
+    if len(np.unique(dt_seconds)) > 1:
+        raise ValueError("Simulation times are inconsistent")
+    else:
+        mesonh_xarray.attrs["DT"] = np.unique(dt_seconds)[0]
 
     # Correct for 360 degree lat/lon system by subtracting 360 from values exceeding 180 degrees...correction for latitude may not be necessary
     mesonh_xarray = mesonh_xarray.assign_coords(

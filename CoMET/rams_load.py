@@ -45,56 +45,56 @@ def rams_load_netcdf_iris(filepath, tracking_var, path_to_header, CONFIG = None,
     rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG)
 
     # This is already in configure_rams, but eventually we will call RAMS-MAT. Then either put the time formatting here or keep it in RAMS-MAT
-    # if "rams" in CONFIG:
+    if "rams" in CONFIG:
 
-    #     # Check for idealized data then correct times
-    #     if "is_idealized" in CONFIG["rams"]:
-    #         if CONFIG["rams"]["is_idealized"]:
-    #             # Update Times
-    #             # Get time differences in minutes
-    #             time_diffs = (
-    #                 np.diff(rams_xarray.Times.values)
-    #                 .astype("timedelta64[m]")
-    #                 .astype("int")
-    #             )
+        # Check for idealized data then correct times
+        if "is_idealized" in CONFIG["rams"]:
+            if CONFIG["rams"]["is_idealized"]:
+                # Update Times
+                # Get time differences in minutes
+                time_diffs = (
+                    np.diff(rams_xarray.Times.values)
+                    .astype("timedelta64[m]")
+                    .astype("int")
+                )
 
-    #             time_list = [0]
+                time_list = [0]
 
-    #             for diff in time_diffs:
-    #                 time_list.append(time_list[-1] + diff)
+                for diff in time_diffs:
+                    time_list.append(time_list[-1] + diff)
 
-    #             # Initialize simulation at January 1, 2000 for convinence
-    #             time_list = cftime.num2date(
-    #                 time_list, units="minutes since 2000-01-01 00:00:00"
-    #             )
-    #             rams_xarray.assign_coords(XTIME=("Time", time_list))
-    #             rams_xarray["XTIME"] = rams_xarray["XTIME"].assign_attrs(
-    #                 {"description": "minutes since 2000-01-01 00:00:00"}
-    #             )
+                # Initialize simulation at January 1, 2000 for convinence
+                time_list = cftime.num2date(
+                    time_list, units="minutes since 2000-01-01 00:00:00"
+                )
+                rams_xarray.assign_coords(XTIME=("Time", time_list))
+                rams_xarray["XTIME"] = rams_xarray["XTIME"].assign_attrs(
+                    {"description": "minutes since 2000-01-01 00:00:00"}
+                )
 
-    #     # Subset time based on user inputs
-    #     if "min_frame_index" in CONFIG["rams"] or "max_frame_index" in CONFIG["rams"]:
-    #         min_frame = (
-    #             CONFIG["rams"]["min_frame_index"]
-    #             if "min_frame_index" in CONFIG["rams"]
-    #             else 0
-    #         )
-    #         max_frame = (
-    #             CONFIG["rams"]["max_frame_index"] + 1
-    #             if "max_frame_index" in CONFIG["rams"]
-    #             else rams_xarray.dims["Time"]
-    #         )
+        # Subset time based on user inputs
+        if "min_frame_index" in CONFIG["rams"] or "max_frame_index" in CONFIG["rams"]:
+            min_frame = (
+                CONFIG["rams"]["min_frame_index"]
+                if "min_frame_index" in CONFIG["rams"]
+                else 0
+            )
+            max_frame = (
+                CONFIG["rams"]["max_frame_index"] + 1
+                if "max_frame_index" in CONFIG["rams"]
+                else rams_xarray.dims["Time"]
+            )
 
-    #         rams_xarray = rams_xarray.isel(
-    #             Time=np.arange(
-    #                 min_frame,
-    #                 max_frame,
-    #             ),
-    #             drop=True,
-    #         )
+            rams_xarray = rams_xarray.isel(
+                Time=np.arange(
+                    min_frame,
+                    max_frame,
+                ),
+                drop=True,
+            )
 
-    # else:
-    #     raise Exception('!=====CONFIG Missing "rams" Field=====!')
+    else:
+        raise Exception('!=====CONFIG Missing "rams" Field=====!')
     
     if tracking_var.lower() == 'tb':
         

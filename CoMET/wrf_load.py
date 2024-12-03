@@ -44,6 +44,7 @@ def wrf_load_netcdf_iris(
     ------
     Exception
         Exception if missing wrf field or invalid tracking variable entered.
+        ValueError if the simulation times are not continuous.
 
     Returns
     -------
@@ -67,7 +68,7 @@ def wrf_load_netcdf_iris(
                 # Get time differences in minutes
                 time_diffs = (
                     np.diff(wrf_xarray.XTIME.values)
-                    .astype("timedelta64[m]")
+                    .astype("timedelta64[s]")
                     .astype("int")
                 )
 
@@ -84,6 +85,18 @@ def wrf_load_netcdf_iris(
                 wrf_xarray["XTIME"] = wrf_xarray["XTIME"].assign_attrs(
                     {"description": "minutes since 2000-01-01 00:00:00"}
                 )
+        # If non-idealized, still calculate DT
+        time_diffs = (
+        np.diff(wrf_xarray.XTIME.values)
+        .astype("timedelta64[s]")
+        .astype("int")
+        )
+
+        # Make sure that the DT attribute is correct
+        if len(np.unique(time_diffs)) > 1:
+            raise ValueError("Simulation times are inconsistent")
+        else:
+            wrf_xarray.attrs["DT"] = np.unique(time_diffs)[0].astype(float)
 
         # Subset time based on user inputs
         if "min_frame_index" in CONFIG["wrf"] or "max_frame_index" in CONFIG["wrf"]:

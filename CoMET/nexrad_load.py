@@ -266,7 +266,7 @@ def nexrad_load_netcdf_iris(
                     warnings.simplefilter("ignore")
                     radar_objects.append(pyart.io.read_grid(file).to_xarray())
 
-            nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity
+            nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity.drop_vars(["origin_altitude","origin_latitude","origin_longitude","ProjectionCoordinateSystem","projection"])
             del radar_objects
 
             # Subset location and time of interest
@@ -325,6 +325,13 @@ def nexrad_load_netcdf_iris(
                 y=("y", np.arange(nexrad_xarray.shape[2])),
                 model_level_number=("z", np.arange(nexrad_xarray.shape[1])),
             )
+
+            # Create DT attribute
+            dt_array = np.diff(nexrad_xarray.time.values)
+            if len(np.unique(dt_array)) != 1:
+                nexrad_xarray.attrs["DT"] = dt_array * 60 # min -> s
+            else:
+                nexrad_xarray.attrs["DT"] = dt_array[0] * 60 # min -> s
 
             # Adjust dimension names to be standards accepted by iris
             nexrad_xarray["time"] = nexrad_xarray.time.assign_attrs(
@@ -385,7 +392,7 @@ def nexrad_load_netcdf_iris(
                     warnings.simplefilter("ignore")
                     radar_objects.append(pyart.io.read_grid(file).to_xarray())
 
-            nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity
+            nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity.drop_vars(["origin_altitude","origin_latitude","origin_longitude","ProjectionCoordinateSystem","projection"])
             del radar_objects
 
             # Subset location and time of interest
@@ -470,7 +477,7 @@ def nexrad_load_netcdf_iris(
             )
 
             # Add altitude dimension to xarray but not to cube
-            nexrad_cube = nexrad_xarray.to_iris()
+            nexrad_cube = nexrad_xarray.to_iris().remove_coord("altitude")
             nexrad_xarray = nexrad_xarray.assign_coords(
                 altitude=("z", nexrad_xarray.z.values)
             )
@@ -555,7 +562,7 @@ def nexrad_load_netcdf(
                     warnings.simplefilter("ignore")
                     radar_objects.append(pyart.io.read_grid(file).to_xarray())
 
-            nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity
+            nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity.drop_vars(["origin_altitude","origin_latitude","origin_longitude","ProjectionCoordinateSystem","projection"])
             del radar_objects
 
             # Subset location and time of interest
@@ -666,7 +673,7 @@ def nexrad_load_netcdf(
                     warnings.simplefilter("ignore")
                     radar_objects.append(pyart.io.read_grid(file).to_xarray())
 
-            nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity
+            nexrad_xarray = xr.concat(radar_objects, dim="time").reflectivity.drop_vars(["origin_altitude","origin_latitude","origin_longitude","ProjectionCoordinateSystem","projection"])
             del radar_objects
 
             # Subset location and time of interest
