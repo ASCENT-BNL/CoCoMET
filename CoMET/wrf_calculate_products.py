@@ -46,10 +46,10 @@ def wrf_calculate_reflectivity(wrf_xarray: xr.Dataset) -> xr.DataArray:
     full_t = t + 300 # K
     full_p = p + pb # Pa
 
-    c = 2.0/7.0
-    tmk = t * np.power(p * .00001, c) # TODO : check if this is correct, it gives higher dbz values but maybe its not right
+    # c = 2.0/7.0
+    # tmk = t * np.power(p * .00001, c) # TODO : check if this is correct, it gives higher dbz values but maybe its not right
 
-    # tmk = full_t * (full_p / 1e5) ** (287.0 / 1004.5)
+    tmk = full_t * (full_p / 1e5) ** (287.0 / 1004.5)
 
     # Supress divide by zero warnings
     with warnings.catch_warnings():

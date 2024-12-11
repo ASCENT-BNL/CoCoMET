@@ -2,6 +2,7 @@ import xarray as xr
 from copy import deepcopy
 import iris
 import geopandas as gpd
+import numpy as np
 
 # Load the UDAF converting functions
 from .tracker_output_translation_layer import (
@@ -58,7 +59,7 @@ def _create_xarrs_and_cubes(
     if dataset_name == 'nexrad': 
         from .nexrad_load import nexrad_load_netcdf_iris
     if dataset_name == 'multi_nexrad': 
-        from .multi_nexrad_load import multi_nexrad_load_netcdf
+        from .multi_nexrad_load import multi_nexrad_load_netcdf_iris
     if dataset_name == 'standard_radar': 
         from .standard_radar_load import standard_radar_load_netcdf_iris
     if dataset_name == 'goes': 
@@ -73,7 +74,7 @@ def _create_xarrs_and_cubes(
             CONFIG[dataset_name]["path_to_header"], CONFIG
         )
 
-    elif dataset_name == 'nexrad' or dataset_name == 'mutli-nexrad':
+    elif dataset_name == 'nexrad' or dataset_name == 'multi_nexrad':
         if "gridding" in CONFIG[dataset_name]:
 
             if CONFIG["verbose"]:
@@ -121,7 +122,7 @@ def _create_xarrs_and_cubes(
         # currently only implemented for tobac (first clause)
     if ("tobac" in CONFIG[dataset_name]) and ('analysis' in CONFIG[dataset_name]['tobac']):
         if ((dataset_name == 'rams' or dataset_name == 'wrf' or dataset_name == 'mesonh') and
-            ('eth' in CONFIG[dataset_name]['tobac']['analysis'] or 'cell_growth' in CONFIG[dataset_name]['tobac']['analysis']) and 
+            ('eth' in CONFIG[dataset_name]['tobac']['analysis']) and 
             CONFIG[dataset_name]['segmentation_var'].lower() != 'dbz'):
             reflectivity_calc = locals()[f'{dataset_name}_calculate_reflectivity'](tracking_xarray)
             tracking_xarray["DBZ"] = reflectivity_calc
@@ -251,7 +252,9 @@ def _run_tracker_det_and_seg(
                 print(f"=====Starting {dataset_name.upper()} tobac Feature ID=====")
 
             features = locals()[f'{dataset_name}_tobac_feature_id'](tracking_cube, CONFIG)
-
+            if features is None:
+                raise Exception("No features identified")
+            
         if "linking" in CONFIG[dataset_name]["tobac"]:
 
             if CONFIG["verbose"]:
@@ -434,7 +437,7 @@ def _tobac_analysis(
     }
 
     if CONFIG["verbose"]:
-        print(f"==== {dataset_name.upper()} tobac Tracking Complete=====")
+        print(f"====={dataset_name.upper()} tobac Tracking Complete=====")
     
     return user_return_dict
 
@@ -640,9 +643,8 @@ def run_tracker(dataset_name, tracker, user_return_dict, tracking_info, CONFIG):
             *UDAF_values
             )
         
-
         # Filter the cells
-        # analysis_object = filter_cells(analysis_object)
+        # analysis_object = filter_cells(analysis_object) # there is an issue with the memory for high resolution data sets
 
         user_return_dict = _tobac_analysis(
             dataset_name,
@@ -673,7 +675,6 @@ def run_tracker(dataset_name, tracker, user_return_dict, tracking_info, CONFIG):
                 dataset_name,
                 user_return_dict,
                 analysis_object,
-                UDAF_values,
                 CONFIG,
             )
             
@@ -682,7 +683,6 @@ def run_tracker(dataset_name, tracker, user_return_dict, tracking_info, CONFIG):
                 dataset_name,
                 user_return_dict,
                 analysis_object,
-                UDAF_values,
                 CONFIG,
             )
 

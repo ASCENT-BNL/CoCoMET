@@ -20,6 +20,7 @@ import xarray as xr
 from scipy.interpolate import interpn
 from scipy.ndimage import center_of_mass
 from tqdm import tqdm
+from matplotlib.path import Path
 
 
 def feature_id_to_UDAF(
@@ -159,18 +160,18 @@ def linking_to_UDAF(tracks: gpd.GeoDataFrame, tracker: str) -> gpd.GeoDataFrame 
 
         # Loop over rows
         for row in tqdm(
-            tracks.iterrows(),
+            tracks.itertuples(index=True),
             desc="=====Performing tobac Linking to UDAF====",
             total=tracks.shape[0],
         ):
-
-            cell_max_life = tracks.query("cell==@row[1].cell").time_cell.values.max()
-
+            cell_id = row.cell
+            cell_max_life = tracks[tracks['cell'] == cell_id]['time_cell'].values.max()
+            #cell_max_life = tracks.query("cell==@row[1].cell").time_cell.values.max()
             # If only tracked one time, add -1 to lifetime_percent
             if cell_max_life == 0:
                 lifetime_percents.append(-1)
             else:
-                lifetime_percents.append(row[1].time_cell / cell_max_life)
+                lifetime_percents.append(row.time_cell / cell_max_life)
 
         # Create GeoDataFrame according to UDAF specification
         UDAF_tracks = gpd.GeoDataFrame(
@@ -241,14 +242,13 @@ def segmentation_to_UDAF(
             desc="=====Performing tobac Segmentation to UDAF=====",
             total=frame_groups.ngroups,
         ):
-
+            cell_segmentation_frame = cell_segmentation[frame[0]].values
             # Loop over each feature in that frame
-            for feature in frame[1].iterrows():
-
+            for feature in frame[1].itertuples():
                 # Replace the feature_id with the cell_id
-                cell_segmentation[frame[0]].values[
-                    cell_segmentation[frame[0]].values == feature[1].feature_id
-                ] = feature[1].cell_id
+                cell_segmentation_frame[
+                    cell_segmentation_frame == feature.feature_id
+                ] = feature.cell_id
 
         # Combine into one xarray Dataset and return
 
@@ -712,8 +712,8 @@ def bulk_tams_to_UDAF(
         frames.append(frame)
         times.append(tracked_elements['time'][ii])
 
-        cell_id = tracked_elements['mcs_id'][ii]
-        cell_ids.append(tracked_elements['mcs_id'][ii])
+        cell_id = int(tracked_elements['mcs_id'][ii])
+        cell_ids.append(cell_id)
 
         lat = tracked_elements['geometry'][ii].centroid.y
         lon = tracked_elements['geometry'][ii].centroid.x
@@ -729,8 +729,8 @@ def bulk_tams_to_UDAF(
 
         feature_ids.append(feature_mask[frame, *closest_point])
 
-        south_norths.append(closest_point[1])
-        west_easts.append(closest_point[0])
+        south_norths.append(closest_point[0])
+        west_easts.append(closest_point[1])
 
         new_proj_x.append(projection_x_coords[west_easts[-1]])
         new_proj_y.append(projection_y_coords[south_norths[-1]])
@@ -849,12 +849,13 @@ def bulk_tams_to_UDAF(
 # Extra functions for converting TAMS dataframe into a mask
 
 def _find_closest_latlon(lat_true, lon_true, lat_arr, lon_arr):
-    import numpy as np
-
+    # TODO : find a more exact way to do this - get an x, y position in grid coordinates 
+    #   given a latitude, a longitude, an array of latitudes, and an array of longitudes
     diff_arr_lat = np.abs(lat_arr - lat_true)
     diff_arr_lon = np.abs(lon_arr - lon_true)
     squared_diff_arr = diff_arr_lat**2 + diff_arr_lon**2
     closest_point = (np.unravel_index(squared_diff_arr.argmin(), squared_diff_arr.shape))
+    # return (closest_point[1], closest_point[0])
     return closest_point
 
 def _points_from_polygons(polygons):
@@ -882,16 +883,12 @@ def _return_gridpoints(points, latlon_coord_system):
     latcoords = latlon_coord_system[0].values[0]
     loncoords = latlon_coord_system[1].values[0]
     for ilon, ilat in points:
-        # print(f'ilat is {ilat} and ilon is {ilon}')
-        gridpoints.append(_find_closest_latlon(ilat, ilon, latcoords, loncoords))
+        x, y = _find_closest_latlon(ilat, ilon, latcoords, loncoords)
+        gridpoints.append((y, x))
 
     return gridpoints
 
 def convert_df_to_mask(ce, latlon_coord_system):
-    import numpy as np
-    from tqdm import tqdm
-    from matplotlib.path import Path
-
     full_mask = np.zeros_like(latlon_coord_system[0].values)
 
     print("=====Converting TAMS Dataframe to Mask=====")
@@ -912,20 +909,17 @@ def convert_df_to_mask(ce, latlon_coord_system):
 
             path = Path(poly_verts)
             grid = path.contains_points(points)
-            grid = grid.reshape((ny,nx))
+            grid = grid.reshape((ny, nx))
 
-            grid = np.array(grid, dtype=int) * mcs_id
+            grid = np.array(grid, dtype=int) * (mcs_id + 1)
 
             non_zero_grid = grid != 0
             full_mask_in_frame = full_mask[frame]
             full_mask_in_frame[non_zero_grid] = grid[non_zero_grid]
-
-    full_mask[full_mask == 0] = -1
+    full_mask -= 1
     return full_mask
 
 def convert_cell_mask_to_feature_mask(cell_mask):
-    import numpy as np
-    from copy import deepcopy
 
     feature_mask = deepcopy(cell_mask)
     last_feature = 0
