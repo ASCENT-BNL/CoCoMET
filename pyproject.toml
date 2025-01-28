@@ -3,8 +3,8 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "CoMET"
-version = "0.0.4"
+name = "CoCoMET"
+version = "0.1.0"
 dependencies = [
     "numpy<=1.26.4",
     "numba",
@@ -25,7 +25,7 @@ dependencies = [
 authors = [
   { name="Travis Hahn", email="travis.hahn@psu.edu" },
 ]
-description = "Convective cloud Model Evaluation Toolkit (CoMET)"
+description = "Community Convective cloud Model Evaluation Toolkit (CoCoMET)"
 readme = "README.md"
 requires-python = ">=3.10.0"
 classifiers = [
@@ -35,5 +35,5 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ASCENT-BNL/CoMET"
-Issues = "https://github.com/ASCENT-BNL/CoMET/issues"
+Homepage = "https://github.com/ASCENT-BNL/CoCoMET"
+Issues = "https://github.com/ASCENT-BNL/CoCoMET/issues"

@@ -1,5 +1,5 @@
-# CoMET
-<img src="./docs/images/comet_logo.png" alt="Logo" width="200" height="200"/>
+# CoCoMET
+<img src="./docs/images/cocomet_logo.png" alt="Logo" width="200" height="200"/>
 
 Convective cloud Model Evaluation Toolkit.
 
@@ -12,7 +12,17 @@ Convective cloud Model Evaluation Toolkit.
       1. Updraft velocity  
       1. Precipitation rate  
       1. Any WRF variables in the dataset (case sensitive)
+   1. MOAAP tracking of MCSs and cloud shields
+   1. TAMS tracking of MCSs and cloud shields  
+1. **RAMS**:  
+   1. tobac tracking of variables  
+      1. Reflectivity  
+      1. Brightness temperature  
+      1. Updraft velocity  
+      1. Precipitation rate  
+      1. Any WRF variables in the dataset (case sensitive)
    1. MOAAP tracking of MCSs and cloud shields  
+   1. TAMS tracking of MCSs and cloud shields  
 1. **MesoNH**:  
    1. tobac tracking of variables:  
       1. Reflectivity  
@@ -47,8 +57,6 @@ Convective cloud Model Evaluation Toolkit.
 
 **Planned Features**:
 1. Post-processing functions
-1. Add bulk basic cell statistics (lifetime, max/min values, etc.)
-1. Adding RAMS Model
 1. Add ARM Radars
 1. Add RWP
 1. Add IMERG Satellite Data

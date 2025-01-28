@@ -1,0 +1,24 @@
+name: CoCoMET-dev
+channels:
+  - conda-forge
+dependencies:
+  - arm_pyart
+  - black
+  - geopandas
+  - iris
+  - libsqlite
+  - metpy
+  - numba
+  - numpy==1.26.4
+  - pip
+  - pytest
+  - python==3.12.*
+  - pyyaml
+  - spyder
+  - sqlite
+  - tobac
+  - tqdm
+  - yaml
+  - pip
+  - pip:
+    - vincenty

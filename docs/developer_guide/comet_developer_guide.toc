@@ -1,0 +1,18 @@
+\babel@toc {english}{}\relax 
+\babel@toc {english}{}\relax 
+\contentsline {section}{\numberline {1}Introduction to CoMET}{1}{}%
+\contentsline {section}{\numberline {2}The CoMET-US}{1}{}%
+\contentsline {subsection}{\numberline {2.1}The CONFIG}{1}{}%
+\contentsline {subsection}{\numberline {2.2}Tracking Output Structure}{3}{}%
+\contentsline {subsubsection}{\numberline {2.2.1}Feature Identification Output}{3}{}%
+\contentsline {subsubsection}{\numberline {2.2.2}Linking Output}{3}{}%
+\contentsline {subsubsection}{\numberline {2.2.3}Segmentation Output}{4}{}%
+\contentsline {subsection}{\numberline {2.3}Analysis Products}{5}{}%
+\contentsline {subsubsection}{\numberline {2.3.1}The Analysis Object}{5}{}%
+\contentsline {subsection}{\numberline {2.4}Outputs to User}{5}{}%
+\contentsline {section}{\numberline {3}General Guidelines}{6}{}%
+\contentsline {section}{\numberline {4}Adding an Analysis Function}{7}{}%
+\contentsline {subsection}{\numberline {4.1}Adding an Internal Function}{8}{}%
+\contentsline {subsection}{\numberline {4.2}Adding a Post-Processing Function}{8}{}%
+\contentsline {section}{\numberline {5}Adding a Tracker}{8}{}%
+\contentsline {section}{\numberline {6}Adding a New Input Type}{8}{}%
