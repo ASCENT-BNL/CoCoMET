@@ -1,0 +1,411 @@
+# ===========================================Welcome To CoCoMET===========================================
+# This is where most all functionality of CoCoMET can be specified. You can change any of the supplied 
+# variables OR you can use a default suite of paramateres setup for different model and observation
+# input types. 
+
+# TODO: Add CONFIG setup to CoCoMET-US specification.
+
+
+# SETUP VARIABLES: These determine basic CoCoMET functionality
+verbose: True # Whether to use verbose output
+parallel_processing: False # [bool] Whether or not to use parallel processing for certain tasks
+max_cores: 4 # Number of cores to use if parallel_processing==True; Enter None for unlimited
+
+# Structered in this form:
+# Observation Type:
+#   path_to_data
+#   additional_observation_parameters
+#
+#   tracker:
+#       tracker_params
+#
+#       analysis:
+#           analysis_variables
+
+# WRF
+wrf:
+    path_to_data: "./.cocomet_testing_datasets/WRF/wrfout_d02*"
+    
+    is_idealized: False
+    min_frame_index: 0 # 0-based indexing, inclusive
+    max_frame_index: 11 # 0-based indexing, inclusive
+
+    feature_tracking_var: "DBZ" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
+    segmentation_var: "DBZ"
+
+    tobac:
+        feature_id:
+            threshold: [30,40,50,60]
+            target: "maximum"
+            position_threshold: "weighted_diff"
+            sigma_threshold: 0.5
+            n_min_threshold: 4
+        
+        linking: 
+            method_linking: "predict"
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 1
+            v_max: 20
+        
+        segmentation_2d:
+            height: 2 # km
+            method: "watershed"
+            threshold: 15
+            
+        segmentation_3d:
+            method: "watershed"
+            threshold: 15
+    
+        analysis: # Optional
+            merge_split-2d: { variable: "DBZ", segmentation_type: "2d", cell_footprint_height: 2 }
+            merge_split-3d: { variable: "DBZ", segmentation_type: "3d" }
+            var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
+            area-low: { height: 2 }
+            area-high: { height: 4, threshold: 15 }
+            volume: { threshold: 15 }
+            volume-high: { threshold: 30 }
+            velocity: {}
+            perimeter: {}
+            cell_growth: {}
+            irregularity: { irregularity_metrics: ["sphericity", "convexity"] }
+            
+    moaap:
+        tracking_save_path: "./.cocomet_testing_datasets/WRF/moaap_tracking/"
+        MinTimePR: 0.5
+        MinAreaPR: 10
+        
+        analysis_type: "cloud" #"cloud" or "mcs"
+        
+        analysis:
+            area: {} # Should get skipped on tests
+            
+    tams:
+        ctt_threshold: 235
+        ctt_core_threshold: 219
+        u_projection: 0
+        parallel: False # there is something weird when you have CoCoMET parallel processing and TAMS parallel processing at the same time
+
+        analysis_type: "cloud"
+        
+        analysis:
+            volume: {} # Should get skipped on tests
+
+# #MesoNH
+# mesonh:
+#     path_to_data: "/D3/data/thahn/MesoNH/CLN/0_5km/500m*"
+
+#     feature_tracking_var: "PR" #DBZ, TB, WA, PR
+#     segmentation_var: "PR"
+
+#     tobac:
+#         feature_id:
+#             threshold: [1,2,3]
+#             target: "maximum"
+#             position_threshold: "weighted_diff"
+#             sigma_threshold: 0.5
+#             n_min_threshold: 4
+        
+#         linking: 
+#             method_linking: "predict"
+#             adaptive_stop: 0.2
+#             adaptive_step: 0.95
+#             order: 1
+#             subnetwork_size: 10
+#             memory: 1
+#             v_max: 20
+        
+#         segmentation_2d:
+#             height: 2 # km
+#             method: "watershed"
+#             threshold: 1
+            
+#         segmentation_3d:
+#             method: "watershed"
+#             threshold: 5
+    
+#         analysis:
+#             merge_split: { variable: "pcp_rate" }
+#             var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 5 }
+#             area: { height: 2 }
+#             volume: {}
+
+#     moaap:
+#         tracking_save_path: "./.cocomet_testing_datasets/MESONH/moaap_tracking/"
+#         MinTimePR: 0.5
+#         MinAreaPR: 10
+        
+#         analysis_type: "cloud" #"cloud" or "mcs"
+        
+#         analysis:
+#             # None yet
+            
+#     tams:
+#         ctt_threshold: 235
+#         ctt_core_threshold: 219
+#         u_projection: 0
+#         parallel: False # there is something weird when you have CoCoMET parallel processing and TAMS parallel processing at the same time
+
+#         analysis_type: "cloud"
+        
+#         analysis:
+#             # None yet
+
+
+# RAMS:
+#     path_to_data: "/share/D3/data/hweiner/RAMS/1min/*.h5"
+#     path_to_header: "/share/D3/data/hweiner/RAMS/1min/*.txt"
+
+#     feature_tracking_var: "WA" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
+#     segmentation_var: "WA"
+
+#     tobac:
+#         feature_id:
+#             threshold: [3, 5, 10]
+#             target: "maximum"
+#             position_threshold: "weighted_diff"
+#             sigma_threshold: 0.5
+#             n_min_threshold: 4
+#             #detect_subset: {1:(29, 47)}
+
+#         linking:
+#             method_linking: "predict"
+#             adaptive_stop: 0.2
+#             adaptive_step: 0.95
+#             order: 1
+#             subnetwork_size: 10
+#             memory: 2
+#             v_max: 20
+#             time_cell_min: 120
+
+#         segmentation_2d:
+#             height: 6 # m
+#             method: "watershed"
+#             target: 'maximum'
+#             threshold: 3
+
+#         segmentation_3d:
+#             method: "watershed"
+#             target: 'maximum'
+#             threshold: 3
+#             seed_3D_flag: 'box'
+    
+#         analysis: # Optional
+#             merge_split: { variable: "WA" }
+#             # eth: { variable: "DBZ", cell_footprint_height: 2, threshold: 30 }
+#             area-low: { height: 2 }
+#             area-high: { height: 6,}
+#             volume: {}
+#             volume-high: { threshold: 30 }
+#             max_intensity: { variable : "WA"}
+#             max_height: { variable : "WA", threshold : 3}
+#             velocity: {}
+#             perimeter: {}
+#             cell_growth: {}
+#             irregularity: {irregularity_metrics: ['convexity', 'sphericity']}
+
+#     moaap:
+#         tracking_save_path: "/share/D3/data/hweiner/MOAAP_out/"
+#         MinTimePR: 0.5
+#         MinAreaPR: 10
+        
+#         analysis_type: "cloud"
+        
+#         analysis:
+#             # None yet
+#     tams:
+#         ctt_threshold: 235
+#         ctt_core_threshold: 219
+#         u_projection: 0
+#         parallel: False # there is something weird when you have CoCoMET parallel processing and TAMS parallel processing at the same time
+
+#         analysis_type: "cloud"
+        
+#         analysis:
+#             # None yet
+
+# NEXRAD
+nexrad:
+    path_to_data: "./.cocomet_testing_datasets/NEXRAD/*.ar2v"
+    # path_to_data: "./.comet_testing_datasets/NEXRAD/grids/*"
+
+    min_frame_index: 0 # 0-based indexing, inclusive
+    max_frame_index: 11 # 0-based indexing, inclusive
+
+    bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max], OPTIONAL
+
+    gridding: # OPTIONAL only if gridding is needed 
+        gridding_save_path: "./.cocomet_testing_datasets/NEXRAD/grids/"
+        grid_shape: (40, 401, 401)
+        grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
+        
+    feature_tracking_var: "dbz"
+    segmentation_var: "dbz"
+        
+    tobac:
+        feature_id:
+            # height: 2 # OPTIONAL kilometers
+            threshold: [30, 40, 50, 60]
+            target: "maximum"
+            position_threshold: "weighted_diff"
+            sigma_threshold: 0.5
+            n_min_threshold: 4
+        
+        linking: 
+            method_linking: "predict"
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 1
+            v_max: 20
+        
+        segmentation_3d:
+            method: "watershed"
+            threshold: 15
+        
+        segmentation_2d:
+            height: 2 #km
+            method: "watershed"
+            threshold: 15
+            
+        analysis:
+            merge_split: { variable: "DBZ" }
+            var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
+            area-low: { height: 2 }
+            area-high: { height: 4 }
+            volume: {}
+            arm-vdis: { path_to_files: "./.cocomet_testing_datasets/ARM/VDISQUANTS/*", variable_names: ["rain_rate", "reflectivity_factor_sband20c"]  }
+            arm-arscl: { path_to_files: "./.cocomet_testing_datasets/ARM/ARSCL/*", variable_names: "reflectivity" }
+            convective_indices: { path_to_files: "./.cocomet_testing_datasets/ARM/INTERPSONDE/*", parcel: 3 } # Need INTERPSONDE for this
+
+# multi_nexrad: 
+#     # path_to_data: ["/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v","/D3/data/thahn/NEXRAD/HAS012535511/0003/*_V06.ar2v"]
+#     path_to_data: "/D3/data/thahn/NEXRAD/HAS012535511/grids/*.nc"
+    
+#     feature_tracking_var: "dbz"
+#     segmentation_var: "dbz"    
+    
+    
+#     # gridding: # only if gridding is needed 
+#     #     gridding_save_path: "/D3/data/thahn/NEXRAD/HAS012527906/grids/"
+#     #     grid_shape: (40, 401, 401)
+#     #     grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
+    
+#     tobac:
+#         feature_id:
+#             # height: 2 # OPTIONAL kilometers
+#             threshold: [50, 60]
+#             target: "maximum"
+#             position_threshold: "weighted_diff"
+#             sigma_threshold: 0.5
+#             n_min_threshold: 20
+        
+#         linking: 
+#             method_linking: "predict"
+#             adaptive_stop: 0.2
+#             adaptive_step: 0.95
+#             order: 1
+#             subnetwork_size: 10
+#             memory: 1
+#             v_max: 20
+        
+#         segmentation_3d:
+#             method: "watershed"
+#             threshold: 15
+        
+#         segmentation_2d:
+#             height: 2000
+#             method: "watershed"
+#             threshold: 15
+            
+#         analysis:
+#             # merge_split: { variable: "DBZ" }
+#             # var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
+#             area: { height: 2 }
+#             # volume: {}
+#             convective_indices: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*", parcel: 3 }
+#             vdisquants: { path_to_files: "/D3/data/thahn/ARM/VDISQUANTS/*" }
+
+
+# Standard Gridded Radar
+standard_radar:
+    path_to_data: "./.cocomet_testing_datasets/GOAMAZON_RADAR/*"
+    
+    min_frame_index: 0 # 0-based indexing, inclusive
+    max_frame_index: 11 # 0-based indexing, inclusive
+    
+    feature_tracking_var: "dbz"
+    segmentation_var: "dbz"
+    
+    tobac:
+        feature_id:
+            threshold: [30,40,50,60]
+            target: "maximum"
+            position_threshold: "weighted_diff"
+            sigma_threshold: 0.5
+            n_min_threshold: 20
+        
+        linking: 
+            method_linking: "predict"
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 1
+            v_max: 20
+        
+        segmentation_2d:
+            height: 2 #km
+            method: "watershed"
+            threshold: 15
+            
+        analysis:
+            merge_split: { variable: "DBZ" }
+            var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
+            area: { height: 2 }
+            #volume: {}
+
+
+# GOES
+goes:
+    path_to_data: "./.cocomet_testing_datasets/GOES/*"
+
+    bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max]
+    
+    min_frame_index: 0 # 0-based indexing, inclusive
+    max_frame_index: 11 # 0-based indexing, inclusive
+    
+    feature_tracking_var: "tb"
+    segmentation_var: "tb"
+    
+    tobac:
+        feature_id:
+            threshold: [250,225,200,175,150]
+            target: "minimum"
+            position_threshold: "weighted_diff"
+            sigma_threshold: 0.5
+            n_min_threshold: 4
+    
+        linking: 
+            method_linking: "predict"
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 1
+            v_max: 20
+        
+        segmentation_2d:
+            target: "minimum"
+            method: "watershed"
+            threshold: 250
+            
+        analysis:
+            merge_split: { segmentation_type: "2d", variable: "TB", invert: True, touching_threshold: .20, flood_background: 250, score_threshold: 0, radius_multiplyer: .1, overlap_threshold: .5, steps_forward_back: 2 }
+            area: {}
+            convective_indices: { path_to_files: "./.cocomet_testing_datasets/ARM/INTERPSONDE/*", parcel: 2 }
+            arm-vdis: { path_to_files: "./.cocomet_testing_datasets/ARM/VDISQUANTS/*", variable_names: ["rain_rate","reflectivity_factor_xband20c"] }
+            arm-interp: { path_to_files: "./.cocomet_testing_datasets/ARM/INTERPSONDE/*", variable_names: "temp" }

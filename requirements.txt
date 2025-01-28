@@ -13,3 +13,5 @@ vincenty
 iris
 tqdm
 metpy
+scikit-image
+deepdiff

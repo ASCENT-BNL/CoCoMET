@@ -1,0 +1,334 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[english]{isodate}
+\usepackage[parfill]{parskip}
+\usepackage{authblk}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{blindtext}
+\usepackage[printonlyused]{acronym}
+\usepackage{paracol}
+\usepackage{fancyvrb}
+
+\graphicspath{
+	{../images/}
+}
+
+\title{Community Convective cloud Model Evaluation Toolkit (CoCoMET) Developer Guide}
+
+\author[1]{Travis Hahn}
+\author[2]{Dié Wang}
+\author[3]{Hershel Weiner}
+\author[4]{Calvin Brooks}
+\author[5]{Jie Xi Li}
+\author[6]{Siddhant Gupta}
+
+\affil[1]{Department of Statistics, The Pennsylvania State University}
+\affil[2]{Environmental and Climate Sciences Department, Brookhaven National Laboratory}
+\affil[3]{Physics and Astronomy Department, University of Hawaii}
+\affil[4]{Physics, Applied Physics, and Astronomy Department, Rensselaer Polytechnic Institute}
+\affil[5]{Applied Mathematics \& Statistics, Stony Brook University}
+\affil[6]{Environmental Sciences Division, Argonne National Laboratory}
+
+\date{January 2025}
+
+
+\begin{document}
+	\pagenumbering{Roman}
+	
+	\maketitle
+	\vspace*{\fill}
+	\begin{center}
+		\includegraphics[width=4cm]{comet_logo}\\
+		\large A toolkit of the Advanced Study of Cloud and Environment iNTerations (ASCENT) program.
+	\end{center}
+	\newpage
+	\tableofcontents
+	\newpage
+	\section*{Acronyms}
+	\begin{paracol}{2}
+		\begin{acronym}[CoCoMET-US]
+			\acro{ARM}{Atmospheric Raditaion Measurement}
+			\acro{NCAR}{National Center for Atmospheric Research}
+			\acro{CoCoMET}{Community Convective cloud Model Evaluation Toolkit}
+			\acro{CoCoMET-US}{Community Convective cloud Model Evaluation Toolkit Unified Specification}
+			\acro{WA}{Vertical Velocity at Mass Points}
+			\acro{TB}{Brightness Temperatire}
+			\acro{tobac}{Tracking and Object-Based Analysis of Clouds}
+			\acro{IDE}{Integrated Developer Environment}
+			\acro{DC}{Data Cell}
+			\acro{CC}{Convective Cell}
+			
+			\switchcolumn
+			
+			\acro{BNL}{Brookhaven National Laboratory}
+		\end{acronym}
+	\end{paracol}
+	\newpage
+	\section*{Document Changes to Come}
+	\begin{itemize}
+		\item Update CoMET Logo
+		\item Fix CoMET-US formatting and references to CoMET-UDAF
+		\item Add Datatypes to CoMET-US
+		\item Add information about adding analysis functions
+		\item Add info for adding a tracker
+		\item Add info for adding a new input type
+	\end{itemize}
+	\newpage
+	%\listoffigures
+	%\newpage
+	%\listoftables
+	%\newpage
+	\pagenumbering{arabic}
+	
+	\section{Introduction to CoMET}
+	Hello, \ac{NCAR}, \ac{ARM}, yep \ac{ARM} \blindtext and \ac{BNL}
+	
+	\section{The CoMET-US}
+	TODO: Update words here
+	
+	Unified Data Analysis Format UDAF dictates/defines how output data from various trackers should be formatted. This facilitates the analysis module of CoMET to prevent mismatched information being used in the analysis module of CoMET. The first thing which is uniformly defined is the structure of the input configuration file which hereafter will be referred to as the “CONFIG”.
+	
+	\subsection{The CONFIG}
+	The CONFIG should either be stored as a .yaml file or created as a python dictionary object– please see the boilerplate.yml file to see a proper setup. The CONFIG is broken down into two primary sections with a number of subsections:
+	
+	\begin{enumerate}
+		\item Parameters relating to the running of CoMET. These include the following:
+		\begin{enumerate}
+			\item verbose [bool]: Whether or not to output text during the running of CoMET.
+			\item parallel\_processing [bool]: Whether or not to use multiple cores for processes when available. This would primarily be invoked when gridding radar data and processing multiple input data types simultaneously.
+			\item max\_cores [int]: How many cores CoMET may use if parallel\_processing is True.
+		\end{enumerate}
+		\item The observation type which will be another dictionary with the following values:
+		\begin{enumerate}
+			\item path\_to\_data [string]: A glob-like path (e.g., “/usr/data/WRF/wrfout\_d02*”) to the raw data files for your observation type
+			\item feature\_tracking\_var [string]: A string designating which variable to use for feature identification and linking
+			\item segmentation\_var [string]: A string designating which variable to use for segmentation
+			\item gridding [optional, dict]: The parameters set for the gridding of radar data. This should be a dictionary with parameter values set for the \verb|Py-ART| gridding function.
+			\item bounds [optional, array]: Sets the bounds of an observation type. Only works for observations including NEXRAD and GOES. It should be defined in the following order: \verb|[min_longitude, max_longitude, min_latitude, max_latitude]|
+		\end{enumerate}
+		\item The tracker to be used for this observation type. This should be another dictionary with subsections determined by the selected tracker.
+		\item The analysis section: another dictionary containing the variable to be calculated as the key and a dictionary of the parameters necessary as the value. 
+	\end{enumerate}
+	
+	Here is an example CONFIG for a simple \ac{CoCoMET} run:
+	
+	\begin{Verbatim}[tabsize=3]
+verbose: True # Whether to use verbose output
+parallel_processing: True # [bool] Whether or not to use parallel processing for certain tasks
+max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None for unlimited
+
+wrf:
+	path_to_data: "/D3/data/thahn/wrf/wrfout_2023_07_09/wrfout_d02*"
+
+	is_idealized: False
+	min_frame_index: 10 # 0-based indexing, inclusive
+	max_frame_index: 70 # 0-based indexing, inclusive
+
+	feature_tracking_var: "DBZ"
+	segmentation_var: "DBZ"
+
+	tobac:
+		feature_id:
+			threshold: [30,40,50,60]
+			target: "maximum"
+			position_threshold: "weighted_diff"
+			sigma_threshold: 0.5
+			n_min_threshold: 4
+
+		linking: 
+			method_linking: "predict"
+			adaptive_stop: 0.2
+			adaptive_step: 0.95
+			order: 1
+			subnetwork_size: 10
+			memory: 1
+			v_max: 20
+
+		segmentation_2d:
+			height: 2 # km
+			method: "watershed"
+			threshold: 15
+
+		segmentation_3d:
+			method: "watershed"
+			threshold: 15
+
+		analysis: # Optional
+			merge_split: { variable: "DBZ" }
+			var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
+			area-low: { height: 2 }
+			area-high: { height: 4, threshold: 15 }
+			volume: { threshold: 15 }
+			volume-high: { threshold: 30 }
+	\end{Verbatim}
+	
+	\subsection{Tracking Output Structure}
+	It is necessary to define a uniform output structure which all trackers should be converted to for the purpose of later analysis. This section defines the primary components of tracker output including feature identification, linking, and segmentation output.
+	
+	\subsubsection{Feature Identification Output}
+	Feature identification output from trackers should be converted to a \verb|GeoPandas geodataframe| where each row should contain information regarding exactly one detected feature. The row should contain the following information in this order:
+	
+	\begin{enumerate}
+		\item “frame” [int]:  The index of the time step the feature was identified at. Should be an integer ranging from 0 to N where N is the number of time steps in the input data source.
+		\item “time” [\verb|pandas Timestamp|]: A \verb|pandas Timestamp| object indicating the time of feature detection based off of the input time field.
+		\item “feature\_id” [int]: A unique id value assigned to each detected feature. Should be an integer ranging from 0 to N where N is the total number of features detected.
+		\item “south\_north” [float]: The y index of the detected feature determined by the input field. May not be an integer for some trackers such as tobac.
+		\item “west\_east” [float]:  The x index of the detected feature determined by the input field. May not be an integer for some trackers such as tobac.
+		\item “up\_down” [optional, float]: The z index of the detected feature determined by the input field. May not be an integer for some trackers such as tobac. May not be present if only doing 2D tracking.
+		\item “latitude” [float]: The exact latitude value of the location of the detected feature.
+		\item “longitude” [float]: The exact longitude value of the location of the detected feature.
+		\item “projection\_x” [float]: The projection x value of the feature. Should be in meters.
+		\item “projection\_y” [float]: The projection y value of the feature. Should be in meters.
+		\item “altitude” [optional, float]:  The altitude of the identified feature in meters. May not be present if only doing 2D tracking.
+		\item “geometry” [\verb|Geopandas point|]: The \verb|point| location of the features determined using lat/long values generated by \verb|GeoPandas|. 
+	\end{enumerate} 
+	
+	\subsubsection{Linking Output}
+	Tracking or “linking” output from the tracker should also be a \verb|GeoPandas geodataframe| where each row should contain information regarding exactly one identified feature. The row should contain the following information (can be seen as an extension of the feature identification output):
+	
+	\begin{enumerate}
+		\item “frame” [int]:  The index of the time step the feature was identified at. Should be an integer ranging from 0 to N where N is the number of time steps in the input data source.
+		\item “time” [\verb|pandas Timestamp|]: A \verb|pandas Timestamp| object indicating the time of feature detection based off of the input time field.
+		\item “lifetime” [\verb|pandas Timedelta|]: A \verb|pandas Timedelta| object indicating the time since the cell was first tracked.
+		\item “lifetime\_percent” [float]: A float indicating the percentage of the cell’s lifetime the current row is. I.e. If the cell lasts 30 minutes, the 15 minute row would be 0.5. If \ac{CC} life is only one frame, will equal -1.
+		\item “feature\_id” [int]: A unique id value assigned to each detected feature. Should be an integer ranging from 0 to N where N is the total number of features detected.
+		\item “cell\_id” [int]: A unique id value assigned to each detected cell track. Should be an integer ranging from 0 to N where N is the total number of \ac{CC}s tracked.
+		\item “south\_north” [float]: The y index of the detected feature determined by the input field. May not be an integer for some trackers such as tobac.
+		\item “west\_east” [float]:  The x index of the detected feature determined by the input field. May not be an integer for some trackers such as tobac.
+		\item “up\_down” [optional, float]: The z index of the detected feature determined by the input field. May not be an integer for some trackers such as tobac. May not be present if only doing 2D tracking.
+		\item “latitude” [float]: The exact latitude value of the location of the detected feature.
+		\item “longitude” [float]: The exact longitude value of the location of the detected feature.
+		\item “projection\_x” [float]: The projection x value of the feature. Should be in meters.
+		\item “projection\_y” [float]: The projection y value of the feature. Should be in meters.
+		\item “altitude” [optional, float]:  The altitude of the identified feature in meters. May not be present if only doing 2D tracking.
+		\item “geometry” [\verb|Geopandas point|]: The \verb|point| location of the features determined using lat/long values generated by \verb|GeoPandas|. 
+	\end{enumerate} 
+	
+	\subsubsection{Segmentation Output}
+	5.2.3. The segmentation step of each tracker should be an \verb|xarray Dataset| containing two data variables with the following dimensions in this order:
+	\begin{enumerate}
+		\item “time” [\verb|numpy datetime64|]: A list of \verb|numpy datetime64| objects containing all of the time steps of the input data.
+		\item “up\_down” [int]: The z index of each \ac{DC} in the \verb|Dataset|, should be an integer for each value. May not be present for 2D segmentation. 
+		\item “south\_north” [int]: The y index of each \ac{DC} in the \verb|Dataset|, should be an integer for each value.
+		\item “west\_east” [int]: The x index of each \ac{DC} in the \verb|Dataset|, should be an integer for each value.
+	\end{enumerate}
+	And the following coordinates in no particular order:
+	\begin{enumerate}
+		\item “projection\_x\_coordinate” [float]: The projection x location of each \ac{DC} in the \verb|Dataset| given in meters.
+		\item “projection\_y\_coordinate” [float]: The projection y location of each \ac{DC} in the \verb|Dataset| given in meters. 
+		\item “altitude” [float]: The altitude in meters of each \ac{DC} in the \verb|Dataset|.
+		\item “latitude” [float]: The latitude of each \ac{DC} in the \verb|Dataset| (Should be 2 dimensional \verb|[south_north, west_east]|).
+		\item “longitude” [float]: The longitude of each \ac{DC} in the \verb|Dataset| (Should be 2 dimensional \verb|[south_north, west_east]|).
+	\end{enumerate}
+	
+	The first data variable will be \verb|Feature_Segmentation| where the field is labeled with feature ids according to the segmentation. The second variable will be a \verb|Cell_Segmentation| which will be the same as the \verb|Feature_Segmentation| but instead of each point in the output field being labeled with the feature ids, they will be replaced with the respective \ac{CC} id of that feature. Locations on the grid without a \ac{CC} should be marked as -1 to coincide with the standard established in the sections above.
+	
+	\subsection{Analysis Products}
+	\ac{CoCoMET-US} analysis products used in variable calculations.
+	
+	\subsubsection{The Analysis Object}
+	The analysis object is a dictionary consisting of the following items:
+	\begin{enumerate}
+		\item “tracking\_xarray” [\verb|xarray Dataset/DataArray|]: An \verb|xarray Dataset/DataArray| which contains the variables used to perform the tracking and potentially other variables. Will be different depending on the type of data used.
+		\item “segmentation\_xarray” [\verb|xarray Dataset/DataArray|]: An \verb|xarray Dataset/DataArray| which contains the variables used to perform the segmentation on. Will be different depending on the type of data used.
+		\item “UDAF\_features” [\verb|Geopandas geodataframe|]: A UDAF\_features compliant \verb|Geopandas geodataframe|. % Change this to US in the code
+		\item “UDAF\_linking” [\verb|Geopandas geodataframe|]: A UDAF\_linking compliant \verb|Geopandas geodataframe|.
+		\item “UDAF\_segmentation\_2d” [\verb|xarray Dataset|]: A UDAF\_segmentation\_2d compliant \verb|xarray Dataset|.
+		\item “UDAF\_segmentation\_3d” [\verb|xarray Dataset|]: A UDAF\_segmentation\_3d compliant \verb|xarray Dataset|.
+	\end{enumerate}	
+	
+	\subsection{Outputs to User}
+	TODO: Define the return structure of CoMET\_start and all elements therein
+	
+	\section{General Guidelines}
+	When making any changes to \ac{CoMET}, whether that be adding a new analysis function or adding a whole new tracker, there are some general guidelines we should follow. They are laid out here, in the [semi-]order (sometimes it may not be necessary to rigidly follow this routine, but it is recommended you do) they should be completed:
+	
+	\begin{itemize}
+		\item When importing python packages into the file you are working on, try your best to collect the imports all at the top of the document. Refrain from putting imports inside of function definitions unless absolutely necessary. 
+		\item Whenever you define a new python function, it should have type hints indicating the potential input types and potential output types. For example: 
+		
+		\begin{verbatim}
+			def extract_arm_product(
+			analysis_object: dict, path_to_files: str, variable_names: list[str], 
+			**args: dict) -> xr.Dataset:
+		\end{verbatim}
+
+		\item Whenever a new python function is defined, it should have a docstring which indicates more information about the input arguments and the return values. These docstrings should follow the \verb|Sphinx| formatting scheme which the Spyder \ac{IDE} does automatically. For the above function definition, the docstring looks like this:
+		
+		\begin{Verbatim}[tabsize=3]
+	"""
+	Parameters
+	----------
+	analysis_object : dict
+		A CoMET-UDAF standard analysis object containing at least UDAF_tracks.
+	path_to_files : str
+		A glob-like path to the ARM product output.
+	variable_name : list[str]
+		Case sensitive name of variable you want to extract from the ARM data
+				
+	Returns
+	-------
+	output_data : xarray.core.dataset.Dataset
+		An xarray Dataset with the following: frame, tracking_time, arm_time, 
+		time_delta, closest_feature_id (km), variable_names list
+	"""
+		\end{Verbatim}
+		
+		\item Whenever a new python function is defined, it should fall into some kind of test (we use the \verb|pytest| testing suite). There will be more information on this in future sections, however, functions which primarily deal with the loading/tracking step will mostly fall under the \textbf{functional tests} whereas those which deal with the analysis or post-processing will fall under the \textbf{unit tests}.
+		
+		\item Now that your code is prepared, there a few processes we should follow. The first of which is to reformat your code so it is in line with the PEP8 formatting standards. We have a few packages which will automatically do this. The first one is going to be \verb|isort|. This package will reorder and reshape your import statements so they are more readable. To use it, simply do \verb|python -m isort dir --profile black| from the command line where \verb|dir| is the directory which contains the \verb|__init__.py| file. For \ac{CoMET}, this will just be the \verb|CoMET/| directory.
+		
+		\item Now to reformat the body of the code, we are going to be using the \verb|black| package. This is also simple, as you just need to do \verb|python -m black dir| from the command line.  \textbf{WARNING:} Do \textbf{not} interrupt \verb|black| during its runtime as this can result in a complete deletion of your files--luckily, \verb|black| usually takes $<1$ second to run.
+		
+		\item Now that our code is nicely formatted, we need to add the automatically generated documentation (this is why the docstrings were important). Firstly, if you created a new file in your changes, you need to edit the \verb|__all__| variable in \ac{CoMET}'s \verb|__init__.py| file. All you need to do is add the name of the new file in quotes to the array. So like this:
+		
+		\begin{verbatim}
+			__all__ = [
+			"user_interface_layer",
+			.
+			.
+			.
+			"user_utils",
+			"your_file_name"
+			]
+		\end{verbatim}
+		
+		\item Now we can generate the documentation. All we need to do is run the following command from the command line: 
+		
+		\verb|python -m pdoc dir --logo "https://url.to.ascent.logo.here" -o ./docs|
+		
+		\item Once all of this is done, and probably intermittently as well, we need to run our tests. As long as you kept the tests within the \verb|dir/tests/| directory, you should be able to automatically run all tests with the following command (make sure they pass before committing!): 
+		
+		\verb|python -m pytest|
+		
+		\item Now we can build our package for distribution. Ensuring we have the \verb|build| package installed, all we have to do is run \verb|python -m build dir| and this will handle everything. You are now ready to commit your updates to \ac{CoMET}! Make sure you do not commit to the \verb|master| branch first, you should always commit to \verb|testing| branch or your own branch.
+	\end{itemize}
+	
+	\section{Adding an Analysis Function}
+	Suppose we want to add another function to the analysis module of \ac{CoMET}, this would be the case when we wish to calculate some properties or quantities of interest relating to the tracking results. Importantly, we restrict the bounds of what the function we want to add can do based off of where it fits into the \ac{CoMET} paradigm. Namely, we have two options. The first is an \textbf{internal function}, this is something which can be evaluated during the normal \ac{CoMET} operating procedure (i.e. The \ac{CoMET} start function), i.e. within the analysis step. Secondly, we have a \textbf{post-processing function} which is something which operates outside of the \ac{CoMET} run step and acts mainly as a function to help users. An example of the first type is say we want to calculate the area of a cell, this is something that can be done within the primary analysis module. Conversely, an example of the second function type is something in which we don't have enough information to do during the analysis step. Say we want to 'link' together \ac{tobac} \ac{WA} and \ac{TB} tracking results to see how their centroids move. Since we cannot track with both variables simultaneously (as this would be unnecessarily difficult), we would take in \ac{CoMET} output from two different runs to apply this function.\\
+	
+	In the following subsections, we describe how you should go about adding each of the function types in a step by step manner.
+	
+	\subsection{Adding an Internal Function}
+	
+	TODO
+	
+	\subsection{Adding a Post-Processing Function}
+	
+	TODO
+	
+	\section{Adding a Tracker}
+	
+	TODO
+	
+	\section{Adding a New Input Type}
+	
+	TODO
+	
+	This should be it.
+	
+	
+\end{document}

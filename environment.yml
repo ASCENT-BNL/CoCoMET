@@ -1,20 +1,24 @@
-name: CoMET-dev
+name: CoCoMET-dev
 channels:
-  - defaults
   - conda-forge
 dependencies:
-  - python
-  - numpy==1.26.4
-  - yaml
-  - pyyaml
   - arm_pyart
-  - iris
+  - black
   - geopandas
-  - tobac
+  - iris
+  - libsqlite
+  - metpy
   - numba
+  - numpy==1.26.4
+  - pip
+  - pytest
+  - python==3.12.*
+  - pyyaml
   - spyder
   - sqlite
-  - libsqlite
+  - tobac
   - tqdm
-  - metpy
-prefix: /home/thahn/.conda/envs/CoMET-dev
+  - yaml
+  - pip
+  - pip:
+    - vincenty

@@ -2,9 +2,9 @@ name: comet_run_tests
 
 on:
   push:
-    branches: [ "master", "dev" ]
+    branches: [ "master", "testing" ]
   pull_request:
-    branches: [ "master", "dev" ]
+    branches: [ "master", "testing" ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
