@@ -144,7 +144,6 @@ def _merge_split_2d(
 
     # If input variable field is 2D return None. Also, if DataArray, use those values for calculations. If Dataset, use tracking_var to get variable
     if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
-
         if len(analysis_object["segmentation_xarray"].shape) < 3:
             warnings.warn("!=====Input Variable has Too Low Dimensionality=====!")
             return None
@@ -152,7 +151,6 @@ def _merge_split_2d(
         variable_field = analysis_object["segmentation_xarray"]
 
     else:
-
         if len(analysis_object["segmentation_xarray"][variable].shape) < 3:
             warnings.warn("!=====Input Variable has Too Low Dimensionality=====!")
             return None
@@ -161,7 +159,6 @@ def _merge_split_2d(
 
     # If 3D segmentation is available, use that to calculate cell footprint, otherwise use 2D segmentation
     if analysis_object["US_segmentation_3d"] is not None:
-
         height_index = find_nearest(
             analysis_object["US_segmentation_3d"].altitude.values,
             cell_footprint_height * 1000,
@@ -172,7 +169,6 @@ def _merge_split_2d(
         ]
 
     elif analysis_object["US_segmentation_2d"] is not None:
-
         footprint_data = analysis_object["US_segmentation_2d"].Feature_Segmentation
 
     else:
@@ -180,7 +176,6 @@ def _merge_split_2d(
 
     # If we care about tracking lower values such as brightness temperature (i.e. we want to flood fill stuff less than a threshold), we need to invert the data so we can use the same algorithm. Will also invert background value
     if invert:
-
         variable_field = -1 * variable_field
         flood_background = -1 * flood_background
 
@@ -199,7 +194,6 @@ def _merge_split_2d(
         desc="=====Calculating Mergers and Splitters=====",
         total=frame_groups.ngroups,
     ):
-
         if frame[1].frame.min() >= (Tracks.frame.max() - (steps_forward_back - 1)):
             continue
         if frame[1].frame.min() <= (Tracks.frame.min() + (steps_forward_back - 1)):
@@ -210,7 +204,6 @@ def _merge_split_2d(
         final_mask.values[:] = -1
 
         for feature in frame[1].iterrows():
-
             feature_mask = deepcopy(footprint_data[frame[1].frame.min()])
             feature_mask.values[~isin(feature_mask.values, feature[1].feature_id)] = -1
 
@@ -229,21 +222,17 @@ def _merge_split_2d(
         ne = []
         tu = []
         for cell_id in valid_cells:
-
             num_of_edges = 0
             touching = []
 
             # Get indices of valid cells in mask
             # Loop over indices
             for nx, ny in zip(*np.where(cell_data == cell_id)):
-
                 # Find if location is on edge of cell (i.e. any touching cells not)
                 neighboring_cells = []
 
                 for mx in range(nx - 1, nx + 2):
-
                     for my in range(ny - 1, ny + 2):
-
                         try:
                             t = cell_data[mx, my]
                         except IndexError:
@@ -276,14 +265,11 @@ def _merge_split_2d(
 
         # As long as one of the cells exceeds out threshold of touching, it will get added to tracked list, so no need to do anything more complex
         for cell in cell_info_df.iterrows():
-
             uu = np.unique(cell[1].Touching_Edges, return_counts=True)
 
             for touching_cellid, touching_edge_count in zip(uu[0], uu[1]):
-
                 # If touching by over a certain percent threshold, add to valid touching set
                 if (touching_edge_count / cell[1].Num_Edges) > touching_threshold:
-
                     touching_tuple = tuple(np.sort((cell[1].cell, touching_cellid)))
                     valid_touching_cell_sets.append(touching_tuple)
 
@@ -293,7 +279,6 @@ def _merge_split_2d(
         valid_overlap_cell_sets = []
 
         for cell_set in valid_touching_cell_sets:
-
             # Cell 1 and 2 checks
             cell1_data = frame[1].query("cell_id==@cell_set[0]")
             cell2_data = frame[1].query("cell_id==@cell_set[1]")
@@ -303,7 +288,6 @@ def _merge_split_2d(
                 len(variable_field.shape) == 4
                 and analysis_object["US_segmentation_3d"] is not None
             ):
-
                 height_index = find_nearest(
                     analysis_object["US_segmentation_3d"].altitude.values,
                     cell_footprint_height * 1000,
@@ -334,11 +318,8 @@ def _merge_split_2d(
 
             # Loop over search radius
             for mx in range(row_1 - cell_1_radius, row_1 + cell_1_radius + 1):
-
                 for my in range(col_1 - cell_1_radius, col_1 + cell_1_radius + 1):
-
                     try:
-
                         # Calculate score function
                         R_adj = reflectivity_data[mx, my] - flood_background
                         dis = np.sqrt((my - col_1) ** 2 + (mx - row_1) ** 2)
@@ -384,11 +365,8 @@ def _merge_split_2d(
             segmented_2 = np.zeros(reflectivity_data.shape)
 
             for mx in range(row_2 - cell_2_radius, row_2 + cell_2_radius + 1):
-
                 for my in range(col_2 - cell_2_radius, col_2 + cell_2_radius + 1):
-
                     try:
-
                         # Repeat same process but for the second cell in the pair
                         R_adj = reflectivity_data[mx, my] - flood_background
                         dis = np.sqrt((my - col_2) ** 2 + (mx - row_2) ** 2)
@@ -446,7 +424,6 @@ def _merge_split_2d(
                 )
 
             if np.all(cell_1_status) and not np.any(cell_2_status):
-
                 output_frame_list_merge.append(
                     np.array([frame[1].frame.min(), frame[1].frame.min() + 1])
                 )
@@ -454,7 +431,6 @@ def _merge_split_2d(
                 output_merged_cells.append(cell_set[0])
 
             elif not np.any(cell_1_status) and np.all(cell_2_status):
-
                 output_frame_list_merge.append(
                     np.array([frame[1].frame.min(), frame[1].frame.min() + 1])
                 )
@@ -478,14 +454,12 @@ def _merge_split_2d(
                 )
 
             if np.all(cell_1_status) and not np.any(cell_2_status):
-
                 output_frame_list_split.append(
                     np.array([frame[1].frame.min() - 1, frame[1].frame.min()])
                 )
                 output_init_cells_split.append(cell_set[0])
                 output_split_cells.append((cell_set[0], cell_set[1]))
             elif not np.any(cell_1_status) and np.all(cell_2_status):
-
                 output_frame_list_split.append(
                     np.array([frame[1].frame.min() - 1, frame[1].frame.min()])
                 )
@@ -574,7 +548,6 @@ def _merge_split_3d(
 
     # If input variable field is 2D return None. Also, if DataArray, use those values for calculations. If Dataset, use tracking_var to get variable
     if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
-
         if len(analysis_object["segmentation_xarray"].shape) < 3:
             warnings.warn("!=====Input Variable has Too Low Dimensionality=====!")
             return None
@@ -582,7 +555,6 @@ def _merge_split_3d(
         variable_field = analysis_object["segmentation_xarray"]
 
     else:
-
         if len(analysis_object["segmentation_xarray"][variable].shape) < 3:
             warnings.warn("!=====Input Variable has Too Low Dimensionality=====!")
             return None
@@ -591,7 +563,6 @@ def _merge_split_3d(
 
     # If we care about tracking lower values such as brightness temperature (i.e. we want to flood fill stuff less than a threshold), we need to invert the data so we can use the same algorithm. Will also invert background value
     if invert:
-
         variable_field = -1 * variable_field
         flood_background = -1 * flood_background
 
@@ -652,7 +623,6 @@ def _merge_split_3d(
         for i in tqdm(
             index_list, desc=desc, total=len(index_list)
         ):  # loop over every feature's final frame (1 cell per loop)
-
             row = Tracks.iloc[i]
             feature_id = row["feature_id"]
             frame = row["frame"]
@@ -702,7 +672,6 @@ def _merge_split_3d(
             touching_featureid,
             touching_area,
         ) in cell.Surface_Area_Dict.items():  # loop through surface area dictionary
-
             changing_cell = Tracks[Tracks["feature_id"] == cell.feature_id][
                 "cell_id"
             ].values[0]
@@ -734,7 +703,6 @@ def _merge_split_3d(
             if (touching_area / total_surface) > touching_threshold or (
                 touching_area / touching_cell_surface_area
             ) > touching_threshold:
-
                 # this if statement is to avoid the case where 2 cells are touching but the both disappear on the next frame, which would not be a merge
                 if (
                     cell.Merge_or_Split == "merge"
@@ -784,7 +752,6 @@ def _merge_split_3d(
         desc="=====Calculating Overlap=====",
         total=len(valid_touching_cell_sets),
     ):
-
         # Cell 1 and 2 checks
         cell1_data = Tracks[
             Tracks["feature_id"] == cell_set[0]
@@ -796,11 +763,9 @@ def _merge_split_3d(
             len(variable_field.shape) == 4
             and analysis_object["US_segmentation_3d"] is not None
         ):
-
             variable_data = deepcopy(variable_field[cell1_data.frame.values[0]]).values
 
         else:
-
             raise ValueError("!=====Variable Field has Wrong Dimension=====!")
 
         # flood fill cell 1
@@ -835,13 +800,9 @@ def _merge_split_3d(
             footprint_data, center_proj_1, cell_1_radius
         )
         for mx in range(xbounds_1[0], xbounds_1[1]):
-
             for my in range(ybounds_1[0], ybounds_1[1]):
-
                 for mz in range(zbounds_1[0], zbounds_1[1]):
-
                     try:
-
                         # Calculate score function
                         R_adj = variable_data[mz, my, mx] - flood_background
                         dis = np.sqrt(
@@ -902,13 +863,9 @@ def _merge_split_3d(
             footprint_data, center_proj_2, cell_2_radius
         )
         for mx in range(xbounds_2[0], xbounds_2[1]):
-
             for my in range(ybounds_2[0], ybounds_2[1]):
-
                 for mz in range(zbounds_2[0], zbounds_2[1]):
-
                     try:
-
                         # Repeat same process but for the second cell in the pair
                         R_adj = variable_data[mz, my, mx] - flood_background
                         dis = np.sqrt(

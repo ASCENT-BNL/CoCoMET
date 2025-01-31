@@ -56,7 +56,6 @@ def create_isolated_cell(grid_shape, cell_var, cell_radius, max_dbz=None, min_tb
         desc="=====Creating Isolated Cell Grid=====",
         total=grid_shape[0],
     ):
-
         # Create sphere of radius r
         xx, yy, zz = np.mgrid[: grid_shape[1], : grid_shape[2], : grid_shape[3]]
 
@@ -75,7 +74,6 @@ def create_isolated_cell(grid_shape, cell_var, cell_radius, max_dbz=None, min_tb
 
     # If cell_var is "dbz" set reflectivities
     if cell_var.lower() == "dbz":
-
         cell_grid[cell_grid == 0] = -30
         cell_grid[cell_grid == 1] = max_dbz
 
@@ -105,7 +103,6 @@ def create_isolated_cell(grid_shape, cell_var, cell_radius, max_dbz=None, min_tb
 
 
 def create_mcs():
-
     print("=====In Progress=====")
 
 

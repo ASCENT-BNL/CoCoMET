@@ -53,7 +53,6 @@ def load(dataset, variable, mode="auto", **kwargs):
 
 
 def loadwrfcubelist(filenames, variable_list, **kwargs):
-
     cubelist_out = CubeList()
     for variable in variable_list:
         cubelist_out.append(loadwrfcube(filenames, variable, **kwargs))
@@ -67,7 +66,6 @@ def loadwrfcube(dataset, variable, **kwargs):
 
 
 def loadwrfcube_mult(dataset, variable, constraint=None, add_coordinates=None):
-
     array = dataset[variable]
     variable_dimensions = array.dims
     attributes = dataset.attrs
@@ -200,7 +198,6 @@ def loadwrfcube_mult(dataset, variable, constraint=None, add_coordinates=None):
 
 
 def derivewrfcubelist(filenames, variable_list, **kwargs):
-
     cubelist_out = CubeList()
     for variable in variable_list:
         cubelist_out.append(derivewrfcube(filenames, variable))
@@ -397,7 +394,6 @@ from dask.array import concatenate
 
 
 def calculate_wrf_surface_precipitation_average(filenames, **kwargs):
-
     surface_precip_accum = calculate_wrf_surface_precipitation_accumulated(
         filenames, **kwargs
     )
@@ -438,7 +434,6 @@ from xarray import open_mfdataset
 
 
 def calculate_wrf_surface_precipitation_instantaneous(filenames, **kwargs):
-
     dataset = open_mfdataset(filenames, coords="all")
     dt = dataset.attrs["DT"]
     RAINNCV = loadwrfcube(filenames, "RAINNCV", **kwargs)
@@ -449,7 +444,6 @@ def calculate_wrf_surface_precipitation_instantaneous(filenames, **kwargs):
 
 
 def variable_list(filenames):
-
     if type(filenames) == list:
         filenames = filenames[0]
     variable_list = list(Dataset(filenames).variables)
@@ -457,7 +451,6 @@ def variable_list(filenames):
 
 
 def calculate_wrf_potential_temperature(filenames, **kwargs):
-
     T = loadwrfcube(filenames, "T", **kwargs)
     T0 = coords.AuxCoord(300.0, long_name="reference_temperature", units="K")
     theta = T + T0
@@ -466,7 +459,6 @@ def calculate_wrf_potential_temperature(filenames, **kwargs):
 
 
 def calculate_wrf_temperature(filenames, **kwargs):
-
     theta = derivewrfcube(filenames, "potential_temperature", **kwargs)
     p = derivewrfcube(filenames, "pressure", **kwargs)
     p0 = coords.AuxCoord(1000.0, long_name="reference_pressure", units="hPa")
@@ -479,7 +471,6 @@ def calculate_wrf_temperature(filenames, **kwargs):
 
 
 def calculate_wrf_relativehumidity(filenames, **kwargs):
-
     QVAPOR = loadwrfcube(filenames, "QVAPOR", **kwargs)
     T = derivewrfcube(filenames, "temperature", **kwargs)
     p = derivewrfcube(filenames, "pressure", **kwargs)
@@ -490,7 +481,6 @@ def calculate_wrf_relativehumidity(filenames, **kwargs):
 
 
 def calculate_RH(QVAPOR, T, p):
-
     ES = 1e2 * 6.1094 * exp(17.625 * (T - 273.15) / (T - 273.15 + 243.04))
     QVS = 0.622 * ES / (p - (1.0 - 0.622) * ES)
     RH = 100 * maximum(minimum(QVAPOR / QVS, 1.0), 0.0)
@@ -539,7 +529,6 @@ def calculate_wrf_airmass(filenames, **kwargs):
 
 
 def calculate_wrf_volume(filenames, **kwargs):
-
     layer_height = derivewrfcube(filenames, "layer_height", **kwargs)
     layer_height.add_aux_coord(
         AuxCoord(
@@ -571,7 +560,6 @@ from numpy import diff
 
 
 def calculate_wrf_area(filenames, **kwargs):
-
     dummy = loadwrfcube(filenames, "OLR", **kwargs)
     dummy.data[:] = 1
     dummy.units = "1"
@@ -597,7 +585,6 @@ def calculate_wrf_area(filenames, **kwargs):
 
 
 def calculate_wrf_layerheight(filenames, **kwargs):
-
     zH = derivewrfcube(filenames, "geopotential_height_stag", **kwargs)
     bottom_top_stag = zH.coord("bottom_top_stag").points
     layer_height = (
@@ -614,7 +601,6 @@ from iris.analysis import SUM
 
 
 def calculate_wrf_LWP(filenames, **kwargs):
-
     LWC = derivewrfcube(filenames, "LWC", **kwargs)
     microphysics_scheme = kwargs.pop("microphysics_scheme", None)
     Airmass = derivewrfcube(filenames, "airmass_path", **kwargs)
@@ -625,7 +611,6 @@ def calculate_wrf_LWP(filenames, **kwargs):
 
 
 def calculate_wrf_IWP(filenames, **kwargs):
-
     IWC = derivewrfcube(filenames, "IWC", **kwargs)
     microphysics_scheme = kwargs.pop("microphysics_scheme", None)
     Airmass = derivewrfcube(filenames, "airmass_path", **kwargs)
@@ -636,7 +621,6 @@ def calculate_wrf_IWP(filenames, **kwargs):
 
 
 def calculate_wrf_IWV(filenames, **kwargs):
-
     QVAPOR = loadwrfcube(filenames, "QVAPOR", **kwargs)
     Airmass = derivewrfcube(filenames, "airmass_path", **kwargs)
     IWV = (QVAPOR * Airmass).collapsed(("model_level_number"), SUM)
@@ -646,7 +630,6 @@ def calculate_wrf_IWV(filenames, **kwargs):
 
 
 def integrate_cube(variable, Airmass_or_dz, name=None):
-
     if name is None:
         name = "integrated_" + variable.name()
     variable_integrated = variable * Airmass_or_dz
@@ -660,7 +643,6 @@ def integrate_cube(variable, Airmass_or_dz, name=None):
 
 
 def calculate_wrf_LWP_fromcubes(LWC, Airmass):
-
     LW = LWC * Airmass
     # LW.remove_coord('geopotential_height')
     # !LWP=LW.collapsed(('model_level_number'),SUM)
@@ -671,7 +653,6 @@ def calculate_wrf_LWP_fromcubes(LWC, Airmass):
 
 
 def calculate_wrf_IWP_fromcubes(IWC, Airmass):
-
     IW = IWC * Airmass
     # IW.remove_coord('geopotential_height')
     # IWP=IW.collapsed(('model_level_number'),SUM)
@@ -682,7 +663,6 @@ def calculate_wrf_IWP_fromcubes(IWC, Airmass):
 
 
 def calculate_wrf_IWV_fromcubes(QVAPOR, Airmass):
-
     VAPOR = QVAPOR * Airmass
     # VAPOR.remove_coord('geopotential_height')
     # IWV=VAPOR.collapsed(('model_level_number'),SUM)
@@ -695,7 +675,6 @@ from iris.analysis import MAX
 
 
 def calculate_wrf_maximum_reflectivity(filenames, **kwargs):
-
     REFL_10CM = loadwrfcube(filenames, "REFL_10CM", **kwargs)
     MAX_REFL_10CM = REFL_10CM.collapsed("model_level_number", MAX)
     MAX_REFL_10CM.rename("maximum reflectivity")
@@ -706,7 +685,6 @@ from iris import Constraint, cube
 
 
 def calculate_wrf_w_unstaggered(filenames, **kwargs):
-
     w = loadwrfcube(filenames, "W", **kwargs)
     constraint_1 = Constraint(
         bottom_top_stag=lambda cell: cell > w.coord("bottom_top_stag").points[0]
@@ -724,7 +702,6 @@ def calculate_wrf_w_unstaggered(filenames, **kwargs):
 
 
 def calculate_wrf_u_unstaggered(filenames, **kwargs):
-
     u = loadwrfcube(filenames, "U", **kwargs)
     constraint_1 = Constraint(
         west_east_stag=lambda cell: cell > u.coord("west_east_stag").points[0]
@@ -742,7 +719,6 @@ def calculate_wrf_u_unstaggered(filenames, **kwargs):
 
 
 def calculate_wrf_v_unstaggered(filenames, **kwargs):
-
     v = loadwrfcube(filenames, "V", **kwargs)
     constraint_1 = Constraint(
         south_north_stag=lambda cell: cell > v.coord("south_north_stag").points[0]
@@ -760,7 +736,6 @@ def calculate_wrf_v_unstaggered(filenames, **kwargs):
 
 
 def calculate_wrf_density(filenames, **kwargs):
-
     if "ALT" in variable_list(filenames):
         alt = loadwrfcube(filenames, "ALT", **kwargs)
         rho = alt ** (-1)
@@ -784,7 +759,6 @@ def calculate_wrf_pressure(filenames, **kwargs):
 
 
 def calculate_wrf_pressure_stag(filenames, **kwargs):
-
     p = derivewrfcube(filenames, "pressure", **kwargs)
     bottom_top = p.coord("bottom_top").points
     p_stag = 0.5 * (
@@ -795,7 +769,6 @@ def calculate_wrf_pressure_stag(filenames, **kwargs):
 
 
 def calculate_wrf_pressure_xstag(filenames, **kwargs):
-
     p = derivewrfcube(filenames, "pressure", **kwargs)
     west_east = p.coord("west_east").points
     p_xstag = 0.5 * (
@@ -807,7 +780,6 @@ def calculate_wrf_pressure_xstag(filenames, **kwargs):
 
 
 def calculate_wrf_pressure_ystag(filenames, **kwargs):
-
     p = derivewrfcube(filenames, "pressure", **kwargs)
     south_north = p.coord("south_north").points
     p_ystag = 0.5 * (
@@ -827,7 +799,6 @@ def calculate_wrf_geopotential(filenames, **kwargs):
 
 
 def calculate_wrf_geopotential_height_stag(filenames, **kwargs):
-
     pH = derivewrfcube(filenames, "geopotential", **kwargs)
     g = coords.AuxCoord(9.81, long_name="acceleration", units="m s^-2")
     zH = pH / g
@@ -836,7 +807,6 @@ def calculate_wrf_geopotential_height_stag(filenames, **kwargs):
 
 
 def calculate_wrf_geopotential_height(filenames, **kwargs):
-
     zH = derivewrfcube(filenames, "geopotential_height_stag", **kwargs)
     bottom_top_stag = zH.coord("bottom_top_stag").points
     z = 0.5 * (
@@ -869,7 +839,6 @@ import numpy as np
 
 
 def array_interp_extendby1(array, dim):
-
     idx1 = [slice(None)] * (array.ndim)
     idx2 = [slice(None)] * (array.ndim)
     idx_start = [slice(None)] * (array.ndim)
@@ -899,7 +868,6 @@ import dask.array as da
 
 
 def cube_interp_extendby1(cube_in, coord):
-
     dim = cube_in.coord_dims(coord)[0]
     cube_data = cube_in.core_data()
     ndim = cube_in.ndim
@@ -1093,7 +1061,6 @@ from copy import deepcopy
 def add_aux_coordinates_multidim(
     filenames, variable_cube, add_coordinates=None, constraint=None, **kwargs
 ):
-
     coords = variable_cube.coords()
     add_coordinates_new = deepcopy(add_coordinates)
 
@@ -1110,9 +1077,7 @@ def add_aux_coordinates_multidim(
         add_coordinates.append(add_coordinates1)
 
     for coordinate in add_coordinates:
-
         if coordinate == "z":
-
             if (
                 coords[0].name() == "time"
                 and coords[1].name() == "bottom_top"
@@ -1365,7 +1330,6 @@ from iris import coords, load_cube
 
 
 def make_time_coord(filenames):
-
     Times = load_cube(filenames, "Times")
     filetimes = Times.data
     #    filetimelist = []   # Will contain list of times in seconds since model start time in file.
@@ -1413,7 +1377,6 @@ from numpy import arange
 
 
 def make_westeast_coord(DX, WEST_EAST_PATCH_END_UNSTAG):
-
     WEST_EAST = arange(0, WEST_EAST_PATCH_END_UNSTAG)
     west_east = coords.DimCoord(
         WEST_EAST,
@@ -1430,7 +1393,6 @@ def make_westeast_coord(DX, WEST_EAST_PATCH_END_UNSTAG):
 
 
 def make_westeast_stag_coord(DX, WEST_EAST_PATCH_END_STAG):
-
     WEST_EAST_U = arange(0, WEST_EAST_PATCH_END_STAG)
     west_east_stag = coords.DimCoord(
         WEST_EAST_U,
@@ -1447,7 +1409,6 @@ def make_westeast_stag_coord(DX, WEST_EAST_PATCH_END_STAG):
 
 
 def make_southnorth_coord(DY, SOUTH_NORTH_PATCH_END_UNSTAG):
-
     # SOUTH_NORTH_PATCH_END_UNSTAG=attributes['SOUTH-NORTH_PATCH_END_UNSTAG']
     SOUTH_NORTH = arange(0, SOUTH_NORTH_PATCH_END_UNSTAG)
     south_north = coords.DimCoord(
@@ -1465,7 +1426,6 @@ def make_southnorth_coord(DY, SOUTH_NORTH_PATCH_END_UNSTAG):
 
 
 def make_southnorth_stag_coord(DY, SOUTH_NORTH_PATCH_END_STAG):
-
     SOUTH_NORTH_V = arange(0, SOUTH_NORTH_PATCH_END_STAG)
     south_north_stag = coords.DimCoord(
         SOUTH_NORTH_V,
@@ -1482,7 +1442,6 @@ def make_southnorth_stag_coord(DY, SOUTH_NORTH_PATCH_END_STAG):
 
 
 def make_bottom_top_coordinate(BOTTOM_TOP_PATCH_END_UNSTAG):
-
     BOTTOM_TOP = arange(0, BOTTOM_TOP_PATCH_END_UNSTAG)
     bottom_top = coords.DimCoord(
         BOTTOM_TOP,
@@ -1499,7 +1458,6 @@ def make_bottom_top_coordinate(BOTTOM_TOP_PATCH_END_UNSTAG):
 
 
 def make_bottom_top_stag_coordinate(BOTTOM_TOP_PATCH_END_STAG):
-
     BOTTOM_TOP_W = arange(0, BOTTOM_TOP_PATCH_END_STAG)
     bottom_top_stag = coords.DimCoord(
         BOTTOM_TOP_W,
@@ -1516,7 +1474,6 @@ def make_bottom_top_stag_coordinate(BOTTOM_TOP_PATCH_END_STAG):
 
 
 def make_model_level_number_coordinate(BOTTOM_TOP_PATCH_END):
-
     MODEL_LEVEL_NUMBER = arange(0, BOTTOM_TOP_PATCH_END)
     model_level_number = coords.AuxCoord(
         MODEL_LEVEL_NUMBER, standard_name="model_level_number", units="1"
@@ -1528,7 +1485,6 @@ from iris import coord_systems
 
 
 def make_coord_system(attributes):
-
     #    :CEN_LAT = -3.212929f ;
     # 		:CEN_LON = -60.59799f ;
     # 		:TRUELAT1 = 0.f ;
@@ -1572,7 +1528,6 @@ from numpy import array, transpose
 
 
 def make_x_coord(DX, WEST_EAST_PATCH_END_UNSTAG, coord_system):
-
     X = DX * (arange(0, WEST_EAST_PATCH_END_UNSTAG) + 0.5)
     bounds = transpose(
         array(
@@ -1597,7 +1552,6 @@ def make_x_coord(DX, WEST_EAST_PATCH_END_UNSTAG, coord_system):
 
 
 def make_x_stag_coord(DX, WEST_EAST_PATCH_END_STAG, coord_system=None):
-
     X_U = DX * (arange(0, WEST_EAST_PATCH_END_STAG) - 1)
     x_stag_coord = coords.AuxCoord(
         X_U,
@@ -1614,7 +1568,6 @@ def make_x_stag_coord(DX, WEST_EAST_PATCH_END_STAG, coord_system=None):
 
 
 def make_y_coord(DY, SOUTH_NORTH_PATCH_END_UNSTAG, coord_system=None):
-
     Y = DY * (arange(0, SOUTH_NORTH_PATCH_END_UNSTAG) + 0.5)
     bounds = transpose(
         array(
@@ -1639,7 +1592,6 @@ def make_y_coord(DY, SOUTH_NORTH_PATCH_END_UNSTAG, coord_system=None):
 
 
 def make_y_stag_coord(DY, SOUTH_NORTH_PATCH_END_STAG, coord_system=None):
-
     Y_V = DY * (arange(0, SOUTH_NORTH_PATCH_END_STAG) - 1)
     y_stag_coord = coords.AuxCoord(
         Y_V,
@@ -1656,7 +1608,6 @@ def make_y_stag_coord(DY, SOUTH_NORTH_PATCH_END_STAG, coord_system=None):
 
 
 def make_z_coordinate(filenames, **kwargs):
-
     z = calculate_wrf_geopotential_height(filenames, **kwargs)
     z_coord = coords.AuxCoord(
         z.core_data(),
@@ -1702,7 +1653,6 @@ def make_z_ystag_coordinate(filenames, **kwargs):
 
 
 def make_z_stag_coordinate(filenames, **kwargs):
-
     z = calculate_wrf_geopotential_height_stag(filenames, **kwargs)
     z_coord = coords.AuxCoord(
         z.core_data(),
@@ -1718,7 +1668,6 @@ def make_z_stag_coordinate(filenames, **kwargs):
 
 
 def make_p_coordinate(filenames, **kwargs):
-
     p = calculate_wrf_pressure(filenames, **kwargs)
     p_coord = coords.AuxCoord(
         p.core_data(),
@@ -1734,7 +1683,6 @@ def make_p_coordinate(filenames, **kwargs):
 
 
 def make_p_xstag_coordinate(filenames, **kwargs):
-
     p = calculate_wrf_pressure_xstag(filenames, **kwargs)
     p_coord = coords.AuxCoord(
         p.core_data(),
@@ -1750,7 +1698,6 @@ def make_p_xstag_coordinate(filenames, **kwargs):
 
 
 def make_p_ystag_coordinate(filenames, **kwargs):
-
     p = calculate_wrf_pressure_ystag(filenames, **kwargs)
     p_coord = coords.AuxCoord(
         p.core_data(),
@@ -1766,7 +1713,6 @@ def make_p_ystag_coordinate(filenames, **kwargs):
 
 
 def make_p_stag_coordinate(filenames, **kwargs):
-
     p = calculate_wrf_pressure_stag(filenames, **kwargs)
     p_coord = coords.AuxCoord(
         p.core_data(),

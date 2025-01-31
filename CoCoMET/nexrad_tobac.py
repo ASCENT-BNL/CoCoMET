@@ -57,7 +57,6 @@ def nexrad_tobac_feature_id(
     inCONFIG = deepcopy(CONFIG)
 
     if "height" in inCONFIG["nexrad"]["tobac"]["feature_id"]:
-
         # Ensure segmentation_height is a proper number before running
         if (
             inCONFIG["nexrad"]["tobac"]["feature_id"]["height"] is None
@@ -93,7 +92,6 @@ def nexrad_tobac_feature_id(
     dxy = tobac.get_spacings(cube)[0]
 
     if cube.coord("altitude").shape[0] == 1:
-
         # Perform tobac feature identification and then convert to a geodataframe before returning
         nexrad_radar_features = (
             tobac.feature_detection.feature_detection_multithreshold(
@@ -102,7 +100,6 @@ def nexrad_tobac_feature_id(
         )
 
     else:
-
         # Perform tobac feature identification and then convert to a geodataframe before returning
         nexrad_radar_features = (
             tobac.feature_detection.feature_detection_multithreshold(
@@ -157,13 +154,11 @@ def nexrad_tobac_linking(
     # Get time spacing
     diffs = []
     for ii in range(cube.coord("time").points.shape[0] - 1):
-
         diffs.append(cube.coord("time").points[ii + 1] - cube.coord("time").points[ii])
 
     dt = np.nanmedian(diffs) * 60
 
     if cube.coord("altitude").shape[0] == 1:
-
         # Do tracking then convert output dataframe to a geodataframe
         nexrad_tracks = tobac.linking_trackpy(
             radar_features,
@@ -175,7 +170,6 @@ def nexrad_tobac_linking(
         )
 
     else:
-
         # Do tracking then convert output dataframe to a geodataframe
         nexrad_tracks = tobac.linking_trackpy(
             radar_features,
@@ -251,7 +245,6 @@ def nexrad_tobac_segmentation(
 
     # 2D and 3D segmentation have different requirements so they are split up here
     if segmentation_type.lower() == "2d":
-
         if "height" in inCONFIG["nexrad"]["tobac"]["segmentation_2d"]:
             del inCONFIG["nexrad"]["tobac"]["segmentation_2d"]["height"]
 
@@ -263,7 +256,6 @@ def nexrad_tobac_segmentation(
             return
 
         if segmentation_height is not None and cube.coord("altitude").shape[0] > 1:
-
             if (
                 segmentation_height * 1000 > cube.coord("altitude").points.max()
                 or segmentation_height * 1000 < cube.coord("altitude").points.min()
@@ -274,7 +266,6 @@ def nexrad_tobac_segmentation(
                 return
 
         elif segmentation_height is None and cube.coord("altitude").shape[0] == 1:
-
             segmentation_height = cube.coord("altitude").points[0]
 
         elif segmentation_height is None and cube.coord("altitude").shape[0] > 1:
@@ -317,7 +308,6 @@ def nexrad_tobac_segmentation(
         return (outXarray, segment_features)
 
     elif segmentation_type.lower() == "3d":
-
         if cube.coord("altitude").shape[0] == 1:
             raise Exception(
                 "!=====Invalid Segmentation Type. Only One Altitude Present=====!"

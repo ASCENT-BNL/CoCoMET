@@ -54,7 +54,6 @@ def standard_radar_load_netcdf_iris(
 
     # Convert to iris cube and return
     if tracking_var.lower() == "dbz":
-
         # Open combined netcdf radar dataarray
         radar_xarray = xr.open_mfdataset(
             path_to_files,  # concat_dim="time", combine="nested"
@@ -62,7 +61,6 @@ def standard_radar_load_netcdf_iris(
 
         # Subset location of interest
         if "standard_radar" in CONFIG:
-
             # Subset time based on user inputs
             if (
                 "min_frame_index" in CONFIG["standard_radar"]
@@ -88,7 +86,6 @@ def standard_radar_load_netcdf_iris(
                 )
 
             if "bounds" in CONFIG["standard_radar"]:
-
                 mask_lon = (
                     radar_xarray.lon >= CONFIG["standard_radar"]["bounds"][0]
                 ) & (radar_xarray.lon <= CONFIG["standard_radar"]["bounds"][1])
@@ -124,12 +121,12 @@ def standard_radar_load_netcdf_iris(
             projection_y_coordinate=("y", radar_xarray.proj_y.values),
         )
 
-        radar_xarray["projection_x_coordinate"] = (
-            radar_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-        )
-        radar_xarray["projection_y_coordinate"] = (
-            radar_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
-        )
+        radar_xarray[
+            "projection_x_coordinate"
+        ] = radar_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+        radar_xarray[
+            "projection_y_coordinate"
+        ] = radar_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
 
         # Drop altitude coordinate temporarily when making iris cube
         radar_xarray = radar_xarray.drop_vars(["altitude", "proj_x", "proj_y"])
@@ -178,7 +175,6 @@ def standard_radar_load_netcdf(
 
     # Convert to iris cube and return
     if tracking_var.lower() == "dbz":
-
         # Open combined netcdf radar dataarray
         radar_xarray = xr.open_mfdataset(
             path_to_files, concat_dim="time", combine="nested"
@@ -186,7 +182,6 @@ def standard_radar_load_netcdf(
 
         # Subset location of interest
         if "standard_radar" in CONFIG:
-
             # Subset time based on user inputs
             if (
                 "min_frame_index" in CONFIG["standard_radar"]
@@ -212,7 +207,6 @@ def standard_radar_load_netcdf(
                 )
 
             if "bounds" in CONFIG["standard_radar"]:
-
                 mask_lon = (
                     radar_xarray.lon >= CONFIG["standard_radar"]["bounds"][0]
                 ) & (radar_xarray.lon <= CONFIG["standard_radar"]["bounds"][1])

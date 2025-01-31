@@ -50,7 +50,6 @@ def load(dataset, variable, mode="auto", **kwargs):
 
 
 def loadramscubelist(filenames, variable_list, **kwargs):
-
     cubelist_out = CubeList()
     for variable in variable_list:
         cubelist_out.append(loadramscube(filenames, variable, **kwargs))
@@ -64,7 +63,6 @@ def loadramscube(dataset, variable, **kwargs):
 
 
 def loadramscube_mult(dataset, variable, constraint=None, add_coordinates=None):
-
     array = dataset[variable]
     variable_dimensions = array.dims
     attributes = dataset.attrs
@@ -198,7 +196,6 @@ def loadramscube_mult(dataset, variable, constraint=None, add_coordinates=None):
 
 
 def deriveramscubelist(filenames, variable_list, **kwargs):
-
     cubelist_out = CubeList()
     for variable in variable_list:
         cubelist_out.append(deriveramscube(filenames, variable))
@@ -537,7 +534,6 @@ def calculate_rams_airmass(filenames, **kwargs):
 
 
 def calculate_rams_volume(filenames, **kwargs):
-
     layer_height = deriveramscube(filenames, "layer_height", **kwargs)
     layer_height.add_aux_coord(
         AuxCoord(
@@ -592,7 +588,6 @@ def calculate_rams_area(filenames, **kwargs):
 
 
 def calculate_rams_layerheight(filenames, **kwargs):
-
     zH = deriveramscube(filenames, "geopotential_height_stag", **kwargs)
     bottom_top_stag = zH.coord("bottom_top_stag").points
     layer_height = (
@@ -782,7 +777,6 @@ def calculate_rams_pressure(filenames, **kwargs):
 
 
 def calculate_rams_pressure_stag(filenames, **kwargs):
-
     p = deriveramscube(filenames, "pressure", **kwargs)
     bottom_top = p.coord("bottom_top").points
     p_stag = 0.5 * (
@@ -793,7 +787,6 @@ def calculate_rams_pressure_stag(filenames, **kwargs):
 
 
 def calculate_rams_pressure_xstag(filenames, **kwargs):
-
     p = deriveramscube(filenames, "pressure", **kwargs)
     west_east = p.coord("west_east").points
     p_xstag = 0.5 * (
@@ -805,7 +798,6 @@ def calculate_rams_pressure_xstag(filenames, **kwargs):
 
 
 def calculate_rams_pressure_ystag(filenames, **kwargs):
-
     p = deriveramscube(filenames, "pressure", **kwargs)
     south_north = p.coord("south_north").points
     p_ystag = 0.5 * (
@@ -835,7 +827,6 @@ def calculate_rams_geopotential_height_stag(filenames, **kwargs):
 
 
 def calculate_rams_geopotential_height(filenames, **kwargs):
-
     zH = deriveramscube(filenames, "geopotential_height_stag", **kwargs)
     bottom_top_stag = zH.coord("bottom_top_stag").points
     z = 0.5 * (
@@ -1104,9 +1095,7 @@ def add_aux_coordinates_multidim(
         add_coordinates.append(add_coordinates1)
 
     for coordinate in add_coordinates:
-
         if coordinate == "z":
-
             if (
                 coords[0].name() == "time"
                 and coords[1].name() == "bottom_top"

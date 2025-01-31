@@ -27,7 +27,6 @@ from .wrf_calculate_products import (
 
 # Calculate nearest item in list to given pivot
 def find_nearest(array, pivot):
-
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx

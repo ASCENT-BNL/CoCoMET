@@ -47,7 +47,6 @@ from numpy import arange, array, transpose
 
 
 def load(mesonh_xarray, variable, filename):
-
     array = mesonh_xarray[variable]
     variable_dimensions = array.dims
     attributes = mesonh_xarray.attrs
@@ -116,17 +115,14 @@ def load(mesonh_xarray, variable, filename):
 
 def guess_horizontal_spacing(mesonh_xarray, filename):
     try:
-
         # Try to guess dimension from file name
         dis_value = filename.split("m")[0]
 
         # If is in kilometers, convert to meters
         if "k" in dis_value:
-
             dis_value = float(dis_value.replace("k", "")) * 1000
 
         else:
-
             dis_value = float(dis_value)
 
         return (dis_value, dis_value)
@@ -203,7 +199,6 @@ def make_coord_system(attributes):
 
 
 def make_westeast_coord(DX, WEST_EAST_PATCH_END_UNSTAG):
-
     WEST_EAST = arange(0, WEST_EAST_PATCH_END_UNSTAG)
     west_east = coords.DimCoord(
         WEST_EAST,
@@ -220,7 +215,6 @@ def make_westeast_coord(DX, WEST_EAST_PATCH_END_UNSTAG):
 
 
 def make_westeast_stag_coord(DX, WEST_EAST_PATCH_END_STAG):
-
     WEST_EAST_U = arange(0, WEST_EAST_PATCH_END_STAG)
     west_east_stag = coords.DimCoord(
         WEST_EAST_U,
@@ -237,7 +231,6 @@ def make_westeast_stag_coord(DX, WEST_EAST_PATCH_END_STAG):
 
 
 def make_southnorth_coord(DY, SOUTH_NORTH_PATCH_END_UNSTAG):
-
     # SOUTH_NORTH_PATCH_END_UNSTAG=attributes["SOUTH-NORTH_PATCH_END_UNSTAG"]
     SOUTH_NORTH = arange(0, SOUTH_NORTH_PATCH_END_UNSTAG)
     south_north = coords.DimCoord(
@@ -255,7 +248,6 @@ def make_southnorth_coord(DY, SOUTH_NORTH_PATCH_END_UNSTAG):
 
 
 def make_southnorth_stag_coord(DY, SOUTH_NORTH_PATCH_END_STAG):
-
     SOUTH_NORTH_V = arange(0, SOUTH_NORTH_PATCH_END_STAG)
     south_north_stag = coords.DimCoord(
         SOUTH_NORTH_V,
@@ -272,7 +264,6 @@ def make_southnorth_stag_coord(DY, SOUTH_NORTH_PATCH_END_STAG):
 
 
 def make_bottom_top_coordinate(BOTTOM_TOP_PATCH_END_UNSTAG):
-
     BOTTOM_TOP = arange(0, BOTTOM_TOP_PATCH_END_UNSTAG)
     bottom_top = coords.DimCoord(
         BOTTOM_TOP,
@@ -289,7 +280,6 @@ def make_bottom_top_coordinate(BOTTOM_TOP_PATCH_END_UNSTAG):
 
 
 def make_bottom_top_stag_coordinate(BOTTOM_TOP_PATCH_END_STAG):
-
     BOTTOM_TOP_W = arange(0, BOTTOM_TOP_PATCH_END_STAG)
     bottom_top_stag = coords.DimCoord(
         BOTTOM_TOP_W,
@@ -306,7 +296,6 @@ def make_bottom_top_stag_coordinate(BOTTOM_TOP_PATCH_END_STAG):
 
 
 def make_model_level_number_coordinate(BOTTOM_TOP_PATCH_END):
-
     MODEL_LEVEL_NUMBER = arange(0, BOTTOM_TOP_PATCH_END)
     model_level_number = coords.AuxCoord(
         MODEL_LEVEL_NUMBER, standard_name="model_level_number", units="1"
@@ -315,7 +304,6 @@ def make_model_level_number_coordinate(BOTTOM_TOP_PATCH_END):
 
 
 def make_x_coord(DX, WEST_EAST_PATCH_END_UNSTAG, coord_system):
-
     X = DX * (arange(0, WEST_EAST_PATCH_END_UNSTAG) + 0.5)
     bounds = transpose(
         array(
@@ -340,7 +328,6 @@ def make_x_coord(DX, WEST_EAST_PATCH_END_UNSTAG, coord_system):
 
 
 def make_x_stag_coord(DX, WEST_EAST_PATCH_END_STAG, coord_system=None):
-
     X_U = DX * (arange(0, WEST_EAST_PATCH_END_STAG) - 1)
     x_stag_coord = coords.AuxCoord(
         X_U,
@@ -357,7 +344,6 @@ def make_x_stag_coord(DX, WEST_EAST_PATCH_END_STAG, coord_system=None):
 
 
 def make_y_coord(DY, SOUTH_NORTH_PATCH_END_UNSTAG, coord_system=None):
-
     Y = DY * (arange(0, SOUTH_NORTH_PATCH_END_UNSTAG) + 0.5)
     bounds = transpose(
         array(
@@ -382,7 +368,6 @@ def make_y_coord(DY, SOUTH_NORTH_PATCH_END_UNSTAG, coord_system=None):
 
 
 def make_y_stag_coord(DY, SOUTH_NORTH_PATCH_END_STAG, coord_system=None):
-
     Y_V = DY * (arange(0, SOUTH_NORTH_PATCH_END_STAG) - 1)
     y_stag_coord = coords.AuxCoord(
         Y_V,

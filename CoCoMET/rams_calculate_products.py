@@ -238,7 +238,6 @@ def rams_calculate_reflectivity(rams_xarray: xr.Dataset) -> xr.DataArray:
         desc="=====Calculating RAMS Reflectivity=====",
         total=len(dicToIterateThrough.keys()),
     ):
-
         alpha = dicToIterateThrough[key][0]
         mixRatio = dicToIterateThrough[key][1]
         conc = dicToIterateThrough[key][2]

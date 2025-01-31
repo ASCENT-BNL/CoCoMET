@@ -21,7 +21,6 @@ from tqdm import tqdm
 
 # Calculate nearest item in list to given pivot
 def find_nearest(array: np.ndarray, pivot) -> int:
-
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx
@@ -67,7 +66,6 @@ def calculate_var_max_height(
 
     # If input variable field is 2D return None. Also, if DataArray, use those values for calculations. If Dataset, use tracking_var to get variable
     if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
-
         if len(analysis_object["segmentation_xarray"].shape) != 4:
             logging.warning("!=====Input Variable is not 3D=====!")
             return None
@@ -75,7 +73,6 @@ def calculate_var_max_height(
         variable_field = analysis_object["segmentation_xarray"]
 
     else:
-
         if len(analysis_object["segmentation_xarray"][variable].shape) != 4:
             logging.warning("!=====Input Variable is not 3D=====!")
             return None
@@ -84,7 +81,6 @@ def calculate_var_max_height(
 
     # If 3D segmentation is available, use that to calculate cell footprint, otherwise use 2D segmentation
     if analysis_object["US_segmentation_3d"] is not None:
-
         height_index = find_nearest(
             analysis_object["US_segmentation_3d"].altitude.values,
             cell_footprint_height * 1000,
@@ -95,7 +91,6 @@ def calculate_var_max_height(
         ]
 
     elif analysis_object["US_segmentation_2d"] is not None:
-
         footprint_data = analysis_object["US_segmentation_2d"].Feature_Segmentation
 
     else:
@@ -118,16 +113,13 @@ def calculate_var_max_height(
         desc=f"=====Calculating {printout_string[0]}=====",
         total=frame_groups.ngroups,
     ):
-
         # Loop over each feature
         for feature in frame[1].groupby("feature_id"):
-
             # Get the indices of the cell footprint
             proper_indices = np.argwhere(footprint_data[frame[0]].values == feature[0])
 
             # Cells which have no segmented output should get a NaN
             if len(proper_indices) == 0:
-
                 max_height_info["frame"].append(frame[0])
                 max_height_info["feature_id"].append(feature[0])
                 max_height_info["cell_id"].append(feature[1]["cell_id"].min())
@@ -138,7 +130,6 @@ def calculate_var_max_height(
 
             # Calculate ETH for each location
             for iy, ix in proper_indices:
-
                 max_alt_index = np.argwhere(
                     variable_field[frame[0], :, iy, ix].values > threshold
                 )
@@ -213,7 +204,6 @@ def calculate_max_intensity(
 
     # If 3D segmentation is available, use that to calculate cell footprint, otherwise use 2D segmentation
     if analysis_object["US_segmentation_3d"] is not None:
-
         height_index = find_nearest(
             analysis_object["US_segmentation_3d"].altitude.values,
             cell_footprint_height * 1000,
@@ -223,7 +213,6 @@ def calculate_max_intensity(
         features_across_footprint = np.unique(segmentation[:, height_index])[1:]
 
     elif analysis_object["US_segmentation_2d"] is not None:
-
         segmentation = analysis_object["US_segmentation_2d"].Feature_Segmentation
         features_across_footprint = np.unique(segmentation)[1:]
 
@@ -310,7 +299,6 @@ def calculate_area(
 
     # If 3D segmentation is available, use that at given height, otherwise use 2D segmentation
     if analysis_object["US_segmentation_3d"] is not None:
-
         height_index = find_nearest(
             analysis_object["US_segmentation_3d"].altitude.values, height * 1000
         )
@@ -320,7 +308,6 @@ def calculate_area(
         ]
 
     elif analysis_object["US_segmentation_2d"] is not None:
-
         mask = analysis_object["US_segmentation_2d"].Feature_Segmentation
 
     else:
@@ -366,16 +353,13 @@ def calculate_area(
         desc="=====Calculating Areas=====",
         total=frame_groups.ngroups,
     ):
-
         # Loop over each feature
         for feature in frame[1].groupby("feature_id"):
-
             # Get valid indices of a given features
             proper_indices = np.argwhere(mask[frame[0]].values == feature[0])
 
             # Cells which have no segmented output should get a NaN
             if len(proper_indices) == 0:
-
                 area_info["frame"].append(frame[0])
                 area_info["feature_id"].append(feature[0])
                 area_info["cell_id"].append(feature[1]["cell_id"].min())
@@ -478,16 +462,13 @@ def calculate_volume(
         desc="=====Calculating Volumes=====",
         total=frame_groups.ngroups,
     ):
-
         # Loop over each feature
         for feature in frame[1].groupby("feature_id"):
-
             # Get valid indices of a given features
             proper_indices = np.argwhere(mask[frame[0]].values == feature[0])
 
             # Cells which have no segmented output should get a NaN
             if len(proper_indices) == 0:
-
                 volume_info["frame"].append(frame[0])
                 volume_info["feature_id"].append(feature[0])
                 volume_info["cell_id"].append(feature[1]["cell_id"].min())
@@ -615,7 +596,6 @@ def calculate_velocity(
         desc="=====Calculating Cell Velocities=====",
         total=len(Tracks.index),
     ):
-
         cell_id = Tracks.iloc[i]["cell_id"]
         frame = Tracks.iloc[i]["frame"]
         feature_id = Tracks.iloc[i]["feature_id"]
@@ -764,7 +744,6 @@ def calculate_cell_growth(
         desc="=====Calculating Cell Growth Rates=====",
         total=len(cell_groups),
     ):
-
         cell_feature_arr = np.array(cell_g["feature_id"]).tolist()
         cell_frame_arr = np.array(cell_g["frame"]).tolist()
         cell_arr = [cell_id] * len(cell_frame_arr)
@@ -864,12 +843,10 @@ def calculate_perimeter(
 
     # If 3D segmentation is available, use that at given height, otherwise use 2D segmentation
     if analysis_object["US_segmentation_3d"] is not None:
-
         feature_seg_3d = analysis_object["US_segmentation_3d"].Feature_Segmentation
         dim = 3
 
     elif analysis_object["US_segmentation_2d"] is not None:
-
         feature_seg_2d = analysis_object["US_segmentation_2d"].Feature_Segmentation
         dim = 2
 
@@ -912,9 +889,7 @@ def calculate_perimeter(
             feature_seg_in_frame = feature_seg_3d[frame].values
 
             for nz, ny, nx in np.argwhere(feature_seg_in_frame == feature_id):
-
                 for mx in (nx - 1, nx + 1):
-
                     if (
                         mx in range(feature_seg_in_frame.shape[2])
                         and feature_seg_in_frame[nz, ny, mx] != feature_id
@@ -922,7 +897,6 @@ def calculate_perimeter(
                         perims += y_dim_sizes[ny] * z_dim_sizes[nz]
 
                 for my in (ny - 1, ny + 1):
-
                     if (
                         my in range(feature_seg_in_frame.shape[1])
                         and feature_seg_in_frame[nz, my, nx] != feature_id
@@ -930,7 +904,6 @@ def calculate_perimeter(
                         perims += x_dim_sizes[nx] * z_dim_sizes[nz]
 
                 for mz in (nz - 1, nz + 1):
-
                     if (
                         mz in range(feature_seg_in_frame.shape[0])
                         and feature_seg_in_frame[mz, ny, nx] != feature_id
@@ -946,9 +919,7 @@ def calculate_perimeter(
             feature_seg_in_frame = feature_seg_2d[frame].values
 
             for ny, nx in np.argwhere(feature_seg_in_frame == feature_id):
-
                 for mx in (nx - 1, nx + 1):
-
                     if (
                         mx in range(feature_seg_in_frame.shape[1])
                         and feature_seg_in_frame[ny, mx] != feature_id
@@ -956,7 +927,6 @@ def calculate_perimeter(
                         perims += y_dim_sizes[ny]
 
                 for my in (ny - 1, ny + 1):
-
                     if (
                         my in range(feature_seg_in_frame.shape[0])
                         and feature_seg_in_frame[my, nx] != feature_id

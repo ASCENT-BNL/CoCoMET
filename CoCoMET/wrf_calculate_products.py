@@ -53,7 +53,6 @@ def wrf_calculate_reflectivity(wrf_xarray: xr.Dataset) -> xr.DataArray:
 
     # Supress divide by zero warnings
     with warnings.catch_warnings():
-
         warnings.filterwarnings(
             action="ignore", message="divide by zero encountered in divide"
         )
@@ -224,7 +223,6 @@ def wrf_calculate_precip_rate(wrf_xarray: xr.Dataset) -> np.ndarray:
         desc="=====Calculating WRF Precipitation Rate=====",
         total=total_precip.shape[0] - 1,
     ):
-
         precip_rate[ii] = (total_precip[ii + 1] - total_precip[ii]) * (
             60 / wrf_xarray.DT
         )

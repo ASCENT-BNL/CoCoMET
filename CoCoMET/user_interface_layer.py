@@ -103,7 +103,6 @@ def CoCoMET_start(
 
     # If parallelization is True, run the multiprocessing version instead
     if CONFIG["parallel_processing"]:
-
         if CONFIG["max_cores"] is not None:
             # TODO: I have no idea if this actually works hah, need to test
             os.environ["OMP_NUM_THREADS"] = str(
@@ -123,49 +122,44 @@ def CoCoMET_start(
     start_time = time.perf_counter()
 
     # Create empty dictionaries for each data type
-    wrf_data = mesonh_data = nexrad_data = multi_nexrad_data = standard_radar_data = (
-        rams_data
-    ) = goes_data = {}
+    wrf_data = (
+        mesonh_data
+    ) = (
+        nexrad_data
+    ) = multi_nexrad_data = standard_radar_data = rams_data = goes_data = {}
 
     # if wrf is present in CONFIG, run the necessary wrf functions
     if "wrf" in CONFIG:
-
         # Call run wrf function to handle all wrf tasks
         wrf_data = run_wrf(CONFIG)
 
     # Handle MesoNH data
     if "mesonh" in CONFIG:
-
         # Call run mesonh function to handle all mesonh tasks
         mesonh_data = run_mesonh(CONFIG)
 
     # Handle RAMS data
     if "rams" in CONFIG:
-
         # Call run goes function to handle all goes tasks
         rams_data = run_rams(CONFIG)
 
     # Handle NEXRAD data
     if "nexrad" in CONFIG:
-
         # Call run nexrad function to handle all nexrad tasks
         nexrad_data = run_nexrad(CONFIG)
 
     # Handle Multi-NEXRAD data
     if "multi_nexrad" in CONFIG:
-
         # Call run multi nexrad function to handle all multi nexrad tasks
         multi_nexrad_data = run_multi_nexrad(CONFIG)
 
     # Handle standard radar data
     if "standard_radar" in CONFIG:
-
         # Call run standard radar function to handle all standard radar tasks
         standard_radar_data = run_standard_radar(CONFIG)
 
     # Handle GOES data
     if "goes" in CONFIG:
-
         # Call run goes function to handle all goes tasks
         goes_data = run_goes(CONFIG)
 
@@ -206,7 +200,6 @@ def CoCoMET_start_multi(CONFIG: dict) -> dict:
 
     # This is necessary for python reasons I suppose may need to check this after some kind of release
     if __name__ == "CoCoMET.user_interface_layer":
-
         start_time = time.perf_counter()
 
         # Start a queue so processes can finish at different times
@@ -217,7 +210,6 @@ def CoCoMET_start_multi(CONFIG: dict) -> dict:
 
         # if wrf is present in CONFIG, run the necessary wrf functions
         if "wrf" in CONFIG:
-
             # Call run wrf function to handle all wrf tasks
             wrf_process = multiprocessing.Process(target=run_wrf, args=(CONFIG, queue))
             processes.append(wrf_process)
@@ -225,7 +217,6 @@ def CoCoMET_start_multi(CONFIG: dict) -> dict:
 
         # Handle MesoNH data
         if "mesonh" in CONFIG:
-
             # Call run MesoNH function to handle all MesoNH tasks
             mesonh_process = multiprocessing.Process(
                 target=run_mesonh, args=(CONFIG, queue)
@@ -235,7 +226,6 @@ def CoCoMET_start_multi(CONFIG: dict) -> dict:
 
         # Handle RAMS data
         if "rams" in CONFIG:
-
             # Call run MesoNH function to handle all MesoNH tasks
             rams_process = multiprocessing.Process(
                 target=run_rams, args=(CONFIG, queue)
@@ -245,7 +235,6 @@ def CoCoMET_start_multi(CONFIG: dict) -> dict:
 
         # Handle GOES data
         if "goes" in CONFIG:
-
             # Call run goes function to handle all goes tasks
             goes_process = multiprocessing.Process(
                 target=run_goes, args=(CONFIG, queue)
@@ -255,7 +244,6 @@ def CoCoMET_start_multi(CONFIG: dict) -> dict:
 
         # Handle NEXRAD data
         if "nexrad" in CONFIG:
-
             # Call run nexrad function to handle all nexrad tasks
             nexrad_process = multiprocessing.Process(
                 target=run_nexrad, args=(CONFIG, queue)
@@ -265,7 +253,6 @@ def CoCoMET_start_multi(CONFIG: dict) -> dict:
 
         # Handle Multi NEXRAD data
         if "multi_nexrad" in CONFIG:
-
             # Call run nexrad function to handle all nexrad tasks
             multi_nexrad_process = multiprocessing.Process(
                 target=run_multi_nexrad, args=(CONFIG, queue)
@@ -275,7 +262,6 @@ def CoCoMET_start_multi(CONFIG: dict) -> dict:
 
         # Handle standard radar data
         if "standard_radar" in CONFIG:
-
             # Call run goes function to handle all goes tasks
             radar_process = multiprocessing.Process(
                 target=run_standard_radar, args=(CONFIG, queue)
@@ -326,13 +312,11 @@ def CoCoMET_load(
     """
 
     if CONFIG_string is None:
-
         # Open and read config file
         with open(path_to_config, "r", encoding="utf-8") as f:
             CONFIG = yaml.safe_load(f)
 
     else:
-
         CONFIG = yaml.safe_load(CONFIG_string)
 
     # Check for default setup parameters, add them if not present
@@ -344,7 +328,6 @@ def CoCoMET_load(
 
     # Go through each potential option and determine which functions need to run
     if "wrf" in CONFIG:
-
         if CONFIG["verbose"]:
             print("=====WRF Setup Found in CONFIG=====")
 
@@ -362,7 +345,6 @@ def CoCoMET_load(
         )
 
     if "mesonh" in CONFIG:
-
         if CONFIG["verbose"]:
             print("=====MesoNH Setup Found in CONFIG=====")
 
@@ -380,7 +362,6 @@ def CoCoMET_load(
         )
 
     if "rams" in CONFIG:
-
         if CONFIG["verbose"]:
             print("=====RAMS Setup Found in CONFIG=====")
 
@@ -399,7 +380,6 @@ def CoCoMET_load(
 
     # if nexrad present, check for tuples
     if "nexrad" in CONFIG:
-
         if CONFIG["verbose"]:
             print("=====NEXRAD Setup Found in CONFIG=====")
 
@@ -417,7 +397,6 @@ def CoCoMET_load(
 
         # If nexrad gridding is needed, change grid shapes and limits back to tuples
         if "gridding" in CONFIG["nexrad"]:
-
             # Convert grid_shape and grid_limits back into proper tuples and ensure correct data types--auto correct automatically
             grid_shape = ast.literal_eval(CONFIG["nexrad"]["gridding"]["grid_shape"])
             # Ensure int grid shapes
@@ -434,7 +413,6 @@ def CoCoMET_load(
 
     # if multi nexrad present, check for tuples
     if "multi_nexrad" in CONFIG:
-
         if CONFIG["verbose"]:
             print("=====Multi-NEXRAD Setup Found in CONFIG=====")
 
@@ -452,7 +430,6 @@ def CoCoMET_load(
 
         # If nexrad gridding is needed, change grid shapes and limits back to tuples
         if "gridding" in CONFIG["multi_nexrad"]:
-
             # Convert grid_shape and grid_limits back into proper tuples and ensure correct data types--auto correct automatically
             grid_shape = ast.literal_eval(
                 CONFIG["multi_nexrad"]["gridding"]["grid_shape"]
@@ -472,7 +449,6 @@ def CoCoMET_load(
             CONFIG["multi_nexrad"]["gridding"]["grid_limits"] = grid_limits
 
     if "standard_radar" in CONFIG:
-
         if CONFIG["verbose"]:
             print("=====RADAR Setup Found in CONFIG=====")
 
@@ -489,7 +465,6 @@ def CoCoMET_load(
         )
 
     if "goes" in CONFIG:
-
         if CONFIG["verbose"]:
             print("=====GOES Setup Found in CONFIG=====")
 
@@ -745,7 +720,7 @@ def run_multi_nexrad(
 
     # Determine which tracker(s) are in the CONFIG file
     if "tobac" in CONFIG["multi_nexrad"]:
-        user_return_dict = run_tracker(
+        user_return_dict, tracking_info = run_tracker(
             "multi_nexrad", "tobac", user_return_dict, tracking_info, CONFIG
         )
 

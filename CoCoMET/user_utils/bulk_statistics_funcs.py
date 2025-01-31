@@ -18,7 +18,6 @@ __all__ = ["area_func", "volume_func", "var_max_height_func"]
 # TODO: Update this to include all functions in the future
 # Calculate nearest item in list to given pivot
 def find_nearest(array: np.ndarray, pivot) -> int:
-
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx
@@ -71,16 +70,13 @@ def var_max_height_func(
         desc="=====Calculating Echo Top Heights=====",
         total=frame_groups.ngroups,
     ):
-
         # Loop over each feature
         for feature in frame[1].groupby("feature_id"):
-
             # Get the indices of the cell footprint
             proper_indices = np.argwhere(footprint_data[frame[0]].values == feature[0])
 
             # Cells which have no segmented output should get a NaN
             if len(proper_indices) == 0:
-
                 eth_info["frame"].append(frame[0])
                 eth_info["feature_id"].append(feature[0])
                 eth_info["cell_id"].append(feature[1]["cell_id"].min())
@@ -91,7 +87,6 @@ def var_max_height_func(
 
             # Calculate ETH for each location
             for iy, ix in proper_indices:
-
                 max_alt_index = np.argwhere(
                     variable_field[frame[0], :, iy, ix].values > threshold
                 )
@@ -167,16 +162,13 @@ def area_func(segmentation_2d: xr.DataArray, tracks: gpd.GeoDataFrame) -> pd.Dat
         desc="=====Calculating Areas=====",
         total=frame_groups.ngroups,
     ):
-
         # Loop over each feature
         for feature in frame[1].groupby("feature_id"):
-
             # Get valid indices of a given features
             proper_indices = np.argwhere(mask[frame[0]].values == feature[0])
 
             # Cells which have no segmented output should get a NaN
             if len(proper_indices) == 0:
-
                 area_info["frame"].append(frame[0])
                 area_info["feature_id"].append(feature[0])
                 area_info["cell_id"].append(feature[1]["cell_id"].min())
@@ -252,16 +244,13 @@ def volume_func(
         desc="=====Calculating Volumes=====",
         total=frame_groups.ngroups,
     ):
-
         # Loop over each feature
         for feature in frame[1].groupby("feature_id"):
-
             # Get valid indices of a given features
             proper_indices = np.argwhere(mask[frame[0]].values == feature[0])
 
             # Cells which have no segmented output should get a NaN
             if len(proper_indices) == 0:
-
                 volume_info["frame"].append(frame[0])
                 volume_info["feature_id"].append(feature[0])
                 volume_info["cell_id"].append(feature[1]["cell_id"].min())

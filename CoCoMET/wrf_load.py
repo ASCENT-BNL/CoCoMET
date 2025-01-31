@@ -64,7 +64,6 @@ def wrf_load_netcdf_iris(
     )
 
     if "wrf" in CONFIG:
-
         # Check for idealized data then correct times
         if "is_idealized" in CONFIG["wrf"]:
             if CONFIG["wrf"]["is_idealized"]:
@@ -134,7 +133,6 @@ def wrf_load_netcdf_iris(
     wrf_xarray["PROJX"] = ("west_east", proj_x_values)
 
     if tracking_var.lower() == "dbz":
-
         wrf_reflectivity = wrf_calculate_reflectivity(wrf_xarray)
 
         wrf_xarray["DBZ"] = wrf_reflectivity
@@ -152,7 +150,6 @@ def wrf_load_netcdf_iris(
         )
 
     elif tracking_var.lower() == "tb":
-
         # Brightness temperature is only 2d so no heights needed
         wrf_xarray["TB"] = (
             ["Time", "south_north", "west_east"],
@@ -166,7 +163,6 @@ def wrf_load_netcdf_iris(
         cube = load(wrf_xarray, "TB")
 
     elif tracking_var.lower() == "wa":
-
         # Get updraft velocity at mass points
         wrf_wa = wrf_calculate_wa(wrf_xarray)
 
@@ -185,7 +181,6 @@ def wrf_load_netcdf_iris(
         )
 
     elif tracking_var.lower() == "pr":
-
         # Precipitation rate is only 2d so no heights needed
         wrf_xarray["PR"] = (
             ["Time", "south_north", "west_east"],
@@ -201,12 +196,10 @@ def wrf_load_netcdf_iris(
     else:
         # If not any of the above, try using user inputed value
         try:
-
             var_values = wrf_xarray[tracking_var.upper()]
             cube = load(wrf_xarray, tracking_var.upper())
 
             if len(var_values.shape) == 4:
-
                 # Add correct altitude based off of average height at each height index
                 ht = wrf_calculate_agl_z(wrf_xarray)
 
@@ -256,7 +249,6 @@ def wrf_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Datase
     )
 
     if "wrf" in CONFIG:
-
         if "is_idealized" in CONFIG["wrf"]:
             if CONFIG["wrf"]["is_idealized"]:
                 # Update Times
@@ -316,7 +308,6 @@ def wrf_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Datase
 
     # Does the same thing as the above function without forming the data into iris cubes. For use in future trackers and when tobac depreciates iris cubes.
     if tracking_var.lower() == "dbz":
-
         wrf_reflectivity = wrf_calculate_reflectivity(wrf_xarray)
 
         wrf_xarray["DBZ"] = wrf_reflectivity
@@ -332,7 +323,6 @@ def wrf_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Datase
         )
 
     elif tracking_var.lower() == "tb":
-
         wrf_xarray["TB"] = (
             ["Time", "south_north", "west_east"],
             wrf_calculate_brightness_temp(wrf_xarray),
@@ -343,7 +333,6 @@ def wrf_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Datase
         wrf_xarray["TB"] = wrf_xarray["TB"].chunk(wrf_xarray["OLR"].chunksizes)
 
     elif tracking_var.lower() == "wa":
-
         # Get updraft velocity at mass points
         wrf_wa = wrf_calculate_wa(wrf_xarray)
 
@@ -362,11 +351,9 @@ def wrf_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Datase
     else:
         # If not any of the above, try using user inputed value
         try:
-
             var_values = wrf_xarray[tracking_var.upper()]
 
             if len(var_values.shape) == 4:
-
                 # Add correct altitude based off of average height at each height index
                 ht = wrf_calculate_agl_z(wrf_xarray)
 

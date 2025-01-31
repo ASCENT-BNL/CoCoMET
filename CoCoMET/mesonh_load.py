@@ -50,17 +50,14 @@ def guess_horizontal_spacing(
     """
 
     try:
-
         # Try to guess dimension from file name
         dis_value = filename.split("m")[0]
 
         # If is in kilometers, convert to meters
         if "k" in dis_value:
-
             dis_value = float(dis_value.replace("k", "")) * 1000
 
         else:
-
             dis_value = float(dis_value)
 
         return (dis_value, dis_value)
@@ -131,7 +128,6 @@ def mesonh_load_netcdf_iris(
     )
 
     if "mesonh" in CONFIG:
-
         # Subset time based on user inputs
         if (
             "min_frame_index" in CONFIG["mesonh"]
@@ -185,7 +181,6 @@ def mesonh_load_netcdf_iris(
     mesonh_xarray["PROJX"] = ("x", proj_x_values)
 
     if tracking_var.lower() == "dbz":
-
         mesonh_reflectivity = mesonh_calculate_reflectivity(mesonh_xarray)
 
         mesonh_xarray["DBZ"] = mesonh_reflectivity
@@ -203,7 +198,6 @@ def mesonh_load_netcdf_iris(
         )
 
     elif tracking_var.lower() == "tb":
-
         # Brightness temperature is only 2d so no heights needed
         mesonh_xarray["TB"] = (
             ["time", "y", "x"],
@@ -218,7 +212,6 @@ def mesonh_load_netcdf_iris(
         cube = load(mesonh_xarray, "TB", filename)
 
     elif tracking_var.lower() == "wa":
-
         # Get updraft velocity at mass points (maybe?)
         mesonh_wa = mesonh_xarray.w
 
@@ -237,7 +230,6 @@ def mesonh_load_netcdf_iris(
         )
 
     elif tracking_var.lower() == "pr":
-
         # precipitation rate is only 2d so no heights needed
         mesonh_xarray["PR"] = mesonh_xarray["pcp_rate"]
 
@@ -252,12 +244,10 @@ def mesonh_load_netcdf_iris(
     else:
         # If not any of the above, try using user inputed value
         try:
-
             var_values = mesonh_xarray[tracking_var]
             cube = load(mesonh_xarray, tracking_var, filename)
 
             if len(var_values.shape) == 4:
-
                 # add correct altitude based off of average height at each height index
                 ht = mesonh_calculate_agl_z(mesonh_xarray)
 
@@ -310,7 +300,6 @@ def mesonh_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Dat
     )
 
     if "mesonh" in CONFIG:
-
         # Subset time based on user inputs
         if (
             "min_frame_index" in CONFIG["mesonh"]
@@ -351,7 +340,6 @@ def mesonh_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Dat
     mesonh_xarray["PROJX"] = ("x", proj_x_values)
 
     if tracking_var.lower() == "dbz":
-
         mesonh_reflectivity = mesonh_calculate_reflectivity(mesonh_xarray)
 
         mesonh_xarray["DBZ"] = mesonh_reflectivity
@@ -367,7 +355,6 @@ def mesonh_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Dat
         )
 
     elif tracking_var.lower() == "tb":
-
         # Brightness temperature is only 2d so no heights needed
         mesonh_xarray["TB"] = (
             ["time", "y", "x"],
@@ -381,7 +368,6 @@ def mesonh_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Dat
         )
 
     elif tracking_var.lower() == "wa":
-
         # Get updraft velocity at mass points (maybe?)
         mesonh_wa = mesonh_xarray.w
 
@@ -398,7 +384,6 @@ def mesonh_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Dat
         )
 
     elif tracking_var.lower() == "pr":
-
         # Brightness temperature is only 2d so no heights needed
         mesonh_xarray["PR"] = mesonh_xarray["pcp_rate"]
 
@@ -412,11 +397,9 @@ def mesonh_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Dat
     else:
         # If not any of the above, try using user inputed value
         try:
-
             var_values = mesonh_xarray[tracking_var]
 
             if len(var_values.shape) == 4:
-
                 # add correct altitude based off of average height at each height index
                 ht = mesonh_calculate_agl_z(mesonh_xarray)
 

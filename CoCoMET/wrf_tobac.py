@@ -54,7 +54,6 @@ def wrf_tobac_feature_id(cube: iris.cube.Cube, CONFIG: dict) -> gpd.GeoDataFrame
     inCONFIG = deepcopy(CONFIG)
 
     if "height" in inCONFIG["wrf"]["tobac"]["feature_id"]:
-
         # Ensure segmentation_height is a proper number before running
         if (
             inCONFIG["wrf"]["tobac"]["feature_id"]["height"] is None
@@ -211,7 +210,6 @@ def wrf_tobac_segmentation(
 
     # 2D and 3D segmentation have different requirements so they are split up here
     if segmentation_type.lower() == "2d":
-
         if "height" in inCONFIG["wrf"]["tobac"]["segmentation_2d"]:
             del inCONFIG["wrf"]["tobac"]["segmentation_2d"]["height"]
 
@@ -291,7 +289,6 @@ def wrf_tobac_segmentation(
         return (outXarray, segment_features)
 
     if segmentation_type.lower() == "3d":
-
         # Similarly, perform 3d segmentation then return products
         segment_cube, segment_features = tobac.segmentation_3D(
             radar_features, cube, dxy=dxy, **inCONFIG["wrf"]["tobac"]["segmentation_3d"]

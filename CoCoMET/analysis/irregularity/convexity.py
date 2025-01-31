@@ -46,7 +46,6 @@ def convexity(
         segmentation_type.lower() == "3d"
         and analysis_dict["US_segmentation_3d"] is not None
     ):
-
         footprint = analysis_dict["US_segmentation_3d"].Feature_Segmentation
         convexities = []
         feature_ids = []
@@ -58,7 +57,6 @@ def convexity(
             desc="=====Calculating Cell Convexities=====",
             total=len(frame_groups),
         ):
-
             final_mask = deepcopy(footprint[frame_number])
             data = final_mask.values
             for (
@@ -116,7 +114,6 @@ def convexity(
         segmentation_type.lower() == "2d"
         and analysis_dict["US_segmentation_2d"] is not None
     ):
-
         footprint_data = analysis_dict["US_segmentation_2d"].Feature_Segmentation
         frame_groups = tracks.groupby("frame")
 

@@ -52,7 +52,6 @@ def feature_id_to_US(
         return None
 
     if tracker.lower() == "tobac":
-
         # Extract values from features
         frames = features.frame.values
         times = np.array(
@@ -128,7 +127,6 @@ def linking_to_US(tracks: gpd.GeoDataFrame, tracker: str) -> gpd.GeoDataFrame | 
         return None
 
     if tracker.lower() == "tobac":
-
         # Extract values from features
         frames = tracks.frame.values
         times = np.array(
@@ -230,7 +228,6 @@ def segmentation_to_US(
         return None
 
     if tracker.lower() == "tobac":
-
         feature_segmentation = (segmentation - 1).rename("Feature_Segmentation")
         cell_segmentation = deepcopy(feature_segmentation).rename("Cell_Segmentation")
 
@@ -255,18 +252,15 @@ def segmentation_to_US(
         # To check for both prescense of altitude and shape of altitude without throwing DNE error
         altitude_check_bool = False
         if "altitude" in segmentation.coords:
-
             if segmentation.altitude.shape != ():
                 altitude_check_bool = True
 
         if "model_level_number" in segmentation.coords:
-
             if segmentation.model_level_number.shape != ():
                 altitude_check_bool = True
 
         # Check if altitude is present
         if altitude_check_bool:
-
             return_ds = xr.combine_by_coords([feature_segmentation, cell_segmentation])
 
             # Check for NEXRAD, and rename accordingly
@@ -277,7 +271,6 @@ def segmentation_to_US(
                 and "lat" in segmentation.coords
                 and "lon" in segmentation.coords
             ):
-
                 return_ds = return_ds.assign_coords(
                     altitude=("z", feature_segmentation.z.values),
                     up_down=("z", np.arange(0, feature_segmentation.z.shape[0])),
@@ -300,7 +293,6 @@ def segmentation_to_US(
 
             # For WRF case
             else:
-
                 # Change altitude values to indices
                 # return_ds = xr.combine_by_coords([feature_segmentation,cell_segmentation]).assign_coords({"up_down":np.arange(0,feature_segmentation.altitude.shape[0])})
                 return_ds = return_ds.assign_coords(
@@ -326,13 +318,11 @@ def segmentation_to_US(
                 ]
 
         else:
-
             # Concat into one dataset and remove superflous coordinates
             return_ds = xr.combine_by_coords([feature_segmentation, cell_segmentation])
 
             # Check for GOES and rename accordingly
             if "sensor_band_bit_depth" in segmentation.attrs:
-
                 # Rename t to time and rename x and y values to south_north and west_east, respectively. Rename lat and lon to latitude and longitude
                 return_ds = (
                     return_ds.assign_coords(time=("t", return_ds.t.values))
@@ -361,7 +351,6 @@ def segmentation_to_US(
                 and "lat" in segmentation.coords
                 and "lon" in segmentation.coords
             ):
-
                 return_ds = return_ds.swap_dims(
                     {"y": "south_north", "x": "west_east"}
                 ).rename({"lat": "latitude", "lon": "longitude"})
@@ -379,7 +368,6 @@ def segmentation_to_US(
 
             # For WRF case
             else:
-
                 return_ds = return_ds.drop_vars(["x", "y"])
                 return return_ds[
                     [
@@ -435,14 +423,12 @@ def bulk_moaap_to_US(
 
     # Get the numpy array that contains the object we care about's mask
     if convert_type.lower() == "cloud":
-
         if "BT_Objects" not in mask:
             return None
 
         mask_field = mask.BT_Objects.values
 
     elif convert_type.lower() == "mcs":
-
         if "MCS_Tb_Objects" not in mask:
             return None
 
@@ -477,7 +463,6 @@ def bulk_moaap_to_US(
         desc="=====Converting MOAAP to US=====",
         total=mask_field.shape[0],
     ):
-
         # Get unique cell ids for this frame
         unique_cells = np.unique(mask_field[ii])[1:]
 
@@ -485,7 +470,6 @@ def bulk_moaap_to_US(
 
         # Loop over unique cell ids
         for cell_id in unique_cells:
-
             segment_feature_mask[ii][mask_field[ii] == cell_id] = feature_ids[-1] + 1
 
             # Append timing information and cell/feature ids
@@ -497,7 +481,6 @@ def bulk_moaap_to_US(
 
             # If cell has not yet been tracked, add it to the lifetime_dict
             if int(cell_id) - 1 not in lifetime_dict:
-
                 lifetime_dict[int(cell_id) - 1] = {
                     "frame": [ii],
                     "lifetime": [pd.Timedelta(0)],
@@ -505,7 +488,6 @@ def bulk_moaap_to_US(
                 lifetimes.append(pd.Timedelta(0))
 
             else:
-
                 new_time = lifetime_dict[int(cell_id) - 1]["lifetime"][-1] + (
                     pd.Timedelta(minutes=dt)
                     * (ii - lifetime_dict[int(cell_id) - 1]["frame"][-1])
@@ -529,7 +511,6 @@ def bulk_moaap_to_US(
         desc="=====Processing MOAAP Cell Lifetimes====",
         total=temp_linking.shape[0],
     ):
-
         cell_max_life = temp_linking.query(
             "cell_id==@row[1].cell_id"
         ).lifetime.values.max()
@@ -672,7 +653,6 @@ def bulk_tams_to_US(
 
     # Get the numpy array that contains the object we care about's mask
     if convert_type.lower() == "cloud":
-
         tracked_elements = output
 
     # TODO : fix this once you get gridding data aggregation working for TAMS. Also make it output[0] above
@@ -763,7 +743,6 @@ def bulk_tams_to_US(
         desc="=====Processing TAMS Cell Lifetimes====",
         total=temp_linking.shape[0],
     ):
-
         cell_max_life = temp_linking.query(
             "cell_id==@row[1].cell_id"
         ).lifetime.values.max()
@@ -931,7 +910,6 @@ def convert_df_to_mask(ce, latlon_coord_system):
 
 
 def convert_cell_mask_to_feature_mask(cell_mask):
-
     feature_mask = deepcopy(cell_mask)
     last_feature = 0
     for t in range(feature_mask.shape[0]):

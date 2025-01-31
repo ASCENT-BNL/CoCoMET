@@ -87,7 +87,6 @@ def gen_and_save_nexrad_grid(
     for idx, ff in tqdm(
         enumerate(files), desc="=====Gridding NEXRAD=====", total=len(files)
     ):
-
         if tracking_var.lower() == "dbz":
             # Create radar object including only field of interest
             radar = pyart.io.read_nexrad_archive(ff, include_fields="reflectivity")
@@ -181,9 +180,7 @@ def gen_and_save_nexrad_grid_multi(
 
     # Start a pool with max_cores and run the grid function
     with multiprocessing.Pool(max_cores) as multi_pool:
-
         with tqdm(total=len(files), desc="=====Parallel Gridding NEXRAD=====") as pbar:
-
             for _ in multi_pool.imap_unordered(
                 partial(
                     create_and_save_grid_single,
@@ -193,7 +190,6 @@ def gen_and_save_nexrad_grid_multi(
                 ),
                 files,
             ):
-
                 pbar.update()
 
     return
@@ -233,7 +229,6 @@ def nexrad_load_netcdf_iris(
 
     # If data is archival, perform gridding
     if file_type.lower() == "ar2v":
-
         # Make sure save_location ends with a "/"
         if save_location[-1] != "/":
             save_location = save_location + "//"
@@ -249,12 +244,10 @@ def nexrad_load_netcdf_iris(
         )
 
         if tracking_var.lower() == "dbz":
-
             # Read radar objects in and concat into one xarray datarray
             # This is a stupid hacky fix because pyart is dumb
             radar_objects = []
             for file in np.sort(glob.glob(save_location + "*")):
-
                 # Ignore import warnings
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
@@ -273,7 +266,6 @@ def nexrad_load_netcdf_iris(
 
             # Subset location and time of interest
             if "nexrad" in CONFIG:
-
                 # Subset time based on user inputs
                 if (
                     "min_frame_index" in CONFIG["nexrad"]
@@ -299,7 +291,6 @@ def nexrad_load_netcdf_iris(
                     )
 
                 if "bounds" in CONFIG["nexrad"]:
-
                     mask_lon = (nexrad_xarray.lon >= CONFIG["nexrad"]["bounds"][0]) & (
                         nexrad_xarray.lon <= CONFIG["nexrad"]["bounds"][1]
                     )
@@ -351,12 +342,12 @@ def nexrad_load_netcdf_iris(
             nexrad_xarray["lon"] = nexrad_xarray.lon.assign_attrs(
                 {"standard_name": "longitude"}
             )
-            nexrad_xarray["projection_x_coordinate"] = (
-                nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-            )
-            nexrad_xarray["projection_y_coordinate"] = (
-                nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
-            )
+            nexrad_xarray[
+                "projection_x_coordinate"
+            ] = nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+            nexrad_xarray[
+                "projection_y_coordinate"
+            ] = nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
 
             # Add altitude dimension to xarray but not to cube
             nexrad_cube = nexrad_xarray.to_iris()
@@ -379,15 +370,12 @@ def nexrad_load_netcdf_iris(
 
     # If data already grided, just return concated netcdf dataset
     elif file_type.lower() == "nc":
-
         # Convert to iris cube and return
         if tracking_var.lower() == "dbz":
-
             # Read radar objects in and concat into one xarray datarray
             # This is a stupid hacky fix because pyart is dumb
             radar_objects = []
             for file in np.sort(glob.glob(path_to_files)):
-
                 # Ignore import warnings
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
@@ -406,7 +394,6 @@ def nexrad_load_netcdf_iris(
 
             # Subset location and time of interest
             if "nexrad" in CONFIG:
-
                 # Subset time based on user inputs
                 if (
                     "min_frame_index" in CONFIG["nexrad"]
@@ -432,7 +419,6 @@ def nexrad_load_netcdf_iris(
                     )
 
                 if "bounds" in CONFIG["nexrad"]:
-
                     mask_lon = (nexrad_xarray.lon >= CONFIG["nexrad"]["bounds"][0]) & (
                         nexrad_xarray.lon <= CONFIG["nexrad"]["bounds"][1]
                     )
@@ -477,12 +463,12 @@ def nexrad_load_netcdf_iris(
             nexrad_xarray["lon"] = nexrad_xarray.lon.assign_attrs(
                 {"standard_name": "longitude"}
             )
-            nexrad_xarray["projection_x_coordinate"] = (
-                nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-            )
-            nexrad_xarray["projection_y_coordinate"] = (
-                nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
-            )
+            nexrad_xarray[
+                "projection_x_coordinate"
+            ] = nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+            nexrad_xarray[
+                "projection_y_coordinate"
+            ] = nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
 
             # Add altitude dimension to xarray but not to cube
             nexrad_cube = nexrad_xarray.to_iris().remove_coord("altitude")
@@ -542,7 +528,6 @@ def nexrad_load_netcdf(
 
     # If data is archival, perform gridding
     if file_type.lower() == "ar2v":
-
         # Make sure save_location ends with a "/"
         if save_location[-1] != "/":
             save_location = save_location + "//"
@@ -559,12 +544,10 @@ def nexrad_load_netcdf(
 
         # Open them as netcdf file and return
         if tracking_var.lower() == "dbz":
-
             # Read radar objects in and concat into one xarray datarray
             # This is a stupid hacky fix because pyart is dumb
             radar_objects = []
             for file in np.sort(glob.glob(save_location + "*")):
-
                 # Ignore import warnings
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
@@ -583,7 +566,6 @@ def nexrad_load_netcdf(
 
             # Subset location and time of interest
             if "nexrad" in CONFIG:
-
                 # Subset time based on user inputs
                 if (
                     "min_frame_index" in CONFIG["nexrad"]
@@ -609,7 +591,6 @@ def nexrad_load_netcdf(
                     )
 
                 if "bounds" in CONFIG["nexrad"]:
-
                     mask_lon = (nexrad_xarray.lon >= CONFIG["nexrad"]["bounds"][0]) & (
                         nexrad_xarray.lon <= CONFIG["nexrad"]["bounds"][1]
                     )
@@ -655,12 +636,12 @@ def nexrad_load_netcdf(
             nexrad_xarray["lon"] = nexrad_xarray.lon.assign_attrs(
                 {"standard_name": "longitude"}
             )
-            nexrad_xarray["projection_x_coordinate"] = (
-                nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-            )
-            nexrad_xarray["projection_y_coordinate"] = (
-                nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
-            )
+            nexrad_xarray[
+                "projection_x_coordinate"
+            ] = nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+            nexrad_xarray[
+                "projection_y_coordinate"
+            ] = nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
             nexrad_xarray["altitude"] = nexrad_xarray.altitude.assign_attrs(
                 {"standard_name": "altitude", "units": "m"}
             )
@@ -675,14 +656,11 @@ def nexrad_load_netcdf(
 
     # If data already grided, just return concated netcdf dataset
     elif file_type.lower() == "nc":
-
         if tracking_var.lower() == "dbz":
-
             # Read radar objects in and concat into one xarray datarray
             # This is a stupid hacky fix because pyart is dumb
             radar_objects = []
             for file in np.sort(glob.glob(path_to_files)):
-
                 # Ignore import warnings
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
@@ -701,7 +679,6 @@ def nexrad_load_netcdf(
 
             # Subset location and time of interest
             if "nexrad" in CONFIG:
-
                 # Subset time based on user inputs
                 if (
                     "min_frame_index" in CONFIG["nexrad"]
@@ -727,7 +704,6 @@ def nexrad_load_netcdf(
                     )
 
                 if "bounds" in CONFIG["nexrad"]:
-
                     mask_lon = (nexrad_xarray.lon >= CONFIG["nexrad"]["bounds"][0]) & (
                         nexrad_xarray.lon <= CONFIG["nexrad"]["bounds"][1]
                     )
@@ -773,12 +749,12 @@ def nexrad_load_netcdf(
             nexrad_xarray["lon"] = nexrad_xarray.lon.assign_attrs(
                 {"standard_name": "longitude"}
             )
-            nexrad_xarray["projection_x_coordinate"] = (
-                nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-            )
-            nexrad_xarray["projection_y_coordinate"] = (
-                nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
-            )
+            nexrad_xarray[
+                "projection_x_coordinate"
+            ] = nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+            nexrad_xarray[
+                "projection_y_coordinate"
+            ] = nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
             nexrad_xarray["altitude"] = nexrad_xarray.altitude.assign_attrs(
                 {"standard_name": "altitude", "units": "m"}
             )

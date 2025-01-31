@@ -58,7 +58,6 @@ def calc_3d_perim(footprint_data, frame, feature_id):
         neighboring_cells = []
 
         for mx in (nx - 1, nx + 1):
-
             if mx in range(feature_data.shape[2]):
                 t = feature_data[nz, ny, mx]
             else:
@@ -67,7 +66,6 @@ def calc_3d_perim(footprint_data, frame, feature_id):
                 perims[t] = perims.get(t, 0) + y_dim_sizes[ny] * z_dim_sizes[nz]
 
         for my in (ny - 1, ny + 1):
-
             if my in range(feature_data.shape[1]):
                 t = feature_data[nz, my, nx]
             else:
@@ -76,7 +74,6 @@ def calc_3d_perim(footprint_data, frame, feature_id):
                 perims[t] = perims.get(t, 0) + x_dim_sizes[nx] * z_dim_sizes[nz]
 
         for mz in (nz - 1, nz + 1):
-
             if mz in range(feature_data.shape[0]):
                 t = feature_data[mz, ny, nx]
             else:

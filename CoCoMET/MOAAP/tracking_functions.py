@@ -914,7 +914,6 @@ def calc_object_characteristics(
             lon_idx_slice = object_indices[iobj][2]
 
             if len(object_slice) >= min_tsteps:
-
                 data_slice[object_slice != (iobj + 1)] = np.nan
                 grid_cell_area_slice = np.tile(
                     grid_cell_area[lat_idx_slice, lon_idx_slice],
@@ -1014,7 +1013,6 @@ def ObjectCharacteristics(
     MinTime=1,  # minimum lifetime of an object
     Boundary=1,
 ):  # 1 --> remove object when it hits the boundary of the domain
-
     # ========
 
     nr_objectsUD = PR_objectsFull.max()
@@ -1193,7 +1191,6 @@ def Feature_Calculation(
     dT,  # time step in hours
     Gridspacing,
 ):  # grid spacing in m
-
     # 11111111111111111111111111111111111111111111111111
     # calculate vapor transport on pressure level
     VapTrans = (
@@ -1665,7 +1662,6 @@ def BreakupObjects(
     dT,  # time step in hours
     obj_history=False,  # calculates how object start and end
 ):
-
     start = time.perf_counter()
 
     object_indices = ndimage.find_objects(DATA)
@@ -1739,9 +1735,9 @@ def BreakupObjects(
                         rgiObActCP.remove(ob1)
                         continue
                     elif len(tt1_obj) == 1:
-                        rgiObjects2D_ACT[tt, rgiObjects2D_ACT[tt, :] == tt1_obj[0]] = (
-                            ob1
-                        )
+                        rgiObjects2D_ACT[
+                            tt, rgiObjects2D_ACT[tt, :] == tt1_obj[0]
+                        ] = ob1
                     else:
                         VOL = [
                             np.sum(rgiObjects2D_ACT[tt, :] == tt1_obj[jj])
@@ -1889,7 +1885,6 @@ def interpolate_numba(arr, no_data=-32768):
                     new_value = value
 
                 elif value == no_data:  # interpolate
-
                     left = arr[z - 1, y, x]
                     right = arr[z + 1, y, x]
                     # look for valid neighbours
@@ -2417,7 +2412,6 @@ from math import atan2, cos, radians, sin, sqrt
 
 # from - https://stackoverflow.com/questions/19412462/getting-distance-between-two-points-based-on-latitude-longitude
 def DistanceCoord(Lo1, La1, Lo2, La2):
-
     # approximate radius of earth in km
     R = 6373.0
 
@@ -2771,7 +2765,8 @@ def MCStracking(pr_data, bt_data, times, Lon, Lat, nc_file, DataOutDir, DataName
         pr_object_majoraxislen = np.array(
             [
                 regionprops(pr_object_act[tt, :, :].astype(int))[0].major_axis_length
-                * np.mean(area_act[tt, (pr_object_act[tt, :, :] == 1)] / 1000**2) ** 0.5
+                * np.mean(area_act[tt, (pr_object_act[tt, :, :] == 1)] / 1000**2)
+                ** 0.5
                 for tt in range(pr_object_act.shape[0])
             ]
         )
@@ -3230,7 +3225,6 @@ def ar_850hpa_tracking(
 
 
 def ar_ivt_tracking(IVT, IVTtrheshold, MinTimeIVT, dT, connectLon):
-
     potIVTs = IVT > IVTtrheshold
     rgiObj_Struct = np.zeros((3, 3, 3))
     rgiObj_Struct[:, :, :] = 1
@@ -3252,7 +3246,6 @@ def ar_ivt_tracking(IVT, IVTtrheshold, MinTimeIVT, dT, connectLon):
 
 
 def ar_check(objects_mask, AR_Lat, AR_width_lenght_ratio, AR_MinLen, Lon, Lat):
-
     start = time.perf_counter()
     AR_obj = np.copy(objects_mask)
     AR_obj[:] = 0.0
@@ -3325,7 +3318,6 @@ def ar_check(objects_mask, AR_Lat, AR_width_lenght_ratio, AR_MinLen, Lon, Lat):
 
 
 def frontal_identification(Frontal_Diagnostic, front_treshold, MinAreaFR, Area):
-
     rgiObj_Struct_Fronts = np.zeros((3, 3, 3))
     rgiObj_Struct_Fronts[1, :, :] = 1
     Fmask = Frontal_Diagnostic > front_treshold
@@ -3365,7 +3357,6 @@ def cy_acy_psl_tracking(
     connectLon,
     breakup="breakup",
 ):
-
     print("        track cyclones")
     rgiObj_Struct = np.zeros((3, 3, 3))
     rgiObj_Struct[:, :, :] = 1
@@ -3467,7 +3458,6 @@ def cy_acy_z500_tracking(
     z500_high_anom=70,
     breakup="breakup",
 ):
-
     rgiObj_Struct = np.zeros((3, 3, 3))
     rgiObj_Struct[:, :, :] = 1
     z500 = z500 / 9.81
@@ -3557,7 +3547,6 @@ def cy_acy_z500_tracking(
 def col_identification(
     cy_z500_objects, z500, u200, Frontal_Diagnostic, MinTimeC, dx, dy, Lon, Lat
 ):
-
     # area arround cyclone
     col_buffer = 500000  # m
 
@@ -3752,7 +3741,6 @@ def mcs_tb_tracking(
     Gridspacing,
     breakup="watershed",  # method for breaking up connected objects [watershed, breakup]
 ):
-
     print("        track  clouds")
     rgiObj_Struct = np.zeros((3, 3, 3))
     rgiObj_Struct[:, :, :] = 1
@@ -3967,7 +3955,6 @@ def tc_tracking(
             ObjACT[:] = 0
             continue
         else:
-
             # has the cyclone a warm core?
             DeltaTCore = np.zeros((ObjACT.shape[0]))
             DeltaTCore[:] = np.nan
@@ -4082,7 +4069,6 @@ def mcs_pr_tracking(
     dT,
     connectLon,
 ):
-
     print("        track  precipitation")
 
     rgiObj_Struct = np.zeros((3, 3, 3))
@@ -4384,7 +4370,6 @@ def watersheding(
     min_dist,  # minimum distance between two objects [int]
     threshold,
 ):  # threshold to identify objects [float]
-
     if len(field_with_max.shape) == 2:
         conection = np.ones((3, 3))
     elif len(field_with_max.shape) == 3:
@@ -4442,7 +4427,6 @@ def watershed_2d_overlap(
     dT,  # time interval in hours [int]
     mintime=24,
 ):  # minimum time an object has to exist in dT [int]
-
     data_2d_watershed = np.copy(data)
     data_2d_watershed[:] = np.nan
     for tt in tqdm(range(data.shape[0])):
@@ -4519,7 +4503,6 @@ def watershed_2d_overlap(
 
             # loop over all objects in t = -1 from big to small
             for ob in range(len(t0_elements)):
-
                 ob_act = np.copy(
                     objects_watershed[tt - 1, ob_loc_t0[ob][0], ob_loc_t0[ob][1]]
                 )
@@ -4648,7 +4631,6 @@ def moaap(
     breakup_tw="watershed",  # ****
     **args,  # Throwaway args
 ):
-
     # calculate grid spacing assuming regular lat/lon grid
     _, _, Area, Gridspacing = calc_grid_distance_area(Lon, Lat)
     Area[Area < 0] = 0
@@ -4843,20 +4825,24 @@ def moaap(
     if ew_test == "yes":
         print("======> track tropical waves")
         start = time.perf_counter()
-        mrg_objects, igw_objects, kelvin_objects, eig0_objects, er_objects = (
-            track_tropwaves(
-                pr,
-                Lat,
-                connectLon,
-                dT,
-                Gridspacing,
-                er_th=er_th,  # threshold for Rossby Waves
-                mrg_th=mrg_th,  # threshold for mixed Rossby Gravity Waves
-                igw_th=igw_th,  # threshold for inertia gravity waves
-                kel_th=kel_th,  # threshold for Kelvin waves
-                eig0_th=eig0_th,  # threshold for n>=1 Inertio Gravirt Wave
-                breakup=breakup_tw,
-            )
+        (
+            mrg_objects,
+            igw_objects,
+            kelvin_objects,
+            eig0_objects,
+            er_objects,
+        ) = track_tropwaves(
+            pr,
+            Lat,
+            connectLon,
+            dT,
+            Gridspacing,
+            er_th=er_th,  # threshold for Rossby Waves
+            mrg_th=mrg_th,  # threshold for mixed Rossby Gravity Waves
+            igw_th=igw_th,  # threshold for inertia gravity waves
+            kel_th=kel_th,  # threshold for Kelvin waves
+            eig0_th=eig0_th,  # threshold for n>=1 Inertio Gravirt Wave
+            breakup=breakup_tw,
         )
         end = time.perf_counter()
         timer(start, end)

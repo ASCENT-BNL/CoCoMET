@@ -78,14 +78,12 @@ def extract_arm_product(
 
     # If 1D input data, don't use heights
     if len(vap.dims) == 1:
-
         # Loop over frames
         for ii, frame in tqdm(
             enumerate(frame_groups),
             desc="=====Extracting ARM Data=====",
             total=frame_groups.ngroups,
         ):
-
             # Get VAP at current time step
             time_idx = find_nearest(vap.time.values, frame[1].time.values[0])
             time_delta = vap.time.values[time_idx] - frame[1].time.values[0]
@@ -99,7 +97,6 @@ def extract_arm_product(
 
             # Loop over features
             for feature in frame[1].groupby("feature_id"):
-
                 # Get distance from each feature to the device
                 dis_to_vdis = vincenty(
                     (lat_pos, lon_pos),
@@ -159,7 +156,6 @@ def extract_arm_product(
         desc="=====Extracting ARM Data=====",
         total=frame_groups.ngroups,
     ):
-
         # Get VAP at current time step
         time_idx = find_nearest(vap.time.values, frame[1].time.values[0])
         time_delta = vap.time.values[time_idx] - frame[1].time.values[0]
@@ -173,7 +169,6 @@ def extract_arm_product(
 
         # Loop over features
         for feature in frame[1].groupby("feature_id"):
-
             # Get distance from each feature to the device
             dis_to_vdis = vincenty(
                 (lat_pos, lon_pos),
@@ -281,7 +276,6 @@ def calculate_convective_indices(
         desc="=====Calculating INTERPSONDE Initation Properties=====",
         total=init_groups.ngroups,
     ):
-
         # Get sonde data at time step before initiation if possible
         time_idx = find_nearest(sonde.time.values, cell[1].time.values[0])
         time_idx_init = time_idx - 1 if time_idx > 0 else 0

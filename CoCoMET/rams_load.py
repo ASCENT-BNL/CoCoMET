@@ -77,7 +77,6 @@ def rams_load_netcdf_iris(
 
     # This is already in configure_rams, but eventually we will call RAMS-MAT. Then either put the time formatting here or keep it in RAMS-MAT
     if "rams" in CONFIG:
-
         # Check for idealized data then correct times
         if "is_idealized" in CONFIG["rams"]:
             if CONFIG["rams"]["is_idealized"]:
@@ -128,7 +127,6 @@ def rams_load_netcdf_iris(
         raise Exception("""!=====CONFIG Missing "rams" Field=====!""")
 
     if tracking_var.lower() == "tb":
-
         # Brightness temperature is only 2d so no heights needed
         rams_xarray["TB"] = rams_calculate_brightness_temp(rams_xarray)
         rams_xarray["TB"].attrs["units"] = "K"
@@ -138,7 +136,7 @@ def rams_load_netcdf_iris(
         cube = load(rams_xarray, "TB")
 
         if debug == 1.0:
-            print(f"this is the tb output: {rams_xarray["TB"].values}")
+            print(f"""this is the tb output: {rams_xarray["TB"].values}""")
 
         if debug == 2.0:
             plt.imshow(rams_xarray["TB"].values[0, :, :], origin="lower")
@@ -158,7 +156,7 @@ def rams_load_netcdf_iris(
         cube = load(rams_xarray, "PR")
 
         if debug == 1.0:
-            print(f"this is the pr output: {rams_xarray["PR"].values}")
+            print(f"""this is the pr output: {rams_xarray["PR"].values}""")
 
         if debug == 2.0:
             plt.imshow(rams_xarray["PR"].values[0, :, :], origin="lower")
@@ -167,7 +165,6 @@ def rams_load_netcdf_iris(
             plt.show()
 
     elif tracking_var.lower() == "dbz":
-
         rams_reflectivity = rams_calculate_reflectivity(rams_xarray)
 
         rams_xarray["DBZ"] = rams_reflectivity
@@ -181,7 +178,7 @@ def rams_load_netcdf_iris(
         )
         if debug == 1.0:
             print(
-                f"this is the dbz output: {rams_xarray["DBZ"].values} with shape {rams_xarray["DBZ"].shape}"
+                f"""this is the dbz output: {rams_xarray["DBZ"].values} with shape {rams_xarray["DBZ"].shape}"""
             )
         if debug == 2.0:
             from matplotlib import cm
@@ -208,7 +205,7 @@ def rams_load_netcdf_iris(
                 vmax=45,
             )
             plt.title(
-                f"{rams_xarray["altitudes"].values[z]:.3f}m Slice of Reflectivity in dBz at t=0"
+                """{rams_xarray["altitudes"].values[z]:.3f}m Slice of Reflectivity in dBz at t=0"""
             )
             plt.colorbar()
             plt.ylabel("Grid points (south_north)")
@@ -255,7 +252,6 @@ def rams_load_netcdf_iris(
             plt.show()
 
     elif tracking_var.lower() == "wa":
-
         # Get updraft velocity at mass points
         rams_wa = rams_calculate_wa(rams_xarray)
 
@@ -270,7 +266,7 @@ def rams_load_netcdf_iris(
         )
 
         if debug == 1:
-            print(f"the wa output is {rams_xarray["WA"].values}")
+            print(f"""the wa output is {rams_xarray["WA"].values}""")
         if debug == 2.0:
             z = 44
             t = 0
@@ -278,7 +274,7 @@ def rams_load_netcdf_iris(
                 rams_xarray["WA"].values[t, z, :, :], origin="lower", cmap="Blues"
             )
             plt.title(
-                f"{rams_xarray["altitudes"].values[z]:.3f}m Slice of Vertical Velocity of Winds in m/s at t={t}"
+                f"""{rams_xarray["altitudes"].values[z]:.3f}m Slice of Vertical Velocity of Winds in m/s at t={t}"""
             )
             plt.colorbar()
             plt.ylabel("Grid points (south_north)")

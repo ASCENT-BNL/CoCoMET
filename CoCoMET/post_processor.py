@@ -52,12 +52,10 @@ def filter_cells(
     frame_groups = analysis_object["US_linking"].groupby("frame")
 
     if analysis_object["US_segmentation_3d"] is not None:
-
         cell_seg = analysis_object["US_segmentation_3d"].Cell_Segmentation
         dim = "3d"
 
     elif ["US_segmentation_2d"] is not None:
-
         cell_seg = analysis_object["US_segmentation_2d"].Cell_Segmentation
         dim = "2d"
 
@@ -68,7 +66,6 @@ def filter_cells(
 
     # Loop over frames
     for frameg in frame_groups:
-
         frame = frameg[0]
 
         # Remove all cells in the first or last frames
@@ -79,7 +76,6 @@ def filter_cells(
 
         # Go through the sides of the 2D or 3D space and remove
         else:
-
             # go through and check the top, bottom, left, right, forward, back faces
 
             bottom_features = np.unique(cell_seg[frame, 0, :, :])[
@@ -136,7 +132,6 @@ def filter_cells(
         desc="=====Deleting Edge Cells=====",
         total=len(edge_cells_to_delete),
     ):
-
         cell_indices_2d = where_replacement(US_segmentation_2d_cell_numpy == cell)
         features = -np.ones_like(US_segmentation_2d_cell_numpy)
 

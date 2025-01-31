@@ -47,7 +47,6 @@ def mesonh_calculate_reflectivity(mesonh_xarray: xr.Dataset) -> xr.DataArray:
 
     # Suppress divide by zero warnings
     with warnings.catch_warnings():
-
         warnings.filterwarnings(
             action="ignore", message="divide by zero encountered in divide"
         )

@@ -111,7 +111,6 @@ def _create_xarrs_and_cubes(
 
     elif dataset_name == "nexrad" or dataset_name == "multi_nexrad":
         if "gridding" in CONFIG[dataset_name]:
-
             if CONFIG["verbose"]:
                 print(f"=====Gridding {dataset_name.upper()} Data=====")
             tracking_cube, tracking_xarray = globals()[
@@ -146,7 +145,6 @@ def _create_xarrs_and_cubes(
         CONFIG[dataset_name]["feature_tracking_var"]
         != CONFIG[dataset_name]["segmentation_var"]
     ):
-
         if dataset_name == "rams":
             segmentation_cube, segmentation_xarray = globals()[
                 f"{dataset_name}_load_netcdf_iris"
@@ -248,7 +246,6 @@ def _run_tracker_det_and_seg(
 
     # now determine which tracker(s) to use
     if tracker == "tobac":
-
         features = None
         tracks = None
         segmentation2d = (None, None)
@@ -256,7 +253,6 @@ def _run_tracker_det_and_seg(
 
         # Perform all cell tracking, id, and segmentation steps. Then add results to return dict
         if "feature_id" in CONFIG[dataset_name]["tobac"]:
-
             if CONFIG["verbose"]:
                 print(f"=====Starting {dataset_name.upper()} tobac Feature ID=====")
 
@@ -267,7 +263,6 @@ def _run_tracker_det_and_seg(
                 raise Exception("No features identified")
 
         if "linking" in CONFIG[dataset_name]["tobac"]:
-
             if CONFIG["verbose"]:
                 print(
                     f"=====Starting {dataset_name.upper()} tobac Feature Linking====="
@@ -278,7 +273,6 @@ def _run_tracker_det_and_seg(
             )
 
         if "segmentation_2d" in CONFIG[dataset_name]["tobac"]:
-
             if CONFIG["verbose"]:
                 print(
                     f"=====Starting {dataset_name.upper()} tobac 2D Segmentation====="
@@ -299,7 +293,6 @@ def _run_tracker_det_and_seg(
             )
 
         if "segmentation_3d" in CONFIG[dataset_name]["tobac"]:
-
             if CONFIG["verbose"]:
                 print(
                     f"=====Starting {dataset_name.upper()} tobac 3D Segmentation====="
@@ -326,7 +319,6 @@ def _run_tracker_det_and_seg(
     if tracker == "moaap" or tracker == "tams":
         # Run MOAAP or TAMS if present
         if tracker in CONFIG[dataset_name]:
-
             if CONFIG["verbose"]:
                 print(
                     f"=====Starting {dataset_name.upper()} {tracker.upper()} Tracking====="
@@ -406,7 +398,6 @@ def _tobac_analysis(
     _tobac_analysis_data = {}
 
     if "analysis" in CONFIG[dataset_name]["tobac"]:
-
         if CONFIG[dataset_name]["tobac"]["analysis"] is None:
             CONFIG[dataset_name]["tobac"]["analysis"] = {}
 
@@ -429,7 +420,6 @@ def _tobac_analysis(
 
         # Calcaulte each variable of interest and append to analysis data array
         for var in analysis_vars:
-
             # Make sure that ETH is calculated with reflectivity
             if var == "eth":
                 CONFIG[dataset_name]["tobac"]["analysis"][var]["variable"] = "DBZ"
@@ -504,7 +494,6 @@ def _moaap_analysis(
 
     # Run analysis on MOAAP output
     if "analysis" in CONFIG[dataset_name]["moaap"]:
-
         if CONFIG[dataset_name]["moaap"]["analysis"] is None:
             CONFIG[dataset_name]["moaap"]["analysis"] = {}
 
@@ -513,11 +502,11 @@ def _moaap_analysis(
                 f"=====Starting {dataset_name.upper()} MOAAP Analysis Calculations====="
             )
 
-        if (US_tracks is not None and US_segmentation_2d is not None) or (US_tracks is not None and US_segmentation_3d is not None):
-
+        if (US_tracks is not None and US_segmentation_2d is not None) or (
+            US_tracks is not None and US_segmentation_3d is not None
+        ):
             # Calcaulte each variable of interest and append to analysis data array
             for var in CONFIG[dataset_name]["moaap"]["analysis"].keys():
-
                 # Add default tracking featured_id variable in place of variable if not present
                 if "variable" not in CONFIG[dataset_name]["moaap"]["analysis"][var]:
                     CONFIG[dataset_name]["moaap"]["analysis"][var]["variable"] = CONFIG[
@@ -588,7 +577,6 @@ def _tams_analysis(
 
     # Run analysis on TAMS output
     if "analysis" in CONFIG[dataset_name]["tams"]:
-
         if CONFIG[dataset_name]["tams"]["analysis"] is None:
             CONFIG[dataset_name]["tams"]["analysis"] = {}
 
@@ -597,11 +585,11 @@ def _tams_analysis(
                 f"=====Starting {dataset_name.upper()} TAMS Analysis Calculations====="
             )
 
-        if (US_tracks is not None and US_segmentation_2d is not None) or (US_tracks is not None and US_segmentation_3d is not None):
-
+        if (US_tracks is not None and US_segmentation_2d is not None) or (
+            US_tracks is not None and US_segmentation_3d is not None
+        ):
             # Calcaulte each variable of interest and append to analysis data array
             for var in CONFIG[dataset_name]["tams"]["analysis"].keys():
-
                 # Add default tracking featured_id variable in place of variable if not present
                 if "variable" not in CONFIG[dataset_name]["tams"]["analysis"][var]:
                     CONFIG[dataset_name]["tams"]["analysis"][var]["variable"] = CONFIG[

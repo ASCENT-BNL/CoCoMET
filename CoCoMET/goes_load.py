@@ -104,7 +104,6 @@ def goes_load_netcdf_iris(
 
     # Convert to iris cube and return
     if tracking_var.lower() == "tb":
-
         # Import GOES satetellite data as xarray dataset
         goes_xarray = xr.open_mfdataset(
             path_to_files, coords="all", concat_dim="t", combine="nested"
@@ -126,7 +125,6 @@ def goes_load_netcdf_iris(
 
         # Subset location of interest
         if "goes" in CONFIG:
-
             # Subset time based on user inputs
             if (
                 "min_frame_index" in CONFIG["goes"]
@@ -149,7 +147,6 @@ def goes_load_netcdf_iris(
                 )
 
             if "bounds" in CONFIG["goes"]:
-
                 mask_lon = (goes_xarray.lon >= CONFIG["goes"]["bounds"][0]) & (
                     goes_xarray.lon <= CONFIG["goes"]["bounds"][1]
                 )
@@ -195,12 +192,12 @@ def goes_load_netcdf_iris(
         goes_xarray["lon"] = goes_xarray.lon.assign_attrs(
             {"standard_name": "longitude"}
         )
-        goes_xarray["projection_x_coordinate"] = (
-            goes_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-        )
-        goes_xarray["projection_y_coordinate"] = (
-            goes_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
-        )
+        goes_xarray[
+            "projection_x_coordinate"
+        ] = goes_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+        goes_xarray[
+            "projection_y_coordinate"
+        ] = goes_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
 
         return (goes_xarray.to_iris(), goes_xarray)
 
@@ -238,7 +235,6 @@ def goes_load_netcdf(
 
     # Convert to iris cube and return
     if tracking_var.lower() == "tb":
-
         # Import GOES satetellite data as xarray dataset
         goes_xarray = xr.open_mfdataset(
             path_to_files, coords="all", concat_dim="t", combine="nested"
@@ -260,7 +256,6 @@ def goes_load_netcdf(
 
         # Subset location of interest
         if "goes" in CONFIG:
-
             # Subset time based on user inputs
             if (
                 "min_frame_index" in CONFIG["goes"]
@@ -283,7 +278,6 @@ def goes_load_netcdf(
                 )
 
             if "bounds" in CONFIG["goes"]:
-
                 mask_lon = (goes_xarray.lon >= CONFIG["goes"]["bounds"][0]) & (
                     goes_xarray.lon <= CONFIG["goes"]["bounds"][1]
                 )
@@ -329,12 +323,12 @@ def goes_load_netcdf(
         goes_xarray["lon"] = goes_xarray.lon.assign_attrs(
             {"standard_name": "longitude"}
         )
-        goes_xarray["projection_x_coordinate"] = (
-            goes_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-        )
-        goes_xarray["projection_y_coordinate"] = (
-            goes_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
-        )
+        goes_xarray[
+            "projection_x_coordinate"
+        ] = goes_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+        goes_xarray[
+            "projection_y_coordinate"
+        ] = goes_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
 
         return goes_xarray
 

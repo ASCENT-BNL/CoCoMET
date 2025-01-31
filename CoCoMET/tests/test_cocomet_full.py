@@ -118,7 +118,6 @@ CONFIG = CoCoMET.CoCoMET_load(str(data_out) + "/CoCoMET/tests/config_for_tests.y
 
 
 def test_load_data():
-
     # We need to store the data online somewhere
     # Then add a script to download data from online...probably zenodo
 
@@ -126,7 +125,6 @@ def test_load_data():
     data_files = glob.glob(str(data_out) + "/.cocomet_testing_datasets/WRF/*")
 
     if len(data_files) == 0:
-
         file_path = "https://zenodo.org/records/14611486/files/.cocomet_testing_datasets.zip?download=1"
 
         temp_zip_file = Path("temp.zip")
@@ -148,7 +146,6 @@ def test_load_data():
 
 
 def test_single_core_full_run():
-
     CONFIG["parallel_processing"] = False
 
     output = CoCoMET.CoCoMET_start(CONFIG=CONFIG)
@@ -162,7 +159,6 @@ def test_single_core_full_run():
 
 
 def test_multi_core_full_run():
-
     CONFIG["parallel_processing"] = True
 
     output = CoCoMET.CoCoMET_start(CONFIG=CONFIG)

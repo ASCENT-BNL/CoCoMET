@@ -12,7 +12,6 @@ Created on Mon Jul 22 11:03:37 2024
 
 
 class Analysis_Object:
-
     def __init__(
         self,
         tracking_xarray,
@@ -30,7 +29,6 @@ class Analysis_Object:
         self.US_segmentation_3d = US_segmentation_3d
 
     def return_analysis_dictionary(self) -> dict:
-
         return {
             "tracking_xarray": self.tracking_xarray,
             "segmentation_xarray": self.segmentation_xarray,

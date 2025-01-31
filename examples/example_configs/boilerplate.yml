@@ -8,7 +8,7 @@
 
 # SETUP VARIABLES: These determine basic CoMET functionality
 verbose: True # Whether to use verbose output
-parallel_processing: True # [bool] Whether or not to use parallel processing for certain tasks
+parallel_processing: False # [bool] Whether or not to use parallel processing for certain tasks
 max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None for unlimited
 
 # Structered in this form:
@@ -23,7 +23,7 @@ max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None 
 #           analysis_variables
 
 # WRF
-wrf:
+wrF:
     # path_to_data: "/D3/data/diewang/idealized_mcs_5min/03_2011-07-16_CTRL_Midwest_-Loc2_MCS_Storm-Nr_JJA-8-TH5/4000/*"
     path_to_data: "/share/D3/data/hweiner/WRF/wrfout_6_19_2013/*"
     # path_to_data: "/share/D3/data/hweiner/WRF/TestingPurposesOnly/*"
@@ -290,53 +290,53 @@ wrf:
 #             # cell_growth: {}
 #             irregularity: {irregularity_metrics: ['convexity']}
 
-# multi_nexrad: 
-#     # path_to_data: ["/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v","/D3/data/thahn/NEXRAD/HAS012535511/0003/*_V06.ar2v"]
-#     path_to_data: "/D3/data/thahn/NEXRAD/HAS012535511/grids/*.nc"
-    
-#     feature_tracking_var: "dbz"
-#     segmentation_var: "dbz"    
-    
-    
-#     # gridding: # only if gridding is needed 
-#     #     gridding_save_path: "/D3/data/thahn/NEXRAD/HAS012527906/grids/"
-#     #     grid_shape: (40, 401, 401)
-#     #     grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
-    
-#     tobac:
-#         feature_id:
-#             # height: 2 # OPTIONAL kilometers
-#             threshold: [50, 60]
-#             target: "maximum"
-#             position_threshold: "weighted_diff"
-#             sigma_threshold: 0.5
-#             n_min_threshold: 20
-        
-#         linking: 
-#             method_linking: "predict"
-#             adaptive_stop: 0.2
-#             adaptive_step: 0.95
-#             order: 1
-#             subnetwork_size: 10
-#             memory: 1
-#             v_max: 20
-        
-#         segmentation_3d:
-#             method: "watershed"
-#             threshold: 15
-        
-#         segmentation_2d:
-#             height: 2000
-#             method: "watershed"
-#             threshold: 15
-            
-#         analysis:
-#             # merge_split: { variable: "DBZ" }
-#             # var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
-#             area: { height: 2 }
-#             # volume: {}
-#             convective_indices: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*", parcel: 3 }
-#             vdisquants: { path_to_files: "/D3/data/thahn/ARM/VDISQUANTS/*" }
+multi_nexrad: 
+    # path_to_data: ["/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v","/D3/data/thahn/NEXRAD/HAS012535511/0003/*_V06.ar2v"]
+    path_to_data: "/D3/data/thahn/NEXRAD/HAS012535511/grids/*.nc"
+  
+    feature_tracking_var: "dbz"
+    segmentation_var: "dbz"    
+  
+  
+    # gridding: # only if gridding is needed 
+    #     gridding_save_path: "/D3/data/thahn/NEXRAD/HAS012527906/grids/"
+    #     grid_shape: (40, 401, 401)
+    #     grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
+  
+    tobac:
+        feature_id:
+            # height: 2 # OPTIONAL kilometers
+            threshold: [40, 50, 60]
+            target: "maximum"
+            position_threshold: "weighted_diff"
+            sigma_threshold: 0.5
+            n_min_threshold: 20
+      
+        linking: 
+            method_linking: "predict"
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 1
+            v_max: 20
+      
+        segmentation_3d:
+            method: "watershed"
+            threshold: 15
+      
+        segmentation_2d:
+            height: 2
+            method: "watershed"
+            threshold: 15
+          
+        analysis:
+            # merge_split: { variable: "DBZ" }
+            # var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
+            area: { height: 2 }
+            # volume: {}
+            convective_indices: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*", parcel: 3 }
+            #vdisquants: { path_to_files: "/D3/data/thahn/ARM/VDISQUANTS/*" }
 
 
 # Standard Gridded Radar
