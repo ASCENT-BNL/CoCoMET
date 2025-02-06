@@ -712,7 +712,7 @@ def calculate_cell_growth(
     ------
     Exception
         Exception if missing tracks input from the analysis object.
-        Exception if the segmentation data is not 3D.
+        Exception if the segmentation data is not 2D or 3D3D.
 
     Returns
     -------
@@ -724,11 +724,27 @@ def calculate_cell_growth(
     if analysis_object["US_tracks"] is None:
         raise ValueError("!=====Tracks Data is Required for Velocity Calculation=====!")
 
-    # Check if volume information is given in the arguments, if not then recalculate it
-    if "volume" in args:
-        vol = args["volume"]["volume"]
+    # Check if the code is 3D
+    if analysis_object["US_segmentation_3d"]is not None:
+        
+        dim = 3
+        # Check if volume information is given in the arguments, if not then recalculate it
+        if 'volume' in args:
+            vol = args['volume']['volume']
+        else:
+            vol = calculate_volume(analysis_object, **args)['volume']
+
+    # If there is no 3D segmentation check if there is 2D
+    elif analysis_object["US_segmentation_2d"] is not None:
+        dim = 2
+        # Check if volume information is given in the arguments, if not then recalculate it
+        if 'area-low' in args:
+            vol = args['area-low']['area']
+        else:
+            vol = calculate_area(analysis_object, **args)['area']
+
     else:
-        vol = calculate_volume(analysis_object, **args)["volume"]
+        raise Exception("!=====Missing Segmentation Input=====!")
 
     Tracks = analysis_object["US_tracks"]
     Tracks_with_vol = deepcopy(Tracks).join(vol)
@@ -747,7 +763,13 @@ def calculate_cell_growth(
         cell_feature_arr = np.array(cell_g["feature_id"]).tolist()
         cell_frame_arr = np.array(cell_g["frame"]).tolist()
         cell_arr = [cell_id] * len(cell_frame_arr)
-        cell_vol_arr = np.array(cell_g["volume"])
+
+        if dim == 3:
+            cell_vol_arr = np.array(cell_g['volume'])
+
+        elif dim == 2:
+            cell_vol_arr = np.array(cell_g['area'])        
+        
         cell_lifetime_arr = np.array(
             cell_g["lifetime"] / np.timedelta64(1, "s")
         )  # convert from ns to s
@@ -789,10 +811,10 @@ def calculate_cell_growth(
         else:
             variable_field = analysis_object["segmentation_xarray"][variable]
 
-        if len(variable_field.shape) != 4:
-            raise ValueError("=====The segmentation must be 3D=====")
+        if len(variable_field.shape) != 4 and len(variable_field.shape) != 3:
+            raise ValueError("=====The segmentation must be 2D or 3D=====")
 
-        feature_mask = analysis_object["US_segmentation_3d"].Feature_Segmentation
+        feature_mask = analysis_object[f"US_segmentation_{dim}d"].Feature_Segmentation
         feature_mask.values[variable_field.values < threshold] = -1
         uncut_feature_list = np.unique(feature_mask)[1:]  # don"t use -1
         cell_growth_df = cell_growth_df[

@@ -409,7 +409,7 @@ def _tobac_analysis(
         # Place the analysis variables which help calculate other variables first in the list if they are to be calculated
         analysis_dict = CONFIG[dataset_name]["tobac"]["analysis"]
         analysis_keys = list(analysis_dict.keys())
-        depended_variables = ["volume", "perimeter", "eth"]
+        depended_variables = ["volume", "perimeter", "area"]
 
         for dep_var in depended_variables:
             if dep_var in analysis_keys:

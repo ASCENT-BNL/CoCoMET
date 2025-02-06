@@ -145,8 +145,15 @@ def rams_load_netcdf_iris(
             plt.show()
 
     elif tracking_var.lower() == "pr":
-        # Precipitation rate is only 2d so no heights needed
-        rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray)
+        
+        if "height" in CONFIG["rams"]["tobac"]["feature_id"]:
+            # Precipitation rate is only 2d so no heights needed
+            rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, height=CONFIG["rams"]["tobac"]["feature_id"]["height"])
+        elif "height" in CONFIG["rams"]["tobac"]["segmentation_2d"]:
+            # Precipitation rate is only 2d so no heights needed
+            rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, height=CONFIG["rams"]["tobac"]["segmentation_2d"]["height"])
+        else:
+            rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, height = 0)
 
         rams_xarray["PR"].attrs["units"] = "mm/hr"
 
