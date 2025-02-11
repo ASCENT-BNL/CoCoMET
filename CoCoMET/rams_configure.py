@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 # TODO: Remove this and replace with RAMS-MAT package
-def configure_rams(dataset0, path_to_header, CONFIG=None):
+def configure_rams(dataset0, path_to_header, CONFIG=None, configure_variables = []):
     """
     Serves to set up proper attributes, coordinates, and dimensions so that the RAMS data set is compatible with CoCoMET
     Inputs:
@@ -20,6 +20,7 @@ def configure_rams(dataset0, path_to_header, CONFIG=None):
     # avoid errors with CONFIG file
     if CONFIG is None:
         CONFIG = {"verbose": False, "rams": {}}
+    
     # since grid 3 of RAMS dataset is large, create a list of only the necessary variables and a new dataset to reduce required computational power
     ListOfNeededVariables = [
         "GLAT",
@@ -27,32 +28,36 @@ def configure_rams(dataset0, path_to_header, CONFIG=None):
         "TOPT",  # lat, lon, and topographical height
         "PI",
         "THETA",  # pressure and temperature var
-        "RV",
-        "RCP",
-        "RDP",  # mixing ratio (dbz calculation)
-        "RRP",
-        "RPP",
-        "RSP",
-        "RAP",
-        "RGP",
-        "RHP",
-        "CCP",
-        "CDP",
-        "CRP",  # concentration numbers (dbz calculation)
-        "CPP",
-        "CSP",
-        "CAP",
-        "CGP",
-        "CHP",
-        "PCPVR",
-        "PCPVS",
-        "PCPVA",  # 3D precipitation rates
-        "PCPVG",
-        "PCPVH",
-        "PCPVD",
-        "LWUP",  # longwave radiation (brightness temp calculation)
-        "DN0",  # dry air density (experimental for precipitation rate calculation)
+        # "RV",
+        # "RCP",
+        # "RDP",  # mixing ratio (dbz calculation)
+        # "RRP",
+        # "RPP",
+        # "RSP",
+        # "RAP",
+        # "RGP",
+        # "RHP",
+        # "CCP",
+        # "CDP",
+        # "CRP",  # concentration numbers (dbz calculation)
+        # "CPP",
+        # "CSP",
+        # "CAP",
+        # "CGP",
+        # "CHP",
+        # "PCPVR",
+        # "PCPVS",
+        # "PCPVA",  # 3D precipitation rates
+        # "PCPVG",
+        # "PCPVH",
+        # "PCPVD",
+        # "LWUP",  # longwave radiation (brightness temp calculation)
+        # "DN0",  # dry air density (experimental for precipitation rate calculation)
     ]
+
+    # Add in the tracking variable(s)
+    ListOfNeededVariables.extend(configure_variables)
+
     dataset = xr.Dataset({})
     if CONFIG["verbose"]:
         for var in tqdm(

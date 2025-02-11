@@ -73,7 +73,6 @@ def rams_load_netcdf_iris(
         engine="h5netcdf",
         phony_dims="sort",
     )
-    rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG)
 
     # This is already in configure_rams, but eventually we will call RAMS-MAT. Then either put the time formatting here or keep it in RAMS-MAT
     if "rams" in CONFIG:
@@ -127,6 +126,11 @@ def rams_load_netcdf_iris(
         raise Exception("""!=====CONFIG Missing "rams" Field=====!""")
 
     if tracking_var.lower() == "tb":
+
+        # Configure rams xarray for brightness temperature
+        rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
+                                        configure_variables=["TOA_OLR", "LWUP"])
+
         # Brightness temperature is only 2d so no heights needed
         rams_xarray["TB"] = rams_calculate_brightness_temp(rams_xarray)
         rams_xarray["TB"].attrs["units"] = "K"
@@ -146,14 +150,11 @@ def rams_load_netcdf_iris(
 
     elif tracking_var.lower() == "pr":
         
-        if "height" in CONFIG["rams"]["tobac"]["feature_id"]:
-            # Precipitation rate is only 2d so no heights needed
-            rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, height=CONFIG["rams"]["tobac"]["feature_id"]["height"])
-        elif "height" in CONFIG["rams"]["tobac"]["segmentation_2d"]:
-            # Precipitation rate is only 2d so no heights needed
-            rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, height=CONFIG["rams"]["tobac"]["segmentation_2d"]["height"])
-        else:
-            rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, height = 0)
+        # Configure rams xarray for brightness temperature
+        rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
+                                        configure_variables=["PCPVR", "PCPVS", "PCPVA", "PCPVG", "PCPVH", "PCPVD"])
+
+        rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, height = 0)
 
         rams_xarray["PR"].attrs["units"] = "mm/hr"
 
@@ -172,6 +173,12 @@ def rams_load_netcdf_iris(
             plt.show()
 
     elif tracking_var.lower() == "dbz":
+
+        # Configure rams xarray for brightness temperature
+        rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
+                                        configure_variables=["RRP", "RPP", "RSP", "RAP", "RGP", "RHP", 
+                                                            "CRP", "CPP", "CSP", "CAP", "CGP", "CHP"])
+
         rams_reflectivity = rams_calculate_reflectivity(rams_xarray)
 
         rams_xarray["DBZ"] = rams_reflectivity
@@ -259,6 +266,11 @@ def rams_load_netcdf_iris(
             plt.show()
 
     elif tracking_var.lower() == "wa":
+
+        # Configure rams xarray for brightness temperature
+        rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
+                                        configure_variables=[])
+        
         # Get updraft velocity at mass points
         rams_wa = rams_calculate_wa(rams_xarray)
 
@@ -324,9 +336,30 @@ def rams_load_netcdf_iris(
             plt.colorbar()
             plt.tight_layout()
             plt.show()
+
     else:
-        raise Exception(
-            f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
-        )
+        # If not any of the above, try using user inputed value
+        try:
+            # Configure rams xarray for brightness temperature
+            rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
+                                            configure_variables=[tracking_var.upper()])
+
+            var_values = rams_xarray[tracking_var.upper()]
+            cube = load(rams_xarray, tracking_var.upper())
+
+            if len(var_values.shape) == 4:
+                # Add correct altitude based off of average height at each height index
+
+                cube.coord("altitude").points = rams_xarray["altitudes"].values
+
+                # Add altitude field for easier processing later
+                rams_xarray[tracking_var.upper()] = rams_xarray[
+                    tracking_var.upper()
+                ].assign_coords(altitude=("bottom_top", rams_xarray["altitudes"].values))
+
+        except:
+            raise Exception(
+                f"!=====Invalid Tracking Variable. You Entered: {tracking_var.lower()}=====!"
+            )
 
     return (cube, rams_xarray.unify_chunks())

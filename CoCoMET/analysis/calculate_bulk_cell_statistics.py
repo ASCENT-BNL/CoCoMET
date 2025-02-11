@@ -559,6 +559,7 @@ def calculate_velocity(
 
         velocity = ((y2 - y1) / dt, (x2 - x1) / dt)
         speed = np.sqrt((velocity[0]) ** 2 + (velocity[1]) ** 2)
+        velocity /= speed
 
         if dim == 3:
             z1 = row1["altitude"]
@@ -571,6 +572,7 @@ def calculate_velocity(
 
             velocity = ((z2 - z1) / dt, (y2 - y1) / dt, (x2 - x1) / dt)
             speed = np.sqrt(velocity[0] ** 2 + velocity[1] ** 2 + velocity[2] ** 2)
+            velocity /= speed
 
         return (distancecomps, distance, velocity, speed)
 
@@ -579,7 +581,7 @@ def calculate_velocity(
         "frame": [],
         "feature_id": [],
         "cell_id": [],
-        "velocity": [],  # in m / s
+        "velocity unit vector": [],  # in m / s
         "speed": [],  # in m / s
     }
 
@@ -605,43 +607,14 @@ def calculate_velocity(
         velocity_info["cell_id"].append(cell_id)
 
         if Tracks.iloc[i]["frame"] == np.min(Tracks["frame"]) and cell_id != -1:
-            velocity_info["velocity"].append(tuple(np.zeros(dim)))
+            velocity_info["velocity unit vector"].append(tuple(np.zeros(dim)))
             velocity_info["speed"].append(0)
 
-        elif cell_id not in Tracks[:i]["cell_id"].values:  # check if this is a new cell
-            # if new, look for closest cell in same frame to copy velocity from
-            same_frame_index_list = Tracks.index[
-                Tracks["frame"] == Tracks.iloc[i]["frame"]
-            ].tolist()
-            same_frame_index_list.remove(i)
-            if len(same_frame_index_list) == 0:
-                velocity_info["velocity"].append(tuple(np.zeros(dim)))
-                velocity_info["speed"].append(0)
-                continue
+        elif cell_id not in Tracks[:i]["cell_id"].values:
 
-            min_distance = np.inf
-            closest_vel = tuple(np.zeros(dim))
-            closest_speed = 0
-            for j in same_frame_index_list:
-                target_row = Tracks.iloc[j]
-                if len(velocity_info["velocity"]) < j:
-                    continue
-
-                target_velocity = velocity_info["velocity"][j]
-                target_speed = velocity_info["speed"][j]
-
-                distance = calculate_row_velocity(
-                    Tracks.iloc[i], target_row, dt_array, dim
-                )[1]
-
-                if distance < min_distance:
-                    min_distance = distance
-                    closest_vel = target_velocity
-                    closest_speed = target_speed
-
-            # If there are no other cells in the frame, append 0
-            velocity_info["velocity"].append(closest_vel)
-            velocity_info["speed"].append(closest_speed)
+            # If this is a new cell, append 0
+            velocity_info["velocity unit vector"].append(tuple(np.zeros(dim)))
+            velocity_info["speed"].append(0)
 
         else:
             # if the cell is not new, determine velocity from the change in position from previous frame
@@ -651,22 +624,24 @@ def calculate_velocity(
             velocity_speed = calculate_row_velocity(
                 Tracks.iloc[i], Tracks.iloc[index], dt_array, dim
             )[2:]
-            velocity_info["velocity"].append(velocity_speed[0])
+            velocity_info["velocity unit vector"].append(velocity_speed[0])
             velocity_info["speed"].append(velocity_speed[1])
 
-    for i in Tracks.index:
-        cell_id = Tracks.iloc[i]["cell_id"]
-        if velocity_info["velocity"][i] == tuple(
-            np.zeros(dim)
-        ):  # go back and look at where velocity was set to zero and see if we can extrapolate backwards
-            index_list = list(np.argwhere(Tracks["cell_id"].values == cell_id))
-            index_list.remove(i)
-            if len(index_list) == 0:
-                continue
-            velocity_info["velocity"][i] = velocity_info["velocity"][index_list[0][0]]
-            velocity_info["speed"][i] = velocity_info["speed"][index_list[0][0]]
-
     velocity_info_df = pd.DataFrame(velocity_info)
+    velocity_groups = velocity_info_df.groupby("cell_id")
+
+    # shift each velocity back one feature, append nan to the last feature, and get rid of the first feature's velocity of 0
+    for cell_id, cell_group in velocity_groups:
+        cell_velocity_list = cell_group["velocity unit vector"].values.tolist()
+        cell_speed_list = cell_group["speed"].values.tolist()
+        
+        cell_velocity_list.append(np.nan)
+        cell_speed_list.append(np.nan)
+        
+        inds = cell_group.index.values
+        velocity_info_df["velocity unit vector"].iloc[inds] = cell_velocity_list[1:]
+        velocity_info_df["speed"].iloc[inds] = cell_speed_list[1:]
+
     # Enforce the threshold
     if threshold is not None:
         # Load background varaible
@@ -793,7 +768,7 @@ def calculate_cell_growth(
         # The eth/t slope is the growth rate
         slope = deth / dt
         slope = slope.tolist()
-        slope.append(slope[-1])
+        slope.append(np.nan)
 
         # Iterate through each element and append them to the info array
         cell_growth_info["frame"].extend(cell_frame_arr)
