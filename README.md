@@ -1,7 +1,7 @@
 # CoCoMET
 <img src="./docs/images/cocomet_logo.png" alt="Logo" width="200" height="200"/>
 
-Convective cloud Model Evaluation Toolkit.
+Community Cloud Model Evaluation Toolkit.
 
 **Current Features**:
 
