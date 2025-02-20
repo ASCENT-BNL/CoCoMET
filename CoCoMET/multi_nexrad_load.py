@@ -413,6 +413,13 @@ def multi_nexrad_load_netcdf_iris(
                 model_level_number=("z", np.arange(nexrad_xarray.shape[1])),
             )
 
+            # Create DT attribute
+            dt_array = np.diff(nexrad_xarray.time.values)
+            if len(np.unique(dt_array)) != 1:
+                nexrad_xarray.attrs["DT"] = dt_array * 60  # min -> s
+            else:
+                nexrad_xarray.attrs["DT"] = dt_array[0] * 60  # min -> s
+                
             # Adjust dimension names to be standards accepted by iris
             nexrad_xarray["time"] = nexrad_xarray.time.assign_attrs(
                 {
@@ -531,6 +538,14 @@ def multi_nexrad_load_netcdf_iris(
                 y=("y", np.arange(nexrad_xarray.shape[2])),
                 model_level_number=("z", np.arange(nexrad_xarray.shape[1])),
             )
+            
+            # Create DT attribute
+            dt_array = np.diff(nexrad_xarray.time.values)
+            if len(np.unique(dt_array)) != 1:
+                nexrad_xarray.attrs["DT"] = dt_array * 60  # min -> s
+            else:
+                nexrad_xarray.attrs["DT"] = dt_array[0] * 60  # min -> s
+                
 
             # Adjust dimension names to be standards accepted by iris
             nexrad_xarray["time"] = nexrad_xarray.time.assign_attrs(

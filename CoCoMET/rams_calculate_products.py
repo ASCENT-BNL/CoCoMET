@@ -6,6 +6,11 @@ import numpy as np
 import xarray as xr
 from tqdm import tqdm
 
+# Calculate nearest item in list to given pivot
+def find_nearest(array: np.ndarray, pivot) -> int:
+    array = np.asarray(array)
+    idx = (np.abs(array - pivot)).argmin()
+    return idx
 
 # TODO: This file needs a lot more explanation
 def rams_calculate_brightness_temp(rams_xarray: xr.Dataset) -> xr.DataArray:
@@ -45,7 +50,7 @@ def rams_calculate_brightness_temp(rams_xarray: xr.Dataset) -> xr.DataArray:
 
 
 def rams_calculate_precip_rate(
-    rams_xarray: xr.Dataset, pr_calc: str = "integral"
+    rams_xarray: xr.Dataset, height : int
 ) -> xr.DataArray:
     """
 
@@ -54,8 +59,12 @@ def rams_calculate_precip_rate(
     ----------
     rams_xarray : xarray.core.dataset.Dataset
         Xarray Dataset containing default RAMS values.
-    pr_calc : str, optional
-        Type of precipitation rate to calculate, 3D is 3d, integral is ??????. The default is "integral".
+    height : int
+        The height to calculate the precipitation rate at
+
+    Raises
+    ------
+        ValueError if the height is None
 
     Returns
     -------
@@ -63,73 +72,34 @@ def rams_calculate_precip_rate(
         Xarray DataArray of precipitation rate in mm/hr.
 
     """
+    # If the height is not at ground level, calculate the index it should be
+    if height != 0:
+        altitudes = rams_xarray["altitudes"].values
+        height_indx = find_nearest(altitudes, height * 1000)
+    # If the height is ground level, take the second level, since the first is unphysical
+    else:
+        height_indx = 1
 
-    if pr_calc == "3d":
-        # Do you want to take the three dimensional rates and sum over them?
-        water_precip_rate = (
-            rams_xarray["PCPVR"].values * (1 / 1000) * (1000) * (60 * 60)
-        )  # take the water precipitation rate and divide by the density of water, convert m->mm, then convert 1/s -> 1/hr
-        snow_precip_rate = (
-            rams_xarray["PCPVS"].values * (1 / 1000) * (1000) * (60 * 60)
-        )  # take the snow precipitation rate and divide by the density of snow, convert m->mm, then convert 1/s -> 1/hr
-        aggregate_precip_rate = (
-            rams_xarray["PCPVA"].values * (1 / 1000) * (1000) * (60 * 60)
-        )  # take the aggregate precipitation rate and divide by the average density of aggregates, convert m->mm, then convert 1/s -> 1/hr
-        graupel_precip_rate = (
-            rams_xarray["PCPVG"].values * (1 / 1000) * (1000) * (60 * 60)
-        )  # take the graupel precipitation rate and divide by the average density of graupel, convert m->mm, then convert 1/s -> 1/hr
-        hail_precip_rate = (
-            rams_xarray["PCPVH"].values * (1 / 1000) * (1000) * (60 * 60)
-        )  # take the hail precipitation rate and divide by the average density of hails, convert m->mm, then convert 1/s -> 1/hr
-        drizzle_precip_rate = (
-            rams_xarray["PCPVD"].values * (1 / 1000) * (1000) * (60 * 60)
-        )  # take the water precipitation rate and divide by the average density of water, convert m->mm, then convert 1/s -> 1/hr
-        print("=====Calculating RAMS Precipitation Rate=====")
+    if height is not None:
+        water_precip_rate = rams_xarray["PCPVR"].values[:, height_indx, :, :] * (1 / 1000) * (1000) * (60 * 60) # take the water precipitation rate and divide by the density of water (kg/ m^2 /s -> m/s), convert m->mm, then convert 1/s -> 1/hr
+        snow_precip_rate = rams_xarray["PCPVS"].values[:, height_indx, :, :] * (1 / 1000) * (1000) * (60 * 60) # take the snow precipitation rate and divide by the density of snow, convert m->mm, then convert 1/s -> 1/hr 
+        aggregate_precip_rate = rams_xarray["PCPVA"].values[:, height_indx, :, :] * (1 / 1000) * (1000) * (60 * 60)# take the aggregate precipitation rate and divide by the average density of aggregates, convert m->mm, then convert 1/s -> 1/hr 
+        graupel_precip_rate = rams_xarray["PCPVG"].values[:, height_indx, :, :] * (1 / 1000) * (1000) * (60 * 60)# take the graupel precipitation rate and divide by the average density of graupel, convert m->mm, then convert 1/s -> 1/hr 
+        hail_precip_rate = rams_xarray["PCPVH"].values[:, height_indx, :, :] * (1 / 1000) * (1000) * (60 * 60)# take the hail precipitation rate and divide by the average density of hails, convert m->mm, then convert 1/s -> 1/hr 
+        drizzle_precip_rate = rams_xarray["PCPVD"].values[:, height_indx, :, :] * (1 / 1000) * (1000) * (60 * 60)# take the water precipitation rate and divide by the average density of water, convert m->mm, then convert 1/s -> 1/hr
+    
+        print('=====Calculating RAMS Precipitation Rate=====')
 
-        total3D_precip_rate = (
-            water_precip_rate
-            + snow_precip_rate
-            + aggregate_precip_rate
-            + graupel_precip_rate
-            + hail_precip_rate
-            + drizzle_precip_rate
+        total2D_precip_rate = water_precip_rate + snow_precip_rate + aggregate_precip_rate + graupel_precip_rate + hail_precip_rate + drizzle_precip_rate
+
+        total2D_precip_rate_xarray = xr.DataArray(
+            total2D_precip_rate, dims=["Time", "south_north", "west_east"]
         )
-        total2D_precip_rate = np.sum(total3D_precip_rate, axis=1)
+    
+    else:
+        raise ValueError("Height cannot be None")
 
-    elif pr_calc == "integral":
-        # Aryeh's calculation suggestion. Elaborate...
-
-        DN0 = rams_xarray["DN0"]
-        # liquid water path
-        cloudMix = rams_xarray["RCP"]
-        drizzleMix = rams_xarray["RDP"]
-        rainMix = rams_xarray["RRP"]
-        # ice water path
-        pris_iceMix = rams_xarray["RPP"]
-        snowMix = rams_xarray["RSP"]
-        aggregatesMix = rams_xarray["RAP"]
-        graupelMix = rams_xarray["RGP"]
-        hailMix = rams_xarray["RHP"]
-
-        total2D_precip_rate = np.sum(
-            (
-                cloudMix
-                + drizzleMix
-                + rainMix
-                + pris_iceMix
-                + snowMix
-                + aggregatesMix
-                + graupelMix
-                + hailMix
-            )
-            * DN0,
-            axis=1,
-        )
-
-    total2D_precip_rate_xarray = xr.DataArray(
-        total2D_precip_rate, dims=["Time", "south_north", "west_east"]
-    )
-    return total2D_precip_rate_xarray
+    return total2D_precip_rate_xarray.chunk(rams_xarray["TOPT"].chunksizes)
 
 
 # Why does this function exist?
