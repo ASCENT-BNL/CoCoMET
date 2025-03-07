@@ -23,77 +23,73 @@ max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None 
 #           analysis_variables
 
 # WRF
-wrF:
-    # path_to_data: "/D3/data/diewang/idealized_mcs_5min/03_2011-07-16_CTRL_Midwest_-Loc2_MCS_Storm-Nr_JJA-8-TH5/4000/*"
-    path_to_data: "/share/D3/data/hweiner/WRF/wrfout_6_19_2013/*"
-    # path_to_data: "/share/D3/data/hweiner/WRF/TestingPurposesOnly/*"
+# wrf:
+#     path_to_data: "/D3/data/diewang/idealized_mcs_5min/03_2011-07-16_CTRL_Midwest_-Loc2_MCS_Storm-Nr_JJA-8-TH5/4000/*"
     
-    is_idealized: False
+#     is_idealized: False
 #     #min_frame_index: 10 # 0-based indexing, inclusive
 #     #max_frame_index: 70 # 0-based indexing, inclusive
 
-    feature_tracking_var: "dbz" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
-    segmentation_var: "dbz"
+#     feature_tracking_var: "dbz" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
+#     segmentation_var: "dbz"
 
-    # tobac:
-    #     feature_id:
-    #         threshold: [30, 40, 50]
-    #         target: "maximum"
-    #         position_threshold: "weighted_diff"
-    #         sigma_threshold: 0.5
-    #         n_min_threshold: 4
-    #         #detect_subset: {1:(29, 47)}
+#     tobac:
+#         feature_id:
+#             threshold: [30, 40, 50]
+#             target: "maximum"
+#             position_threshold: "weighted_diff"
+#             sigma_threshold: 0.5
+#             n_min_threshold: 4
+#             #detect_subset: {1:(29, 47)}
 
-    #     linking:
-    #         method_linking: "predict"
-    #         adaptive_stop: 0.2
-    #         adaptive_step: 0.95
-    #         order: 1
-    #         subnetwork_size: 10
-    #         memory: 0
-    #         v_max: 20
-    #         time_cell_min: 120
+#         linking:
+#             method_linking: "predict"
+#             adaptive_stop: 0.2
+#             adaptive_step: 0.95
+#             order: 1
+#             subnetwork_size: 10
+#             memory: 0
+#             v_max: 20
+#             time_cell_min: 120
 
-    #     segmentation_2d:
-    #         height: 2 # km
-    #         method: "watershed"
-    #         target: 'maximum'
-    #         threshold: 30
+#         segmentation_2d:
+#             height: 2 # km
+#             method: "watershed"
+#             target: 'maximum'
+#             threshold: 30
 
-    #     segmentation_3d:
-    #         method: "watershed"
-    #         target: 'maximum'
-    #         threshold: 30
-    #         seed_3D_flag: 'box'
+#         segmentation_3d:
+#             method: "watershed"
+#             target: 'maximum'
+#             threshold: 30
+#             seed_3D_flag: 'box'
     
-    #     # analysis: # Optional
-    #     #     merge_split: { variable: "DBZ" }
-    #     #     eth: { variable: "DBZ", threshold : 30}
-    #     #     area-low: { height: 2 }
-    #     #     area-high: { height: 6,}
-    #     #     volume: {}
-    #     #     # volume-high: { threshold: 30 }
-    #     #     max_intensity: { variable : "DBZ"}
-    #     #     max_height: { variable : "DBZ", threshold : 30}
-    #     #     velocity: {}
-    #     #     perimeter: {}
-    #     #     cell_growth: {}
-    #     #     irregularity: {irregularity_metrics: ['convexity']}
+#         analysis: # Optional
+#             # merge_split: { variable: "WA" }
+#             # area: { height: 2 }
+#             # volume: {}
+#             # volume-high: { threshold: 30 }
+#             # max_intensity: { variable : "WA"}
+#             # var_max_height: { variable : "WA", threshold : 30}
+#             # velocity: {}
+#             perimeter: {}
+#             cell_growth: {variable: "perimeter"}
+#             # irregularity: {irregularity_metrics: ['convexity', 'sphericity']}
 
-    moaap:
-        tracking_save_path: "/share/D3/data/hweiner/WRF/MOAAP_619_Data/"
-        MinTimePR: 0.05
-        MinAreaPR: 10
+#     moaap:
+#         tracking_save_path: "/share/D3/data/hweiner/WRF/MOAAP_619_Data/"
+#         MinTimePR: 0.05
+#         MinAreaPR: 10
         
-        analysis:
-            # None yet
-    # tams:
-    #     ctt_threshold: 235
-    #     ctt_core_threshold: 219
-    #     u_projection: 0
-    #     parallel: False # there is something weird when you have CoMET parallel processing and TAMS parallel processing at the same time
+#         analysis:
+#             None yet
+#     tams:
+#         ctt_threshold: 235
+#         ctt_core_threshold: 219
+#         u_projection: 0
+#         parallel: False # there is something weird when you have CoMET parallel processing and TAMS parallel processing at the same time
 
-    #     analysis_type: "cloud"
+#         analysis_type: "cloud"
 
 # #MesoNH
 # mesonh:
@@ -156,62 +152,63 @@ wrF:
 #             # None yet
 
 # RAMS
-# rams:
-#     # path_to_data: "/D3/data/diewang/idealized_mcs_5min/03_2011-07-16_CTRL_Midwest_-Loc2_MCS_Storm-Nr_JJA-8-TH5/4000/*"
-#     path_to_data: "/share/D3/data/hweiner/RAMS/1min/*.h5"
-#     path_to_header: "/share/D3/data/hweiner/RAMS/1min/*.txt"
+rams:
+    # path_to_data: "/D3/data/diewang/idealized_mcs_5min/03_2011-07-16_CTRL_Midwest_-Loc2_MCS_Storm-Nr_JJA-8-TH5/4000/*"
+    path_to_data: "/share/D3/data/hweiner/RAMS/TestingPurposesOnly/*.h5"
+    path_to_header: "/share/D3/data/hweiner/RAMS/TestingPurposesOnly/*.txt"
     
-# #     is_idealized: False
-# #     #min_frame_index: 10 # 0-based indexing, inclusive
-# #     #max_frame_index: 70 # 0-based indexing, inclusive
+    is_idealized: False
+#     #min_frame_index: 10 # 0-based indexing, inclusive
+#     #max_frame_index: 70 # 0-based indexing, inclusive
 
-#     feature_tracking_var: "WA" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
-#     segmentation_var: "WA"
+    feature_tracking_var: "dbz" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
+    segmentation_var: "dbz"
 
-#     tobac:
-#         feature_id:
-#             threshold: [3, 5, 10]
-#             target: "maximum"
-#             position_threshold: "weighted_diff"
-#             sigma_threshold: 0.5
-#             n_min_threshold: 4
-#             #detect_subset: {1:(29, 47)}
+    # If tracking on "pr"
+    calculation_type: "surface time averaged precipitation rate" # Either "surface time averaged precipitation rate", "surface instantaneous precipitation rate", or "volumetric instantaneous precipitation rate"
 
-#         linking:
-#             method_linking: "predict"
-#             adaptive_stop: 0.2
-#             adaptive_step: 0.95
-#             order: 1
-#             subnetwork_size: 10
-#             memory: 2
-#             v_max: 20
-#             time_cell_min: 120
+    tobac:
+        feature_id:
+            threshold: [30, 40, 50]
+            target: "maximum"
+            position_threshold: "weighted_diff"
+            sigma_threshold: 0.5
+            n_min_threshold: 4
+            #detect_subset: {1:(29, 47)}
 
-#         segmentation_2d:
-#             height: 6 # m
-#             method: "watershed"
-#             target: 'maximum'
-#             threshold: 3
+        linking:
+            method_linking: "predict"
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 0
+            v_max: 20
+            time_cell_min: 120
 
-#         segmentation_3d:
-#             method: "watershed"
-#             target: 'maximum'
-#             threshold: 3
-#             seed_3D_flag: 'box'
+        segmentation_2d:
+            height: 2 # km
+            method: "watershed"
+            target: 'maximum'
+            threshold: 30
+
+        segmentation_3d:
+            method: "watershed"
+            target: 'maximum'
+            threshold: 30
+            seed_3D_flag: 'box'
     
-#         analysis: # Optional
-#             merge_split: { variable: "WA" }
-#             # eth: { variable: "DBZ", cell_footprint_height: 2, threshold: 30 }
-#             area-low: { height: 2 }
-#             area-high: { height: 6,}
-#             volume: {}
-#             # volume-high: { threshold: 30 }
-#             max_intensity: { variable : "WA"}
-#             max_height: { variable : "WA", threshold : 3}
-#             velocity: {}
-#             perimeter: {}
-#             cell_growth: {}
-#             irregularity: {irregularity_metrics: ['convexity', 'sphericity']}
+        analysis: # Optional
+            # merge_split: { variable: "WA" }
+            # area: { height: 2 }
+            # volume: {}
+            # volume-high: { threshold: 30 }
+            # max_intensity: { variable : "WA"}
+            # var_max_height: { variable : "WA", threshold : 30}
+            # velocity: {}
+            perimeter: {}
+            cell_growth: {variable: "perimeter"}
+            # irregularity: {irregularity_metrics: ['convexity', 'sphericity']}
 
 #     # moaap:
 #     #     tracking_save_path: "/share/D3/data/hweiner/MOAAP_out/"
@@ -231,13 +228,11 @@ wrF:
 # NEXRAD
 # nexrad:
 #     path_to_data: "/share/D3/data/hweiner/Nexrad/nexrad_06_19_2013_KVNX/*_V07.gz"
-#     # path_to_data: "/share/D3/data/thahn/NEXRAD/HAS012535511/0001/*_V06.ar2v"
-#     # path_to_data: "/D3/data/thahn/NEXRAD/HAS012527906/grids/*"
+#     # path_to_data: "/share/D3/data/hweiner/Nexrad/nexrad_06_19_2013_KVNX/grids/*"
 
 #     bounds: [-100, -95.5, 35.5, 38.5] # In form [lon_min,lon_max,lat_min,lat_max], OPTIONAL
 
 #     gridding: # OPTIONAL only if gridding is needed 
-#         # gridding_save_path: "/share/D3/data/hweiner/Nexrad/unused_grids/"
 #         gridding_save_path: "/share/D3/data/hweiner/Nexrad/nexrad_06_19_2013_KVNX/grids/"
 #         grid_shape: (40, 401, 401)
 #         grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
@@ -290,53 +285,53 @@ wrF:
 #             # cell_growth: {}
 #             irregularity: {irregularity_metrics: ['convexity']}
 
-multi_nexrad: 
-    # path_to_data: ["/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v","/D3/data/thahn/NEXRAD/HAS012535511/0003/*_V06.ar2v"]
-    path_to_data: "/D3/data/thahn/NEXRAD/HAS012535511/grids/*.nc"
+# multi_nexrad: 
+#     # path_to_data: ["/D3/data/thahn/NEXRAD/HAS012527906/0003/*_V06.ar2v","/D3/data/thahn/NEXRAD/HAS012535511/0003/*_V06.ar2v"]
+#     path_to_data: "/D3/data/thahn/NEXRAD/HAS012535511/grids/*.nc"
   
-    feature_tracking_var: "dbz"
-    segmentation_var: "dbz"    
+#     feature_tracking_var: "dbz"
+#     segmentation_var: "dbz"    
   
   
-    # gridding: # only if gridding is needed 
-    #     gridding_save_path: "/D3/data/thahn/NEXRAD/HAS012527906/grids/"
-    #     grid_shape: (40, 401, 401)
-    #     grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
+#     # gridding: # only if gridding is needed 
+#     #     gridding_save_path: "/D3/data/thahn/NEXRAD/HAS012527906/grids/"
+#     #     grid_shape: (40, 401, 401)
+#     #     grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
   
-    tobac:
-        feature_id:
-            # height: 2 # OPTIONAL kilometers
-            threshold: [40, 50, 60]
-            target: "maximum"
-            position_threshold: "weighted_diff"
-            sigma_threshold: 0.5
-            n_min_threshold: 20
+#     tobac:
+#         feature_id:
+#             # height: 2 # OPTIONAL kilometers
+#             threshold: [40, 50, 60]
+#             target: "maximum"
+#             position_threshold: "weighted_diff"
+#             sigma_threshold: 0.5
+#             n_min_threshold: 20
       
-        linking: 
-            method_linking: "predict"
-            adaptive_stop: 0.2
-            adaptive_step: 0.95
-            order: 1
-            subnetwork_size: 10
-            memory: 1
-            v_max: 20
+#         linking: 
+#             method_linking: "predict"
+#             adaptive_stop: 0.2
+#             adaptive_step: 0.95
+#             order: 1
+#             subnetwork_size: 10
+#             memory: 1
+#             v_max: 20
       
-        segmentation_3d:
-            method: "watershed"
-            threshold: 15
+#         segmentation_3d:
+#             method: "watershed"
+#             threshold: 15
       
-        segmentation_2d:
-            height: 2
-            method: "watershed"
-            threshold: 15
+#         segmentation_2d:
+#             height: 2
+#             method: "watershed"
+#             threshold: 15
           
-        analysis:
-            # merge_split: { variable: "DBZ" }
-            # var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
-            area: { height: 2 }
-            # volume: {}
-            convective_indices: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*", parcel: 3 }
-            #vdisquants: { path_to_files: "/D3/data/thahn/ARM/VDISQUANTS/*" }
+#         analysis:
+#             # merge_split: { variable: "DBZ" }
+#             # var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
+#             area: { height: 2 }
+#             # volume: {}
+#             convective_indices: { path_to_files: "/D3/data/thahn/ARM/INTERPSONDE/*", parcel: 3 }
+#             #vdisquants: { path_to_files: "/D3/data/thahn/ARM/VDISQUANTS/*" }
 
 
 # Standard Gridded Radar

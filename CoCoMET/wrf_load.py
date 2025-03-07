@@ -10,6 +10,8 @@ Created on Wed Jun  5 15:19:26 2024
 # Takes in a filepath containing WRF netCDF data and converts it to a netcdf dataset and/or an iris cube for use in trackers
 # =============================================================================
 
+import logging
+
 import cftime
 import iris.cube
 import numpy as np
@@ -88,6 +90,22 @@ def wrf_load_netcdf_iris(
                 wrf_xarray["XTIME"] = wrf_xarray["XTIME"].assign_attrs(
                     {"description": "minutes since 2000-01-01 00:00:00"}
                 )
+
+        # If there are specified bounds, bound the data
+        if "bounds" in CONFIG["wrf"]:
+            # If it is idealized data, print a warning
+            if "is_idealized" in CONFIG["wrf"]:
+                if CONFIG["wrf"]["is_idealized"]:      
+                    logging.warning("!=====Setting bounds for idealized data=====!")
+
+            mask_lon = (wrf_xarray.XLONG >= CONFIG["wrf"]["bounds"][0]) & (
+                wrf_xarray.XLONG <= CONFIG["wrf"]["bounds"][1]
+            )
+            mask_lat = (wrf_xarray.XLAT >= CONFIG["wrf"]["bounds"][2]) & (
+                wrf_xarray.XLAT <= CONFIG["wrf"]["bounds"][3]
+            )
+
+            wrf_xarray = wrf_xarray.where(mask_lon & mask_lat, drop=True)
         # If non-idealized, still calculate DT
         time_diffs = (
             np.diff(wrf_xarray.XTIME.values).astype("timedelta64[s]").astype("int")
@@ -149,6 +167,8 @@ def wrf_load_netcdf_iris(
             altitude=("bottom_top", correct_alts)
         )
 
+        wrf_xarray["altitudes"] = (["bottom_top"], correct_alts)
+
     elif tracking_var.lower() == "tb":
         # Brightness temperature is only 2d so no heights needed
         wrf_xarray["TB"] = (
@@ -180,6 +200,8 @@ def wrf_load_netcdf_iris(
             altitude=("bottom_top", correct_alts)
         )
 
+        wrf_xarray["altitudes"] = (["bottom_top"], correct_alts)
+
     elif tracking_var.lower() == "pr":
         # Precipitation rate is only 2d so no heights needed
         wrf_xarray["PR"] = (
@@ -210,6 +232,8 @@ def wrf_load_netcdf_iris(
                 wrf_xarray[tracking_var.upper()] = wrf_xarray[
                     tracking_var.upper()
                 ].assign_coords(altitude=("bottom_top", correct_alts))
+
+                wrf_xarray["altitudes"] = (["bottom_top"], correct_alts)
 
         except:
             raise Exception(
@@ -322,6 +346,9 @@ def wrf_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Datase
             altitude=("bottom_top", correct_alts)
         )
 
+        # Add altitudes as another data variable
+        wrf_xarray["altitudes"] = (["bottom_top"], correct_alts)
+
     elif tracking_var.lower() == "tb":
         wrf_xarray["TB"] = (
             ["Time", "south_north", "west_east"],
@@ -348,6 +375,9 @@ def wrf_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Datase
             altitude=("bottom_top", correct_alts)
         )
 
+        # Add altitudes as another data variable
+        wrf_xarray["altitudes"] = (["bottom_top"], correct_alts)
+
     else:
         # If not any of the above, try using user inputed value
         try:
@@ -363,6 +393,9 @@ def wrf_load_netcdf(filepath: str, tracking_var: str, CONFIG: dict) -> xr.Datase
                 wrf_xarray[tracking_var.upper()] = wrf_xarray[
                     tracking_var.upper()
                 ].assign_coords(altitude=("bottom_top", correct_alts))
+
+                # Add altitudes as another data variable
+                wrf_xarray["altitudes"] = (["bottom_top"], correct_alts)
 
         except:
             raise Exception(

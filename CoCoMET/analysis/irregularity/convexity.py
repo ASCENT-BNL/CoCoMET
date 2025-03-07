@@ -12,7 +12,7 @@ from .projection_calc_3d import point_projection
 def convexity(
     analysis_dict: dict,
     surface_area_df: pd.DataFrame,  # What is this?
-    segmentation_type: str = "2d",
+    segmentation_type: str = "3d",
 ) -> pd.DataFrame:
     """
 
@@ -86,7 +86,7 @@ def convexity(
 
                 try:
                     convex_hull = sp.ConvexHull(
-                        points=points_proj
+                        points=points_proj, qhull_options='QJ Pp'
                     )  # generate convex hull using segmentation coords
                 except:
                     convexities.append(np.NaN)
@@ -99,6 +99,7 @@ def convexity(
                     convexities.append(1)
                     continue
                 convexities.append(convexity_val)
+
         convexity_df = pd.DataFrame(
             data={
                 "frame": frame_numbers,
@@ -145,7 +146,7 @@ def convexity(
 
                 try:
                     convex_hull = sp.ConvexHull(
-                        points=points
+                        points=points, qhull_options='QJ Pp'
                     )  # generate convex hull using segmentation coords
                     convex_perim = convex_hull.area  # extract perimeter
                 except:
@@ -184,6 +185,9 @@ def convexity(
                 perim += final_dist
 
                 convexity_val = convex_perim / perim
+                if convexity_val > 1:
+                    convexities.append(1)
+                    continue
                 convexities.append(convexity_val)
 
         convexity_df = pd.DataFrame(

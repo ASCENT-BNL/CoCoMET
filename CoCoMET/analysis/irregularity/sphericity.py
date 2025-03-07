@@ -32,6 +32,7 @@ def sphericity(
         desc="=====Calculating Cell Sphericities=====",
         total=len(surface_area_df),
     ):
+
         i = row[0]
         frames.append(row[1])
         feature_ids.append(row[2])
@@ -54,7 +55,8 @@ def sphericity(
         if sphericity_val > 1:
             sphericities.append(1)
             continue
-        sphericities.append(sphericity)
+        sphericities.append(sphericity_val)
+
     sphericity_df = pd.DataFrame(
         {
             "frame": frames,

@@ -10,6 +10,8 @@ Created on Mon Aug 26 14:40:33 2024
 # Takes in a filepath containing RAMS netCDF data and converts it to a netcdf dataset and/or an iris cube for use in trackers
 # =============================================================================
 
+import logging
+
 import cftime
 import iris.cube
 import matplotlib.pyplot as plt
@@ -101,6 +103,22 @@ def rams_load_netcdf_iris(
                     {"description": "minutes since 2000-01-01 00:00:00"}
                 )
 
+        # If there are specified bounds, bound the data
+        if "bounds" in CONFIG["rams"]:
+            # If it is idealized data, print a warning
+            if "is_idealized" in CONFIG["rams"]:
+                if CONFIG["rams"]["is_idealized"]:      
+                    logging.warning("!=====Setting bounds for idealized data=====!")
+
+            mask_lon = (rams_xarray.GLON >= CONFIG["rams"]["bounds"][0]) & (
+                rams_xarray.GLON <= CONFIG["rams"]["bounds"][1]
+            )
+            mask_lat = (rams_xarray.GLAT >= CONFIG["rams"]["bounds"][2]) & (
+                rams_xarray.GLAT <= CONFIG["rams"]["bounds"][3]
+            )
+
+            rams_xarray = rams_xarray.where(mask_lon & mask_lat, drop=True)
+
         # Subset time based on user inputs
         if "min_frame_index" in CONFIG["rams"] or "max_frame_index" in CONFIG["rams"]:
             min_frame = (
@@ -135,42 +153,62 @@ def rams_load_netcdf_iris(
         rams_xarray["TB"] = rams_calculate_brightness_temp(rams_xarray)
         rams_xarray["TB"].attrs["units"] = "K"
 
-        rams_xarray["TB"] = rams_xarray["TB"].chunk(rams_xarray["TOA_OLR"].chunksizes)
-
         cube = load(rams_xarray, "TB")
 
-        if debug == 1.0:
-            print(f"""this is the tb output: {rams_xarray["TB"].values}""")
-
-        if debug == 2.0:
-            plt.imshow(rams_xarray["TB"].values[0, :, :], origin="lower")
-            plt.title("Brightness Temperature in K at t=0")
-            plt.colorbar()
-            plt.show()
 
     elif tracking_var.lower() == "pr":
         
+        use_available_variables = False
         # Configure rams xarray for brightness temperature
-        rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
-                                        configure_variables=["PCPVR", "PCPVS", "PCPVA", "PCPVG", "PCPVH", "PCPVD"])
 
-        rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, height = 0)
+        # If there is a specified calculation type for precipitation, use that
+        if "calculation_type" in CONFIG["rams"]:
+            if CONFIG["rams"]["calculation_type"] == "surface time averaged precipitation rate" or CONFIG["rams"]["calculation_type"] is None:
+                rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
+                                                configure_variables=["ACCPR", "ACCPP", "ACCPS", "ACCPA", "ACCPG", "ACCPH", "ACCPD", "ACONPR", "ACCPIP", "ACCPIC", "ACCPID"])
+                rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, calculation_type = CONFIG["rams"]["calculation_type"])
+
+            elif CONFIG["rams"]["calculation_type"] == "surface instantaneous precipitation rate":
+                rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
+                                                configure_variables=["PCPRR", "PCPRP", "PCPRS", "PCPRA", "PCPRG", "PCPRH", "PCPRD", "CONPRR", "PCPRIP", "PCPRIC", "PCPRID"])
+                rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, calculation_type = CONFIG["rams"]["calculation_type"])
+
+            elif CONFIG["rams"]["calculation_type"] == "volumetric instantaneous precipitation rate":
+                rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
+                                                configure_variables=["PCPVR", "PCPVP", "PCPVS", "PCPVA", "PCPVG", "PCPVH", "PCPVD", "CONPRR", "PCPVIP", "PCPVIC", "PCPVID"])
+                rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, calculation_type = CONFIG["rams"]["calculation_type"])
+
+            else:
+                print("No calculation type found in CONFIG file, using available variables")
+                use_available_variables = True
+
+        # If there is no calculation type, see which variables are available and use those
+        if "calculation_type" not in CONFIG["rams"] or use_available_variables:
+            if "ACCPR" in rams_xarray:
+                rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
+                                    configure_variables=["ACCPR", "ACCPP", "ACCPS", "ACCPA", "ACCPG", "ACCPH", "ACCPD", "ACONPR", "ACCPIP", "ACCPIC", "ACCPID"])
+                rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, calculation_type = "surface time averaged precipitation rate")
+
+            elif "PCPRR" in rams_xarray:
+                rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
+                                    configure_variables=["PCPRR", "PCPRP", "PCPRS", "PCPRA", "PCPRG", "PCPRH", "PCPRD", "CONPRR", "PCPRIP", "PCPRIC", "PCPRID"])
+                rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, calculation_type = "surface instantaneous precipitation rate")
+
+
+            elif "PCPVR" in rams_xarray:
+                rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
+                                    configure_variables=["PCPVR", "PCPVP", "PCPVS", "PCPVA", "PCPVG", "PCPVH", "PCPVD", "CONPRR", "PCPVIP", "PCPVIC", "PCPVID"])
+                rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, calculation_type = "volumetric surface instantaneous precipitation rate")
+
 
         rams_xarray["PR"].attrs["units"] = "mm/hr"
 
-        # Adjust dask chunks
-        rams_xarray["PR"] = rams_xarray["PR"].chunk(rams_xarray["TOPT"].chunksizes)
-
         cube = load(rams_xarray, "PR")
 
-        if debug == 1.0:
-            print(f"""this is the pr output: {rams_xarray["PR"].values}""")
+        # If tracking 3D precipitation rate, add altitude to the cube
+        if len(rams_xarray["PR"].values.shape) == 4:
+            cube.coord("altitude").points = rams_xarray["altitudes"].values
 
-        if debug == 2.0:
-            plt.imshow(rams_xarray["PR"].values[0, :, :], origin="lower")
-            plt.title("Precipitation Rate in mm/hr at t = 0")
-            plt.colorbar()
-            plt.show()
 
     elif tracking_var.lower() == "dbz":
 
@@ -190,80 +228,7 @@ def rams_load_netcdf_iris(
         rams_xarray["DBZ"] = rams_xarray["DBZ"].assign_coords(
             altitude=("bottom_top", rams_xarray["altitudes"].values)
         )
-        if debug == 1.0:
-            print(
-                f"""this is the dbz output: {rams_xarray["DBZ"].values} with shape {rams_xarray["DBZ"].shape}"""
-            )
-        if debug == 2.0:
-            from matplotlib import cm
-            from matplotlib.colors import ListedColormap
 
-            bottom = cm.get_cmap("Reds", 128)
-            top = cm.get_cmap("Blues_r", 128)
-
-            newcolors = np.vstack(
-                (top(np.linspace(0, 1, 128)), bottom(np.linspace(0, 1, 128)))
-            )
-            cmap = ListedColormap(newcolors, name="RedBlue")
-            z = 44
-            y = 250
-            plt.figure(figsize=[9, 6])
-            varToPlot = rams_xarray["DBZ"].values
-            varToPlot[rams_xarray["DBZ"].values <= -10] = np.nan
-            plt.imshow(
-                varToPlot[0, z, :, :],
-                origin="lower",
-                cmap=cmap,
-                aspect="auto",
-                vmin=-10,
-                vmax=45,
-            )
-            plt.title(
-                """{rams_xarray["altitudes"].values[z]:.3f}m Slice of Reflectivity in dBz at t=0"""
-            )
-            plt.colorbar()
-            plt.ylabel("Grid points (south_north)")
-            plt.xlabel("Grid points (west_east)")
-            plt.show()
-
-            fig, ax = plt.subplots(1, figsize=[9, 6])
-            im = plt.imshow(
-                varToPlot[0, :, y, :],
-                origin="lower",
-                cmap=cmap,
-                aspect="auto",
-                vmin=-10,
-                vmax=45,
-            )
-            ax.set_title(
-                f"Cross section (x-z plane) of Reflectivity in dBz \n at y (south_north)={y}, t=0"
-            )
-            ax.set_ylabel("Altitude [m]")
-            ax.set_xlabel("Grid points (west_east)")
-            plt.colorbar(im, fraction=0.046, pad=0.04, ax=ax)
-            ax.set_yticks(
-                np.arange(len(rams_xarray["DBZ"].values[0, :, 0, 0])),
-                np.round(rams_xarray["altitudes"].values, 2),
-            )
-            array = np.asarray(rams_xarray["altitudes"].values)
-            idx = (np.abs(array - 15000)).argmin()
-            ax.set_ylim(0, idx)
-            plt.locator_params(axis="y", nbins=8)
-            plt.tight_layout()
-            plt.show()
-
-            plt.figure(figsize=[9, 6])
-            plt.imshow(
-                varToPlot[0, 0, :, :], origin="lower", cmap=cmap, vmin=-10, vmax=45
-            )
-            plt.title(
-                "Cross section (x-y plane) of Reflectivity in dBz \n at z (bottom_top)=0, t=0"
-            )
-            plt.ylabel("Grid points (south_north)")
-            plt.xlabel("Grid points (west_east)")
-            plt.colorbar()
-            plt.tight_layout()
-            plt.show()
 
     elif tracking_var.lower() == "wa":
 
@@ -284,58 +249,6 @@ def rams_load_netcdf_iris(
             altitude=("bottom_top", rams_xarray["altitudes"].values)
         )
 
-        if debug == 1:
-            print(f"""the wa output is {rams_xarray["WA"].values}""")
-        if debug == 2.0:
-            z = 44
-            t = 0
-            plt.imshow(
-                rams_xarray["WA"].values[t, z, :, :], origin="lower", cmap="Blues"
-            )
-            plt.title(
-                f"""{rams_xarray["altitudes"].values[z]:.3f}m Slice of Vertical Velocity of Winds in m/s at t={t}"""
-            )
-            plt.colorbar()
-            plt.ylabel("Grid points (south_north)")
-            plt.xlabel("Grid points (west_east)")
-            plt.show()
-
-            plt.figure(figsize=[10, 10])
-            plt.imshow(
-                rams_xarray["WA"].values[t, :, 0, :],
-                origin="lower",
-                cmap="plasma",
-                aspect="auto",
-            )
-            plt.title(
-                f"Cross section of Vertical Wind Velocity in m/s \n at y (south_north)=0, t={t} time units"
-            )
-            plt.ylabel("Altitude [m]")
-            plt.xlabel("Grid points (west_east)")
-            plt.yticks(
-                np.arange(len(rams_xarray["WA"].values[0, :, 0, 0])),
-                np.round(rams_xarray["altitudes"].values, 2),
-            )
-            plt.locator_params(axis="y", nbins=6)
-            plt.colorbar()
-            plt.tight_layout()
-            plt.show()
-
-            plt.figure(figsize=[10, 10])
-            plt.imshow(
-                rams_xarray["WA"].values[t, z, :, :],
-                origin="lower",
-                cmap="plasma",
-                aspect="auto",
-            )
-            plt.title(
-                f"""Cross section of Vertical Wind Velocity in m/s \n at z (bottom_zop)={rams_xarray["altitudes"].values[z]:.3f}m, t={t} time units"""
-            )
-            plt.ylabel("Grid points (south_north)")
-            plt.xlabel("Grid points (west_east)")
-            plt.colorbar()
-            plt.tight_layout()
-            plt.show()
 
     else:
         # If not any of the above, try using user inputed value

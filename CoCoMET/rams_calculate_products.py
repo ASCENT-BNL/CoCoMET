@@ -46,11 +46,14 @@ def rams_calculate_brightness_temp(rams_xarray: xr.Dataset) -> xr.DataArray:
     TB[:, :, :] = (np.sqrt(4 * b * tf + a**2) - a) / (2 * b)
 
     TB_xarray = xr.DataArray(TB, dims=["Time", "south_north", "west_east"])
+
+    TB_xarray = TB_xarray.chunk(rams_xarray["TOA_OLR"].chunksizes)
+
     return TB_xarray
 
 
 def rams_calculate_precip_rate(
-    rams_xarray: xr.Dataset, height : int
+    rams_xarray: xr.Dataset, calculation_type : str | None = None
 ) -> xr.DataArray:
     """
 
@@ -59,12 +62,15 @@ def rams_calculate_precip_rate(
     ----------
     rams_xarray : xarray.core.dataset.Dataset
         Xarray Dataset containing default RAMS values.
-    height : int
-        The height to calculate the precipitation rate at
+    calculation_type : str
+        A string dictating which variables to use for the precipitation rate calculation
 
     Raises
     ------
-        ValueError if the height is None
+        Exception if calculating precipitation rate with accumulation variables without ACCPR
+        Exception if calculating precipitation rate with instantaneous rate variables without PCPRR
+        Exception if calculating precipitation rate with volumetric instantaneous rate variables without PCPVR
+        Exception if the calculation type is unknown
 
     Returns
     -------
@@ -72,34 +78,74 @@ def rams_calculate_precip_rate(
         Xarray DataArray of precipitation rate in mm/hr.
 
     """
-    # If the height is not at ground level, calculate the index it should be
-    if height != 0:
-        altitudes = rams_xarray["altitudes"].values
-        height_indx = find_nearest(altitudes, height * 1000)
-    # If the height is ground level, take the second level, since the first is unphysical
+
+    # If calculation type is none, look at the available variables in rams xarray and determine which scheme to use
+    if calculation_type is None:
+        if "ACCPR" in rams_xarray:
+            calculation_type = "surface time averaged precipitation rate"
+
+        elif "PCPRR" in rams_xarray:
+            calculation_type = "surface instantaneous precipitation rate"
+
+        elif "PCPVR" in rams_xarray:
+            calculation_type = "volumetric instantaneous precipitation rate"
+
+        else:
+            raise Exception("No precipitation variables found in data")
+
+    # based on the calculation type, calculate precipitation rate
+    if calculation_type == "surface time averaged precipitation rate":
+        accumulated_rainfall_vars = ["ACCPR", "ACCPP", "ACCPS", "ACCPA", "ACCPG", "ACCPH", "ACCPD", "ACONPR", "ACCPIP", "ACCPIC", "ACCPID"]
+
+        if "ACCPR" not in rams_xarray:
+            raise Exception("If calculating precipitation with accumulation variables, ACCPR must be present")
+
+        total_accumulation = rams_xarray["ACCPR"]
+        for avar in accumulated_rainfall_vars[1:]:
+            if avar in rams_xarray:
+                total_accumulation += rams_xarray[avar]
+        
+        pr = np.zeros_like(total_accumulation)
+        
+        for tt in tqdm(
+            range(pr.shape[0] - 1),
+            desc="=====Calculating RAMS Precipitation Rate=====",
+            total=pr.shape[0] - 1
+        ):
+            pr[tt] = (total_accumulation[tt] - total_accumulation[tt - 1]) / rams_xarray.DT # in kg / m^2 / s
+
+        # pr = pr / 1000 * 1000 # convert to mm / s, (kg / m^2 / s) * (1/1000 m^3/kg) * (1000 mm / m)
+        pr = xr.DataArray(pr, dims=["Time", "south_north", "west_east"]).chunk(rams_xarray["TOPT"].chunksizes)
+
+    elif calculation_type == "surface instantaneous precipitation rate":
+        instantaneous_rainfall_vars = ["PCPRR", "PCPRP", "PCPRS", "PCPRA", "PCPRG", "PCPRH", "PCPRD", "CONPRR", "PCPRIP", "PCPRIC", "PCPRID"]
+            
+        if "PCPRR" not in rams_xarray:
+            raise Exception("If calculating precipitation with instantaneous variables, PCPRR must be present")
+
+        pr = rams_xarray["PCPRR"]
+        for avar in instantaneous_rainfall_vars[1:]:
+            if avar in rams_xarray:
+                pr += rams_xarray[avar]
+
+        pr = pr.chunk(rams_xarray["TOPT"].chunksizes)
+
+    elif calculation_type == "volumetric instantaneous precipitation rate":
+        instantaneous_rainfall_vars = ["PCPVR", "PCPVP", "PCPVS", "PCPVA", "PCPVG", "PCPVH", "PCPVD", "CONPRR", "PCPVIP", "PCPVIC", "PCPVID"]
+            
+        if "PCPVR" not in rams_xarray:
+            raise Exception("If calculating precipitation with the volumetric instantaneous variables, PCPVR must be present")
+
+        pr = rams_xarray["PCPVR"]
+        for avar in instantaneous_rainfall_vars[1:]:
+            if avar in rams_xarray:
+                pr += rams_xarray[avar]
+
+        pr = pr.chunk(rams_xarray["PCPVR"].chunksizes)
+
     else:
-        height_indx = 1
-
-    if height is not None:
-        water_precip_rate = rams_xarray["PCPVR"].values[:, height_indx, :, :] * (1 / 1000) * (1000) * (60 * 60) # take the water precipitation rate and divide by the density of water (kg/ m^2 /s -> m/s), convert m->mm, then convert 1/s -> 1/hr
-        snow_precip_rate = rams_xarray["PCPVS"].values[:, height_indx, :, :] * (1 / 1000) * (1000) * (60 * 60) # take the snow precipitation rate and divide by the density of snow, convert m->mm, then convert 1/s -> 1/hr 
-        aggregate_precip_rate = rams_xarray["PCPVA"].values[:, height_indx, :, :] * (1 / 1000) * (1000) * (60 * 60)# take the aggregate precipitation rate and divide by the average density of aggregates, convert m->mm, then convert 1/s -> 1/hr 
-        graupel_precip_rate = rams_xarray["PCPVG"].values[:, height_indx, :, :] * (1 / 1000) * (1000) * (60 * 60)# take the graupel precipitation rate and divide by the average density of graupel, convert m->mm, then convert 1/s -> 1/hr 
-        hail_precip_rate = rams_xarray["PCPVH"].values[:, height_indx, :, :] * (1 / 1000) * (1000) * (60 * 60)# take the hail precipitation rate and divide by the average density of hails, convert m->mm, then convert 1/s -> 1/hr 
-        drizzle_precip_rate = rams_xarray["PCPVD"].values[:, height_indx, :, :] * (1 / 1000) * (1000) * (60 * 60)# take the water precipitation rate and divide by the average density of water, convert m->mm, then convert 1/s -> 1/hr
-    
-        print('=====Calculating RAMS Precipitation Rate=====')
-
-        total2D_precip_rate = water_precip_rate + snow_precip_rate + aggregate_precip_rate + graupel_precip_rate + hail_precip_rate + drizzle_precip_rate
-
-        total2D_precip_rate_xarray = xr.DataArray(
-            total2D_precip_rate, dims=["Time", "south_north", "west_east"]
-        )
-    
-    else:
-        raise ValueError("Height cannot be None")
-
-    return total2D_precip_rate_xarray.chunk(rams_xarray["TOPT"].chunksizes)
+        raise Exception("Unknown calculation type for precipitation rate calculation")
+    return pr
 
 
 # Why does this function exist?

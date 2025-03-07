@@ -65,30 +65,41 @@ def configure_rams(dataset0, path_to_header, CONFIG=None, configure_variables = 
             desc="=====Creating Truncated RAMS Dataset=====",
             total=len(ListOfNeededVariables),
         ):
-            dims = dataset0[var].dims
-            if len(dims) == 3:
-                dataset[var] = ([*dims], dataset0[var].data[:, 1:, 1:])
-                dataset[var].chunk(
-                    dataset0[var][:, 1:, 1:].chunksizes
-                )  # rechunk the variables
-            elif len(dims) == 4:
-                dataset[var] = ([*dims], dataset0[var].data[:, 1:, 1:, 1:])
-                dataset[var].chunk(
-                    dataset0[var][:, 1:, 1:, 1:].chunksizes
-                )  # rechunk the variables
+
+            try:
+                dims = dataset0[var].dims
+                if len(dims) == 3:
+                    dataset[var] = ([*dims], dataset0[var].data[:, 1:, 1:])
+                    dataset[var].chunk(
+                        dataset0[var][:, 1:, 1:].chunksizes
+                    )  # rechunk the variables
+                elif len(dims) == 4:
+                    dataset[var] = ([*dims], dataset0[var].data[:, 1:, 1:, 1:])
+                    dataset[var].chunk(
+                        dataset0[var][:, 1:, 1:, 1:].chunksizes
+                    )  # rechunk the variables
+            
+            except:
+                continue
+
     else:
         for var in ListOfNeededVariables:
-            dims = dataset0[var].dims
-            if len(dims) == 3:
-                dataset[var] = ([*dims], dataset0[var].data[:, 1:, 1:])
-                dataset[var].chunk(
-                    dataset0[var][:, 1:, 1:].chunksizes
-                )  # rechunk the variables
-            elif len(dims) == 4:
-                dataset[var] = ([*dims], dataset0[var].data[:, 1:, 1:, 1:])
-                dataset[var].chunk(
-                    dataset0[var][:, 1:, 1:, 1:].chunksizes
-                )  # rechunk the variables
+
+            try:
+                dims = dataset0[var].dims
+                if len(dims) == 3:
+                    dataset[var] = ([*dims], dataset0[var].data[:, 1:, 1:])
+                    dataset[var].chunk(
+                        dataset0[var][:, 1:, 1:].chunksizes
+                    )  # rechunk the variables
+                elif len(dims) == 4:
+                    dataset[var] = ([*dims], dataset0[var].data[:, 1:, 1:, 1:])
+                    dataset[var].chunk(
+                        dataset0[var][:, 1:, 1:, 1:].chunksizes
+                    )  # rechunk the variables]
+            
+            except:
+                continue
 
     # destagger winds
     pbar = tqdm(

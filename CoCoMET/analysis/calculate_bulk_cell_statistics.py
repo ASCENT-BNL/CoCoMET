@@ -254,11 +254,6 @@ def calculate_max_intensity(
         # TODO: add in quantile to reduce outlier skewing
         max_intensity_info["max_intensity"].append(max_intensity)
 
-        # if np.array(max_intensity_list).all() is np.nan:
-        #     max_intensity_info["max_intensity"].extend([np.nan] * len(max_intensity_list))
-        # else:
-        #     max_intensity_info["max_intensity"].append(np.nanquantile(max_intensity_list, quantile) / 1000)
-
     return pd.DataFrame(max_intensity_info)
 
 
@@ -687,7 +682,7 @@ def calculate_cell_growth(
     ------
     Exception
         Exception if missing tracks input from the analysis object.
-        Exception if the segmentation data is not 2D or 3D3D.
+        Exception if the segmentation data is not 2D or 3D.
 
     Returns
     -------
@@ -699,36 +694,80 @@ def calculate_cell_growth(
     if analysis_object["US_tracks"] is None:
         raise ValueError("!=====Tracks Data is Required for Velocity Calculation=====!")
 
+    def _variable_lookup(analysis_object, var, **args):
+        
+        if var == "var_max_height":
+            variable = "max_height"
+            return calculate_var_max_height(analysis_object, **args)["max_height"]
+        elif var == "max_intensity":
+            return calculate_max_intensity(analysis_object, **args)["max_intensity"]
+        elif var == "area":
+            return calculate_area(analysis_object, **args)["area"]
+        elif var == "volume":
+            return calculate_volume(analysis_object, **args)["volume"]
+        elif var == "velocity" or var == "speed":
+            variable = "speed"
+            return calculate_velocity(analysis_object, **args)["speed"]
+        elif var == "perimeter":
+            return calculate_perimeter(analysis_object, **args)["perimeter"]
+        elif var == "convexity":
+            return calculate_irregularity(analysis_object, **args)["convexity"]
+        elif var == "sphericity":
+            return calculate_irregularity(analysis_object, **args)["sphericity"]
+        else:
+            raise KeyError("!=====Invalid variable for cell growth rate=====!")
+
     # Check if the code is 3D
     if analysis_object["US_segmentation_3d"]is not None:
         
         dim = 3
-        # Check if volume information is given in the arguments, if not then recalculate it
-        if 'volume' in args:
-            vol = args['volume']['volume']
+
+        # If there is a given variable use that
+        # TODO: there's definitely a better way to do this. in _variable_lookup maybe if variable is None default to either volume or area
+        if variable != None:
+            if variable in args:
+                var = args[variable][variable]
+            else:
+                var = _variable_lookup(analysis_object, var=variable, **args)
+
+        # If there is no variable, default to volume
         else:
-            vol = calculate_volume(analysis_object, **args)['volume']
+            if "volume" in args:
+                var = args["volume"]["volume"]
+            else:
+                var = _variable_lookup(analysis_object, var="volume", **args)
 
     # If there is no 3D segmentation check if there is 2D
     elif analysis_object["US_segmentation_2d"] is not None:
+
         dim = 2
-        # Check if volume information is given in the arguments, if not then recalculate it
-        if 'area-low' in args:
-            vol = args['area-low']['area']
+
+        # If there is a given variable use that
+        if variable != None:
+            if variable in args:
+                var = args[variable][variable]
+            else:
+                var = _variable_lookup(analysis_object, var=variable, **args)
+
+        # If there is no variable, default to area
         else:
-            vol = calculate_area(analysis_object, **args)['area']
+            if "area" in args:
+                var = args["area"]["area"]
+            else:
+                var = _variable_lookup(analysis_object, var="area", **args)
 
     else:
         raise Exception("!=====Missing Segmentation Input=====!")
+    
 
     Tracks = analysis_object["US_tracks"]
-    Tracks_with_vol = deepcopy(Tracks).join(vol)
+    Tracks_with_var = deepcopy(Tracks).join(var)
 
     # Cell Growth Rate
     cell_growth_info = {"frame": [], "feature_id": [], "cell_id": [], "cell_growth": []}
 
     # List all of the unique cells and make sure there are no non-physical cells
-    cell_groups = Tracks_with_vol.groupby("cell_id")
+    cell_groups = Tracks_with_var.groupby("cell_id")
 
     for cell_id, cell_g in tqdm(
         cell_groups,
@@ -739,11 +778,14 @@ def calculate_cell_growth(
         cell_frame_arr = np.array(cell_g["frame"]).tolist()
         cell_arr = [cell_id] * len(cell_frame_arr)
 
-        if dim == 3:
-            cell_vol_arr = np.array(cell_g['volume'])
+        if dim == 3 and variable is None:
+            cell_var_arr = np.array(cell_g['volume'])
 
-        elif dim == 2:
-            cell_vol_arr = np.array(cell_g['area'])        
+        elif dim == 2 and variable is None:
+            cell_var_arr = np.array(cell_g['area'])
+        
+        else:
+            cell_var_arr = np.array(cell_g[cell_g.columns[-1]])
         
         cell_lifetime_arr = np.array(
             cell_g["lifetime"] / np.timedelta64(1, "s")
@@ -761,12 +803,12 @@ def calculate_cell_growth(
             cell_growth_info["cell_growth"].append(np.nan)
             continue
 
-        # If the cell lasts for more than one frame, calculate delta eth and delta t
-        deth = cell_vol_arr[1:] - cell_vol_arr[:-1]
+        # If the cell lasts for more than one frame, calculate delta var and delta t
+        dvar = cell_var_arr[1:] - cell_var_arr[:-1]
         dt = cell_lifetime_arr[1:] - cell_lifetime_arr[:-1]
 
         # The eth/t slope is the growth rate
-        slope = deth / dt
+        slope = dvar / dt
         slope = slope.tolist()
         slope.append(np.nan)
 
@@ -778,6 +820,7 @@ def calculate_cell_growth(
 
     cell_growth_df = pd.DataFrame(cell_growth_info)
     uncut_feature_list = np.unique(cell_growth_df["feature_id"].values)
+
     # Enforce the threshold
     if threshold is not None:
         # Load background varaible
@@ -797,19 +840,18 @@ def calculate_cell_growth(
         ]
 
     cell_growth_df.sort_values("feature_id", inplace=True)
-    cell_growth_df.set_index(np.arange(len(uncut_feature_list)), inplace=True)
+    cell_growth_df.set_index(np.arange(len(cell_growth_df["feature_id"])), inplace=True)
 
     return cell_growth_df
 
 
-def calculate_perimeter(
+def calculate_perimeter( # TODO: split into surface area and perimeter
     analysis_object: dict,
     variable: str | None = None,
     threshold: float | None = None,
     **args: dict,
 ) -> pd.DataFrame:
     """
-
 
     Parameters
     ----------
@@ -831,37 +873,36 @@ def calculate_perimeter(
     Returns
     -------
     pandas.core.frame.DataFrame
-        A pandas dataframe with the following rows: frame, feature_id, cell_id, perimeter where perimeter is in km^(segmentation_dim - 1).
+        A pandas dataframe with the following rows: frame, feature_id, cell_id, perimeter where perimeter is in km.
 
     """
 
     if analysis_object["US_tracks"] is None:
-        raise ValueError("!=====Tracks Data is Required for Velocity Calculation=====!")
+        raise Exception("!=====Tracks Data is Required for Perimeter Calculation=====!")
 
-    # If 3D segmentation is available, use that at given height, otherwise use 2D segmentation
-    if analysis_object["US_segmentation_3d"] is not None:
-        feature_seg_3d = analysis_object["US_segmentation_3d"].Feature_Segmentation
-        dim = 3
+    # Check if there is 2D segmentation
+    if "height" in args and analysis_object["US_segmentation_3d"] is not None:
+        altitudes = analysis_object["segmentation_xarray"]["altitudes"]
 
+        height_index = find_nearest(altitudes, args["height"] * 1000)
+        feature_seg = analysis_object["US_segmentation_3d"].Feature_Segmentation[:, height_index]    
+    
     elif analysis_object["US_segmentation_2d"] is not None:
-        feature_seg_2d = analysis_object["US_segmentation_2d"].Feature_Segmentation
-        dim = 2
+        feature_seg = analysis_object["US_segmentation_2d"].Feature_Segmentation
 
     else:
-        raise ValueError("!=====Missing Segmentation Input=====!")
+        raise Exception("!=====Missing Invalid Segmentation Input, needs either 2D segmetation or 3D segmentation with height [km] parameter=====!")
 
     perimeter_info = {"frame": [], "feature_id": [], "cell_id": [], "perimeter": []}
     Tracks = analysis_object["US_tracks"]
 
     # define some useful variables
-    proj_x = analysis_object[f"US_segmentation_{dim}d"].projection_x_coordinate
-    proj_y = analysis_object[f"US_segmentation_{dim}d"].projection_y_coordinate
-    if dim == 3:
-        altitude = analysis_object["US_segmentation_3d"].altitude
+    proj_x = analysis_object[f"US_segmentation_2d"].projection_x_coordinate
+    proj_y = analysis_object[f"US_segmentation_2d"].projection_y_coordinate
 
     for ii in tqdm(
         range(len(Tracks)),
-        desc="=====Calculating Cell Perimeters=====",
+        desc="=====Calculating 2D Feature Perimeters=====",
         total=len(Tracks),
     ):
         feature_id = Tracks["feature_id"][ii]
@@ -875,65 +916,30 @@ def calculate_perimeter(
         x_dim_sizes = np.append(x_dim_sizes, x_dim_sizes[-1])
         y_dim_sizes = np.append(y_dim_sizes, y_dim_sizes[-1])
 
-        if dim == 3:
-            z_dim_sizes = np.diff(altitude) / 1000  # m->km
-            z_dim_sizes = np.append(z_dim_sizes, z_dim_sizes[-1])
-
         perims = 0  # this is to keep track of the amount of the perimeter that is shared with another cell
         # key is feature id of other cell, value is the shared perimeter
 
-        if dim == 3:
-            feature_seg_in_frame = feature_seg_3d[frame].values
+        feature_seg_in_frame = feature_seg[frame].values
 
-            for nz, ny, nx in np.argwhere(feature_seg_in_frame == feature_id):
-                for mx in (nx - 1, nx + 1):
-                    if (
-                        mx in range(feature_seg_in_frame.shape[2])
-                        and feature_seg_in_frame[nz, ny, mx] != feature_id
-                    ):
-                        perims += y_dim_sizes[ny] * z_dim_sizes[nz]
+        for ny, nx in np.argwhere(feature_seg_in_frame == feature_id):
+            for mx in (nx - 1, nx + 1):
+                if (
+                    mx in range(feature_seg_in_frame.shape[1])
+                    and feature_seg_in_frame[ny, mx] != feature_id
+                ):
+                    perims += y_dim_sizes[ny]
 
-                for my in (ny - 1, ny + 1):
-                    if (
-                        my in range(feature_seg_in_frame.shape[1])
-                        and feature_seg_in_frame[nz, my, nx] != feature_id
-                    ):
-                        perims += x_dim_sizes[nx] * z_dim_sizes[nz]
+            for my in (ny - 1, ny + 1):
+                if (
+                    my in range(feature_seg_in_frame.shape[0])
+                    and feature_seg_in_frame[my, nx] != feature_id
+                ):
+                    perims += x_dim_sizes[nx]
 
-                for mz in (nz - 1, nz + 1):
-                    if (
-                        mz in range(feature_seg_in_frame.shape[0])
-                        and feature_seg_in_frame[mz, ny, nx] != feature_id
-                    ):
-                        perims += x_dim_sizes[nx] * y_dim_sizes[ny]
-
-            perimeter_info["frame"].append(frame)
-            perimeter_info["feature_id"].append(feature_id)
-            perimeter_info["cell_id"].append(cell_id)
-            perimeter_info["perimeter"].append(perims)
-
-        elif dim == 2:
-            feature_seg_in_frame = feature_seg_2d[frame].values
-
-            for ny, nx in np.argwhere(feature_seg_in_frame == feature_id):
-                for mx in (nx - 1, nx + 1):
-                    if (
-                        mx in range(feature_seg_in_frame.shape[1])
-                        and feature_seg_in_frame[ny, mx] != feature_id
-                    ):
-                        perims += y_dim_sizes[ny]
-
-                for my in (ny - 1, ny + 1):
-                    if (
-                        my in range(feature_seg_in_frame.shape[0])
-                        and feature_seg_in_frame[my, nx] != feature_id
-                    ):
-                        perims += x_dim_sizes[nx]
-
-            perimeter_info["frame"].append(frame)
-            perimeter_info["feature_id"].append(feature_id)
-            perimeter_info["cell_id"].append(cell_id)
-            perimeter_info["perimeter"].append(perims)
+        perimeter_info["frame"].append(frame)
+        perimeter_info["feature_id"].append(feature_id)
+        perimeter_info["cell_id"].append(cell_id)
+        perimeter_info["perimeter"].append(perims)
 
     perimeter_df = pd.DataFrame(perimeter_info)
     # Enforce the threshold
@@ -944,23 +950,142 @@ def calculate_perimeter(
         else:
             variable_field = analysis_object["segmentation_xarray"][variable]
 
-        if len(variable_field.shape) != 4 and len(variable_field.shape) != 3:
-            raise ValueError("=====The segmentation must be 2D or 3D=====")
+        if len(variable_field.shape) != 3:
+            raise ValueError("=====The segmentation must be 2D=====")
 
-        feature_mask = analysis_object[f"US_segmentation_{dim}d"].Feature_Segmentation
+        feature_mask = analysis_object["US_segmentation_2d"].Feature_Segmentation
         feature_mask.values[variable_field.values < threshold] = -1
         uncut_feature_list = np.unique(feature_mask)[1:]  # don"t use -1
         perimeter_df = perimeter_df[perimeter_df["feature_id"].isin(uncut_feature_list)]
 
     return perimeter_df
 
+def calculate_surface_area(
+    analysis_object: dict,
+    variable: str | None = None,
+    threshold: float | None = None,
+    **args: dict,
+) -> pd.DataFrame:
+    """
+
+    Parameters
+    ----------
+    analysis_object : dict
+        A CoCoMET-US standard analysis object containing at least US_tracks.
+    variable : str, optional
+        Variable to which we should apply the threshold. The default is None.
+    threshold : float, optional
+        Value of which the area should be greater than. The default is None.
+    **args : dict
+        Throw away variables.
+
+    Raises
+    ------
+    Exception
+        Exception if missing tracks input from the analysis object.
+        Exception if the segmentation data is not 2D or 3D.
+
+    Returns
+    -------
+    pandas.core.frame.DataFrame
+        A pandas dataframe with the following rows: frame, feature_id, cell_id, surface_area where surface_area is in km^2.
+
+    """
+
+    if analysis_object["US_tracks"] is None:
+        raise Exception("!=====Tracks Data is Required for Surface Area Calculation=====!")
+
+    # Check if there is 3D segmentation
+    if analysis_object["US_segmentation_3d"] is not None:
+        feature_seg = analysis_object["US_segmentation_3d"].Feature_Segmentation
+    
+    else:
+        raise Exception("!=====Missing 3D Segmentation Input=====!")
+
+    surface_area_info = {"frame": [], "feature_id": [], "cell_id": [], "surface_area": []}
+    Tracks = analysis_object["US_tracks"]
+
+    # define some useful variables
+    proj_x = analysis_object["US_segmentation_3d"].projection_x_coordinate
+    proj_y = analysis_object["US_segmentation_3d"].projection_y_coordinate
+    altitude = analysis_object["US_segmentation_3d"].altitude
+
+    for ii in tqdm(
+        range(len(Tracks)),
+        desc="=====Calculating Feature Surface Areas=====",
+        total=len(Tracks),
+    ):
+        feature_id = Tracks["feature_id"][ii]
+        frame = Tracks["frame"][ii]
+        cell_id = Tracks["cell_id"][ii]
+
+        x_dim_sizes = np.diff(proj_x) / 1000  # m->km
+        y_dim_sizes = np.diff(proj_y) / 1000  # m->km
+        z_dim_sizes = np.diff(altitude) / 1000  # m->km
+
+        # These are one cell too small due to how diff works, so infer last cell size using the same cell size as the previous cell
+        x_dim_sizes = np.append(x_dim_sizes, x_dim_sizes[-1])
+        y_dim_sizes = np.append(y_dim_sizes, y_dim_sizes[-1])
+        z_dim_sizes = np.append(z_dim_sizes, z_dim_sizes[-1])
+
+        surface_areas = 0  # this is to keep track of the amount of the surface_area that is shared with another cell
+        # key is feature id of other cell, value is the shared surface_area
+
+        feature_seg_in_frame = feature_seg[frame].values
+
+        for nz, ny, nx in np.argwhere(feature_seg_in_frame == feature_id):
+            for mx in (nx - 1, nx + 1):
+                if (
+                    mx in range(feature_seg_in_frame.shape[2])
+                    and feature_seg_in_frame[nz, ny, mx] != feature_id
+                ):
+                    surface_areas += y_dim_sizes[ny] * z_dim_sizes[nz]
+
+            for my in (ny - 1, ny + 1):
+                if (
+                    my in range(feature_seg_in_frame.shape[1])
+                    and feature_seg_in_frame[nz, my, nx] != feature_id
+                ):
+                    surface_areas += x_dim_sizes[nx] * z_dim_sizes[nz]
+
+            for mz in (nz - 1, nz + 1):
+                if (
+                    mz in range(feature_seg_in_frame.shape[0])
+                    and feature_seg_in_frame[mz, ny, nx] != feature_id
+                ):
+                    surface_areas += x_dim_sizes[nx] * y_dim_sizes[ny]
+
+        surface_area_info["frame"].append(frame)
+        surface_area_info["feature_id"].append(feature_id)
+        surface_area_info["cell_id"].append(cell_id)
+        surface_area_info["surface_area"].append(surface_areas)
+
+    surface_area_df = pd.DataFrame(surface_area_info)
+
+    # Enforce the threshold
+    if threshold is not None:
+        # Load background varaible
+        if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
+            variable_field = analysis_object["segmentation_xarray"]
+        else:
+            variable_field = analysis_object["segmentation_xarray"][variable]
+
+        if len(variable_field.shape) != 4:
+            raise ValueError("=====The segmentation must be 3D=====")
+
+        feature_mask = analysis_object[f"US_segmentation_3d"].Feature_Segmentation
+        feature_mask.values[variable_field.values < threshold] = -1
+        uncut_feature_list = np.unique(feature_mask)[1:]  # don"t use -1
+        surface_area_df = surface_area_df[surface_area_df["feature_id"].isin(uncut_feature_list)]
+
+    return surface_area_df
 
 def calculate_irregularity(
     analysis_object: dict,
     irregularity_metrics: str | list[str],
     variable: str | None = None,
     threshold: float | None = None,
-    segmentation_type: str = "2d",
+    segmentation_type: str = "3d",
     **args: dict,
 ) -> pd.DataFrame:
     """
@@ -1010,6 +1135,8 @@ def calculate_irregularity(
         raise KeyError("Found No Implemented Irregularity Metric")
 
     list_of_irregularities = []
+
+    # Calculate convexity
     if "convexity" in irregularity_metrics:
         if "perimeter" in args:
             perimeter_df = args["perimeter"]["perimeter"]
@@ -1020,6 +1147,7 @@ def calculate_irregularity(
             convexity.convexity(analysis_object, perimeter_df, segmentation_type)
         )
 
+    # Calculate sphericity
     if "sphericity" in irregularity_metrics:
         # Get volume and perimeter dataframes
         if "volume" in args:
@@ -1037,7 +1165,6 @@ def calculate_irregularity(
         list_of_irregularities.append(sphericity.sphericity(perimeter_df, volume_df))
 
     # Enforce the threshold
-
     if analysis_object["US_segmentation_3d"] is not None:
         uncut_feature_list = np.unique(
             analysis_object["US_segmentation_3d"].Feature_Segmentation
@@ -1063,6 +1190,7 @@ def calculate_irregularity(
         uncut_feature_list = np.unique(feature_mask)[1:]  # don"t use -1
 
     irregularity_info_df = list_of_irregularities[0]
+
     # if there are more irregularity metrics, add them as a column to the irregularity info dataframe
     if len(list_of_irregularities) > 1:
         for df in list_of_irregularities[1:]:

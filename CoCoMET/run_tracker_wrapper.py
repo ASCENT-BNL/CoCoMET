@@ -426,6 +426,10 @@ def _tobac_analysis(
 
             # Add default tracking featured_id variable in place of variable if not present
             elif "variable" not in CONFIG[dataset_name]["tobac"]["analysis"][var]:
+
+                if var == "cell_growth":
+                    raise Exception("!=====Must input a variable for cell growth/dissipation rate=====!")
+
                 CONFIG[dataset_name]["tobac"]["analysis"][var]["variable"] = CONFIG[
                     dataset_name
                 ]["feature_tracking_var"].upper()
