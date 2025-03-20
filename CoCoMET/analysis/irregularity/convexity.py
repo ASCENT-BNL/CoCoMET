@@ -94,7 +94,7 @@ def convexity(
 
                 convex_perim = convex_hull.area  # extract surface area
 
-                convexity_val = convex_perim / perim
+                convexity_val = convex_perim / perim if perim != 0 else np.nan
                 if convexity_val > 1:
                     convexities.append(1)
                     continue
@@ -184,7 +184,7 @@ def convexity(
                 )  # add final part of perimeter
                 perim += final_dist
 
-                convexity_val = convex_perim / perim
+                convexity_val = convex_perim / perim if perim != 0 else np.nan
                 if convexity_val > 1:
                     convexities.append(1)
                     continue

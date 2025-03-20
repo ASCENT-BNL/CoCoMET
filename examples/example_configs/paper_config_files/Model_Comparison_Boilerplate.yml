@@ -1,0 +1,183 @@
+# ===========================================Welcome To CoMET===========================================
+# This is where most all functionality of CoMET can be specified. You can change any of the supplied 
+# variables OR you can use a default suite of paramateres setup for different model and observation
+# input types. 
+
+# TODO: Add CONFIG setup to CoMET-UDAF specification.
+
+
+# SETUP VARIABLES: These determine basic CoMET functionality
+verbose: True # Whether to use verbose output
+parallel_processing: True # [bool] Whether or not to use parallel processing for certain tasks
+max_cores: 32 # Number of cores to use if parallel_processing==True; Enter None for unlimited
+
+# Structered in this form:
+# Observation Type:
+#   path_to_data
+#   additional_observation_parameters
+#
+#   tracker:
+#       tracker_params
+#
+#       analysis:
+#           analysis_variables
+
+# WRF
+wrf:
+    path_to_data: "/D3/data/hweiner/Model_Test_Data/WRF/*"
+    
+    is_idealized: False
+#     #min_frame_index: 10 # 0-based indexing, inclusive
+#     #max_frame_index: 70 # 0-based indexing, inclusive
+
+    feature_tracking_var: "wa" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
+    segmentation_var: "wa"
+
+    tobac:
+        feature_id:
+            threshold: [3, 5, 10]
+            target: "maximum"
+            position_threshold: "weighted_diff"
+            sigma_threshold: 0.5
+            n_min_threshold: 4
+            #detect_subset: {1:(29, 47)}
+
+        linking:
+            method_linking: "predict"
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 0
+            v_max: 20
+            time_cell_min: 120
+
+        segmentation_2d:
+            height: 6 # km
+            method: "watershed"
+            target: 'maximum'
+            threshold: 3
+
+        segmentation_3d:
+            method: "watershed"
+            target: 'maximum'
+            threshold: 3
+            seed_3D_flag: 'box'
+    
+        analysis: # Optional
+            merge_split: { variable: "WA" }
+            area: { height: 6 }
+            volume: {}
+            max_intensity: { variable : "WA", cell_footprint_height: 6}
+            var_max_height: {threshold: 3, cell_footprint_height : 6, variable: "WA"}
+            velocity: {}
+            perimeter: {}
+            cell_growth: {variable: "volume"}
+            irregularity: {irregularity_metrics: ['sphericity']}
+
+
+# RAMS
+rams:
+    path_to_data: "/D3/data/hweiner/Model_Test_Data/RAMS/*-g3.h5"
+    path_to_header: "/D3/data/hweiner/Model_Test_Data/RAMS/*.txt"
+    
+    is_idealized: False
+#     #min_frame_index: 10 # 0-based indexing, inclusive
+#     #max_frame_index: 70 # 0-based indexing, inclusive
+
+    feature_tracking_var: "wa" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
+    segmentation_var: "wa"
+
+    tobac:
+        feature_id:
+            threshold: [3, 5, 10]
+            target: "maximum"
+            position_threshold: "weighted_diff"
+            sigma_threshold: 0.5
+            n_min_threshold: 4
+            #detect_subset: {1:(29, 47)}
+
+        linking:
+            method_linking: "predict"
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 0
+            v_max: 20
+            time_cell_min: 120
+
+        segmentation_2d:
+            height: 6 # km
+            method: "watershed"
+            target: 'maximum'
+            threshold: 3
+
+        segmentation_3d:
+            method: "watershed"
+            target: 'maximum'
+            threshold: 3
+            seed_3D_flag: 'box'
+    
+        analysis: # Optional
+            merge_split: { variable: "WA" }
+            area: { height: 6 }
+            volume: {}
+            max_intensity: { variable : "WA", cell_footprint_height: 6}
+            var_max_height: {threshold: 3, cell_footprint_height : 6, variable: "WA"}
+            velocity: {}
+            perimeter: {}
+            cell_growth: {variable: "volume"}
+            irregularity: {irregularity_metrics: ['sphericity']}
+
+mesonh:
+    path_to_data: "/D3/data/hweiner/Model_Test_Data/MesoNH/*"
+
+    is_idealized: False
+#     #min_frame_index: 10 # 0-based indexing, inclusive
+#     #max_frame_index: 70 # 0-based indexing, inclusive
+
+    feature_tracking_var: "wa" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
+    segmentation_var: "wa"
+
+    tobac:
+        feature_id:
+            threshold: [3, 5, 10]
+            target: "maximum"
+            position_threshold: "weighted_diff"
+            sigma_threshold: 0.5
+            n_min_threshold: 4
+            #detect_subset: {1:(29, 47)}
+
+        linking:
+            method_linking: "predict"
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 0
+            v_max: 20
+            time_cell_min: 120
+
+        segmentation_2d:
+            height: 6 # km
+            method: "watershed"
+            target: 'maximum'
+            threshold: 3
+
+        segmentation_3d:
+            method: "watershed"
+            target: 'maximum'
+            threshold: 3
+            seed_3D_flag: 'box'
+    
+        analysis: # Optional
+            merge_split: { variable: "WA" }
+            area: { height: 6 }
+            volume: {}
+            max_intensity: { variable : "WA", cell_footprint_height: 6}
+            var_max_height: {threshold: 3, cell_footprint_height : 6, variable: "WA"}
+            velocity: {}
+            perimeter: {}
+            cell_growth: {variable: "volume"}
+            irregularity: {irregularity_metrics: ['sphericity']}

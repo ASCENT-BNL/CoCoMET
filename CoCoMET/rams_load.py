@@ -34,7 +34,6 @@ def rams_load_netcdf_iris(
     tracking_var: str,
     path_to_header: str,
     CONFIG: dict = None,
-    debug: int = 0,
 ) -> tuple[iris.cube.Cube, xr.Dataset]:
     """
 
@@ -212,21 +211,19 @@ def rams_load_netcdf_iris(
 
     elif tracking_var.lower() == "dbz":
 
-        # Configure rams xarray for brightness temperature
+        # Configure rams xarray for reflectivity
         rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
                                         configure_variables=["RRP", "RPP", "RSP", "RAP", "RGP", "RHP", 
                                                             "CRP", "CPP", "CSP", "CAP", "CGP", "CHP"])
 
-        rams_reflectivity = rams_calculate_reflectivity(rams_xarray)
-
-        rams_xarray["DBZ"] = rams_reflectivity
+        rams_xarray["DBZ"] = rams_calculate_reflectivity(rams_xarray)
 
         cube = load(rams_xarray, "DBZ")
-        cube.coord("altitude").points = rams_xarray["altitudes"].values
+        cube.coord("altitude").points = rams_xarray["altitudes"].values # there is already an altitude coordinate in the xarray
 
         # Add altitude field for easier processing later
         rams_xarray["DBZ"] = rams_xarray["DBZ"].assign_coords(
-            altitude=("bottom_top", rams_xarray["altitudes"].values)
+            altitude=(["bottom_top"], rams_xarray["altitudes"].values)
         )
 
 
@@ -242,7 +239,7 @@ def rams_load_netcdf_iris(
         rams_xarray["WA"] = rams_wa
 
         cube = load(rams_xarray, "WA")
-        cube.coord("altitude").points = rams_xarray["altitudes"].values
+        cube.coord("altitude").points = rams_xarray["altitudes"].values # there is already an altitude coordinate in the xarray
 
         # Add altitude field for easier processing later
         rams_xarray["WA"] = rams_xarray["WA"].assign_coords(
@@ -263,7 +260,7 @@ def rams_load_netcdf_iris(
             if len(var_values.shape) == 4:
                 # Add correct altitude based off of average height at each height index
 
-                cube.coord("altitude").points = rams_xarray["altitudes"].values
+                cube.coord("altitude").points = rams_xarray["altitudes"].values # there is already an altitude coordinate in the xarray
 
                 # Add altitude field for easier processing later
                 rams_xarray[tracking_var.upper()] = rams_xarray[

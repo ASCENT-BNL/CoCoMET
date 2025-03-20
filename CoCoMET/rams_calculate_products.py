@@ -280,14 +280,14 @@ def rams_calculate_reflectivity(rams_xarray: xr.Dataset) -> xr.DataArray:
 
         Z_total += tmp2
 
-    Z_total = np.clip(Z_total, 0.001, 1e99)
-    np.nan_to_num(Z_total, copy=False, nan=0.001)
+    Z_total = Z_total.clip(0.001, 1e99)
 
     dbz_total = 10 * np.log10(Z_total)
 
     dbz_total_xarray = xr.DataArray(
         dbz_total, dims=["Time", "bottom_top", "south_north", "west_east"]
     )
+
     # Assign attributes
     dBZ = dbz_total_xarray.assign_attrs(
         {

@@ -184,7 +184,10 @@ def _merge_split_2d(
             if height is None:
                 raise Exception('2D merging and splitting on a 3D variable requires a "height" parameter. Either do 3D merging and splitting or set height')
             
-            altitudes = analysis_object["segmentation_xarray"]["altitudes"]
+            try: # TODO: reconcile this later, the models have attribute altitudes, but the observations have attribute altitude
+                altitudes = analysis_object["segmentation_xarray"]["altitude"]
+            except:
+                altitudes = analysis_object["segmentation_xarray"]["altitudes"]
 
             vf_height_index = find_nearest(altitudes, height * 1000)
             variable_field = variable_field[:, vf_height_index]

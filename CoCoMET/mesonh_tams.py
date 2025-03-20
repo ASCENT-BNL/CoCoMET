@@ -24,14 +24,16 @@ def mesonh_run_tams(mesonh_xarray, CONFIG):
         tb = xr.DataArray(
             mesonh_calculate_brightness_temp(mesonh_xarray), dims=["time", "y", "x"]
         )
-        mesonh_for_tams_copy["ctt"] = tb.assign_attrs(
-            {"long_name": "Brightness temperature", "units": "K"}
-        )
-        mesonh_for_tams_copy["ctt"].chunk(mesonh_xarray["top"].chunksizes)
-        mesonh_xarray = mesonh_xarray.assign(TB=mesonh_for_tams_copy["ctt"])
+
     else:
         tb = mesonh_xarray["TB"]
 
+    mesonh_for_tams_copy["ctt"] = tb.assign_attrs(
+        {"long_name": "Brightness temperature", "units": "K"}
+    )
+    mesonh_for_tams_copy["ctt"].chunk(mesonh_xarray["top"].chunksizes)
+    mesonh_xarray = mesonh_xarray.assign(TB=mesonh_for_tams_copy["ctt"])
+    
     # # if precipitation rate is already in mesonh_xarray use it
     # if "PR" not in mesonh_xarray:
     #     pr = mesonh_calculate_precip_rate(mesonh_xarray)

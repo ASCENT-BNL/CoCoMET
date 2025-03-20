@@ -162,8 +162,7 @@ def calculate_var_max_height(
 def calculate_max_intensity(
     analysis_object: dict,
     variable: str | None = None,
-    cell_footprint_height: float = 2,
-    quantile: float = 0.95,
+    cell_footprint_height: float | None = None,
     **args,
 ) -> pd.DataFrame | None:
     """
@@ -176,7 +175,7 @@ def calculate_max_intensity(
     variable : str, optional
         The variable from the input segmentation_xarray which should be used for calculating var_max_height. The default is None.
     cell_footprint_height : float, optional
-        The height used to calculate the cell area to determine where to calculate var_max_heights. The default is 2km.
+        The height used to determine the location of which cells to calculate the max_intensity of. If None, will calculate the max_intensity of all cells. The default is None.
     quantile : float, optional
         The percentile of calculated max heights to return. The default is 0.95.
     **args : dict
@@ -204,14 +203,20 @@ def calculate_max_intensity(
 
     # If 3D segmentation is available, use that to calculate cell footprint, otherwise use 2D segmentation
     if analysis_object["US_segmentation_3d"] is not None:
-        height_index = find_nearest(
-            analysis_object["US_segmentation_3d"].altitude.values,
-            cell_footprint_height * 1000,
-        )
-
         segmentation = analysis_object["US_segmentation_3d"].Feature_Segmentation
-        features_across_footprint = np.unique(segmentation[:, height_index])[1:]
+        segmentation = analysis_object["US_segmentation_3d"].Feature_Segmentation
 
+        if cell_footprint_height is not None:
+            height_index = find_nearest(
+                analysis_object["US_segmentation_3d"].altitude.values,
+                cell_footprint_height * 1000,
+            )
+
+            features_across_footprint = np.unique(segmentation[:, height_index])[1:]
+        
+        else:
+            features_across_footprint = np.unique(segmentation)[1:]   
+            
     elif analysis_object["US_segmentation_2d"] is not None:
         segmentation = analysis_object["US_segmentation_2d"].Feature_Segmentation
         features_across_footprint = np.unique(segmentation)[1:]
@@ -759,10 +764,19 @@ def calculate_cell_growth(
     else:
         raise Exception("!=====Missing Segmentation Input=====!")
     
-
+    # Get Tracks
     Tracks = analysis_object["US_tracks"]
     Tracks_with_var = deepcopy(Tracks).join(var)
 
+    # Get dt
+    if ("tracking_xarray" in analysis_object) and (
+        "DT" in analysis_object["tracking_xarray"].attrs
+    ):
+        dt_from_tracking = analysis_object["tracking_xarray"].attrs["DT"]  # in s
+    else:
+        dt_from_tracking = 1.0
+        logging.warning("Could not find DT in dataset, computing velocity in m/frame")
+    
     # Cell Growth Rate
     cell_growth_info = {"frame": [], "feature_id": [], "cell_id": [], "cell_growth": []}
 
@@ -805,7 +819,14 @@ def calculate_cell_growth(
 
         # If the cell lasts for more than one frame, calculate delta var and delta t
         dvar = cell_var_arr[1:] - cell_var_arr[:-1]
-        dt = cell_lifetime_arr[1:] - cell_lifetime_arr[:-1]
+        if type(dt_from_tracking) == np.ndarray:
+            dt = dt_from_tracking[cell_frame_arr[0] : cell_frame_arr[-1]]
+
+        elif type(dt_from_tracking) == list:
+            dt = [dt_from_tracking[cf] for cf in range(cell_frame_arr[0], cell_frame_arr[-1])]
+            
+        else:
+            dt = dt_from_tracking
 
         # The eth/t slope is the growth rate
         slope = dvar / dt
@@ -887,18 +908,22 @@ def calculate_perimeter( # TODO: split into surface area and perimeter
         height_index = find_nearest(altitudes, args["height"] * 1000)
         feature_seg = analysis_object["US_segmentation_3d"].Feature_Segmentation[:, height_index]    
     
+        # define some useful variables
+        proj_x = analysis_object[f"US_segmentation_3d"].projection_x_coordinate
+        proj_y = analysis_object[f"US_segmentation_3d"].projection_y_coordinate
+
     elif analysis_object["US_segmentation_2d"] is not None:
         feature_seg = analysis_object["US_segmentation_2d"].Feature_Segmentation
+
+        # define some useful variables
+        proj_x = analysis_object[f"US_segmentation_2d"].projection_x_coordinate
+        proj_y = analysis_object[f"US_segmentation_2d"].projection_y_coordinate
 
     else:
         raise Exception("!=====Missing Invalid Segmentation Input, needs either 2D segmetation or 3D segmentation with height [km] parameter=====!")
 
     perimeter_info = {"frame": [], "feature_id": [], "cell_id": [], "perimeter": []}
     Tracks = analysis_object["US_tracks"]
-
-    # define some useful variables
-    proj_x = analysis_object[f"US_segmentation_2d"].projection_x_coordinate
-    proj_y = analysis_object[f"US_segmentation_2d"].projection_y_coordinate
 
     for ii in tqdm(
         range(len(Tracks)),
@@ -952,8 +977,9 @@ def calculate_perimeter( # TODO: split into surface area and perimeter
 
         if len(variable_field.shape) != 3:
             raise ValueError("=====The segmentation must be 2D=====")
-
+        
         feature_mask = analysis_object["US_segmentation_2d"].Feature_Segmentation
+        # TODO: if user only has 3D segmentation and height for perimeter and has a threshold set
         feature_mask.values[variable_field.values < threshold] = -1
         uncut_feature_list = np.unique(feature_mask)[1:]  # don"t use -1
         perimeter_df = perimeter_df[perimeter_df["feature_id"].isin(uncut_feature_list)]

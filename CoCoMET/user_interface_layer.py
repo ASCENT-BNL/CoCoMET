@@ -809,6 +809,11 @@ def run_goes(
             "goes", "tobac", user_return_dict, tracking_info, CONFIG
         )
 
+    if "tams" in CONFIG["goes"]:
+        user_return_dict, tracking_info = run_tracker(
+            "goes", "tams", user_return_dict, tracking_info, CONFIG
+        )
+
     # Send return dict to queue if there is a queue object passed
     if queue is not None:
         queue.put(user_return_dict)

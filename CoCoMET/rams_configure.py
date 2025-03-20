@@ -136,7 +136,6 @@ def configure_rams(dataset0, path_to_header, CONFIG=None, configure_variables = 
     pbar.refresh()
 
     # define the coordinates
-    dataset = dataset.assign_coords(Times=(["Time"], np.arange(len(dataset["Time"]))))
     dataset = dataset.assign_coords(
         GLAT=(["Time", "south_north", "west_east"], dataset["GLAT"].data)
     )
@@ -166,39 +165,48 @@ def configure_rams(dataset0, path_to_header, CONFIG=None, configure_variables = 
     firstHeaderStr = listing[0]
     if len(listing) > 1:
         times = np.zeros(len(listing))
+        datetime_times = []
         for ind, i in tqdm(
             enumerate(listing),
             desc="=====Loading RAMS Header File Data=====",
             total=len(listing),
         ):
             f = np.loadtxt(i, skiprows=findWhereColsChange(i), dtype=str)
-            times[ind] = f[np.where(f == "__time")[0] + 2][0]
-        # use the last loaded file for the initial date
-        year = int(f[np.where(f == "__iyear1")[0] + 2][0])
-        month = int(f[np.where(f == "__imonth1")[0] + 2][0])
-        date = int(f[np.where(f == "__idate1")[0] + 2][0])
-        itime = f[np.where(f == "__itime1")[0] + 2][0]
+            time_now = float(f[np.where(f == "__time")[0] + 2][0])
+            times[ind] = time_now
 
-        # times = np.sort(times)
-        init_time = times[0]
-        hour = int(np.floor(init_time / 3600))
-        init_time -= hour * 3600
-        minute = int(np.floor(init_time / 60))
-        init_time -= minute * 60
-        second = int(init_time)
-        init_date_str_unformatted = f"{year}-{month}-{date} {int(itime[:2]) + hour}:{int(itime[2:]) + minute}:{second}"
-        datetime_start_date = datetime.strptime(
-            init_date_str_unformatted, "%Y-%m-%d %H:%M:%S"
-        )
-        init_date_str_formatted = datetime.strftime(
-            datetime_start_date, "%Y-%m-%d %H:%M:%S"
-        )
-        dataset.attrs["date"] = f"minutes since {init_date_str_formatted}"
+            # use the last loaded file for the initial date
+            year = int(f[np.where(f == "__iyear1")[0] + 2][0])
+            month = int(f[np.where(f == "__imonth1")[0] + 2][0])
+            date = int(f[np.where(f == "__idate1")[0] + 2][0])
+            itime = f[np.where(f == "__itime1")[0] + 2][0]
+
+            hour = int(np.floor(time_now / 3600))
+            time_now -= hour * 3600
+            minute = int(np.floor(time_now / 60))
+            time_now -= minute * 60
+            second = int(time_now)
+            date_str_unformatted = f"{year}-{month}-{date} {int(itime[:2]) + hour}:{int(itime[2:]) + minute}:{second}"
+            datetime_date = datetime.strptime(
+                date_str_unformatted, "%Y-%m-%d %H:%M:%S"
+            )
+            datetime_times.append(datetime_date)
+
+            # declare the units from the initial time
+            if ind == 0:
+                date_str_formatted = datetime.strftime(
+                    datetime_date, "%Y-%m-%d %H:%M:%S"
+                    )                
+                dataset.attrs["date"] = f"minutes since {date_str_formatted}"
+        
 
         DT = times[1:] - times[:-1]
         if sum(~(DT == DT[0])) != 0:
             raise Exception("Header file time stamps are non-continuous")
         dataset.attrs["DT"] = DT[0]
+
+    # Now that the times have been parsed, write the times coordinate
+    dataset = dataset.assign_coords(Times=(["Time"], datetime_times))
 
     # use one header file to define the linear projection constants
     headerfile = np.loadtxt(
