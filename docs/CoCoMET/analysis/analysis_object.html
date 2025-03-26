@@ -22,6 +22,7 @@
   <path fill-rule="evenodd" d="M4.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H14.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3z"/>
 </svg>                &nbsp;CoCoMET.analysis</a>
 
+            <img src="./images/cocomet_logo.png" class="logo" alt="project logo"/>
 
             <input type="search" placeholder="Search..." role="searchbox" aria-label="search"
                    pattern=".+" required>
@@ -99,33 +100,31 @@
 </span><span id="L-12"><a href="#L-12"><span class="linenos">12</span></a>
 </span><span id="L-13"><a href="#L-13"><span class="linenos">13</span></a>
 </span><span id="L-14"><a href="#L-14"><span class="linenos">14</span></a><span class="k">class</span> <span class="nc">Analysis_Object</span><span class="p">:</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>
-</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>        <span class="n">tracking_xarray</span><span class="p">,</span>
-</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>        <span class="n">segmentation_xarray</span><span class="p">,</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>        <span class="n">US_features</span><span class="p">,</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>        <span class="n">US_tracks</span><span class="p">,</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>        <span class="n">US_segmentation_2d</span><span class="p">,</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>        <span class="n">US_segmentation_3d</span><span class="p">,</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>    <span class="p">):</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">tracking_xarray</span> <span class="o">=</span> <span class="n">tracking_xarray</span>
-</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">segmentation_xarray</span> <span class="o">=</span> <span class="n">segmentation_xarray</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_features</span> <span class="o">=</span> <span class="n">US_features</span>
-</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_tracks</span> <span class="o">=</span> <span class="n">US_tracks</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_2d</span> <span class="o">=</span> <span class="n">US_segmentation_2d</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_3d</span> <span class="o">=</span> <span class="n">US_segmentation_3d</span>
-</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>
-</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>    <span class="k">def</span> <span class="nf">return_analysis_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>
-</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>        <span class="k">return</span> <span class="p">{</span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>            <span class="s2">&quot;tracking_xarray&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracking_xarray</span><span class="p">,</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>            <span class="s2">&quot;segmentation_xarray&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">segmentation_xarray</span><span class="p">,</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>            <span class="s2">&quot;US_features&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_features</span><span class="p">,</span>
-</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>            <span class="s2">&quot;US_tracks&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_tracks</span><span class="p">,</span>
-</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>            <span class="s2">&quot;US_segmentation_2d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_2d</span><span class="p">,</span>
-</span><span id="L-40"><a href="#L-40"><span class="linenos">40</span></a>            <span class="s2">&quot;US_segmentation_3d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_3d</span><span class="p">,</span>
-</span><span id="L-41"><a href="#L-41"><span class="linenos">41</span></a>        <span class="p">}</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos">15</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+</span><span id="L-16"><a href="#L-16"><span class="linenos">16</span></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="L-17"><a href="#L-17"><span class="linenos">17</span></a>        <span class="n">tracking_xarray</span><span class="p">,</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos">18</span></a>        <span class="n">segmentation_xarray</span><span class="p">,</span>
+</span><span id="L-19"><a href="#L-19"><span class="linenos">19</span></a>        <span class="n">US_features</span><span class="p">,</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos">20</span></a>        <span class="n">US_tracks</span><span class="p">,</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos">21</span></a>        <span class="n">US_segmentation_2d</span><span class="p">,</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos">22</span></a>        <span class="n">US_segmentation_3d</span><span class="p">,</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos">23</span></a>    <span class="p">):</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos">24</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">tracking_xarray</span> <span class="o">=</span> <span class="n">tracking_xarray</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos">25</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">segmentation_xarray</span> <span class="o">=</span> <span class="n">segmentation_xarray</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos">26</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_features</span> <span class="o">=</span> <span class="n">US_features</span>
+</span><span id="L-27"><a href="#L-27"><span class="linenos">27</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_tracks</span> <span class="o">=</span> <span class="n">US_tracks</span>
+</span><span id="L-28"><a href="#L-28"><span class="linenos">28</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_2d</span> <span class="o">=</span> <span class="n">US_segmentation_2d</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos">29</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_3d</span> <span class="o">=</span> <span class="n">US_segmentation_3d</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos">30</span></a>
+</span><span id="L-31"><a href="#L-31"><span class="linenos">31</span></a>    <span class="k">def</span> <span class="nf">return_analysis_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="L-32"><a href="#L-32"><span class="linenos">32</span></a>        <span class="k">return</span> <span class="p">{</span>
+</span><span id="L-33"><a href="#L-33"><span class="linenos">33</span></a>            <span class="s2">&quot;tracking_xarray&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracking_xarray</span><span class="p">,</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos">34</span></a>            <span class="s2">&quot;segmentation_xarray&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">segmentation_xarray</span><span class="p">,</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos">35</span></a>            <span class="s2">&quot;US_features&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_features</span><span class="p">,</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos">36</span></a>            <span class="s2">&quot;US_tracks&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_tracks</span><span class="p">,</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos">37</span></a>            <span class="s2">&quot;US_segmentation_2d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_2d</span><span class="p">,</span>
+</span><span id="L-38"><a href="#L-38"><span class="linenos">38</span></a>            <span class="s2">&quot;US_segmentation_3d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_3d</span><span class="p">,</span>
+</span><span id="L-39"><a href="#L-39"><span class="linenos">39</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 
@@ -142,33 +141,31 @@
     </div>
     <a class="headerlink" href="#Analysis_Object"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="Analysis_Object-15"><a href="#Analysis_Object-15"><span class="linenos">15</span></a><span class="k">class</span> <span class="nc">Analysis_Object</span><span class="p">:</span>
-</span><span id="Analysis_Object-16"><a href="#Analysis_Object-16"><span class="linenos">16</span></a>
-</span><span id="Analysis_Object-17"><a href="#Analysis_Object-17"><span class="linenos">17</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-</span><span id="Analysis_Object-18"><a href="#Analysis_Object-18"><span class="linenos">18</span></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="Analysis_Object-19"><a href="#Analysis_Object-19"><span class="linenos">19</span></a>        <span class="n">tracking_xarray</span><span class="p">,</span>
-</span><span id="Analysis_Object-20"><a href="#Analysis_Object-20"><span class="linenos">20</span></a>        <span class="n">segmentation_xarray</span><span class="p">,</span>
-</span><span id="Analysis_Object-21"><a href="#Analysis_Object-21"><span class="linenos">21</span></a>        <span class="n">US_features</span><span class="p">,</span>
-</span><span id="Analysis_Object-22"><a href="#Analysis_Object-22"><span class="linenos">22</span></a>        <span class="n">US_tracks</span><span class="p">,</span>
-</span><span id="Analysis_Object-23"><a href="#Analysis_Object-23"><span class="linenos">23</span></a>        <span class="n">US_segmentation_2d</span><span class="p">,</span>
-</span><span id="Analysis_Object-24"><a href="#Analysis_Object-24"><span class="linenos">24</span></a>        <span class="n">US_segmentation_3d</span><span class="p">,</span>
-</span><span id="Analysis_Object-25"><a href="#Analysis_Object-25"><span class="linenos">25</span></a>    <span class="p">):</span>
-</span><span id="Analysis_Object-26"><a href="#Analysis_Object-26"><span class="linenos">26</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">tracking_xarray</span> <span class="o">=</span> <span class="n">tracking_xarray</span>
-</span><span id="Analysis_Object-27"><a href="#Analysis_Object-27"><span class="linenos">27</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">segmentation_xarray</span> <span class="o">=</span> <span class="n">segmentation_xarray</span>
-</span><span id="Analysis_Object-28"><a href="#Analysis_Object-28"><span class="linenos">28</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_features</span> <span class="o">=</span> <span class="n">US_features</span>
-</span><span id="Analysis_Object-29"><a href="#Analysis_Object-29"><span class="linenos">29</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_tracks</span> <span class="o">=</span> <span class="n">US_tracks</span>
-</span><span id="Analysis_Object-30"><a href="#Analysis_Object-30"><span class="linenos">30</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_2d</span> <span class="o">=</span> <span class="n">US_segmentation_2d</span>
-</span><span id="Analysis_Object-31"><a href="#Analysis_Object-31"><span class="linenos">31</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_3d</span> <span class="o">=</span> <span class="n">US_segmentation_3d</span>
-</span><span id="Analysis_Object-32"><a href="#Analysis_Object-32"><span class="linenos">32</span></a>
-</span><span id="Analysis_Object-33"><a href="#Analysis_Object-33"><span class="linenos">33</span></a>    <span class="k">def</span> <span class="nf">return_analysis_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-</span><span id="Analysis_Object-34"><a href="#Analysis_Object-34"><span class="linenos">34</span></a>
-</span><span id="Analysis_Object-35"><a href="#Analysis_Object-35"><span class="linenos">35</span></a>        <span class="k">return</span> <span class="p">{</span>
-</span><span id="Analysis_Object-36"><a href="#Analysis_Object-36"><span class="linenos">36</span></a>            <span class="s2">&quot;tracking_xarray&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracking_xarray</span><span class="p">,</span>
-</span><span id="Analysis_Object-37"><a href="#Analysis_Object-37"><span class="linenos">37</span></a>            <span class="s2">&quot;segmentation_xarray&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">segmentation_xarray</span><span class="p">,</span>
-</span><span id="Analysis_Object-38"><a href="#Analysis_Object-38"><span class="linenos">38</span></a>            <span class="s2">&quot;US_features&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_features</span><span class="p">,</span>
-</span><span id="Analysis_Object-39"><a href="#Analysis_Object-39"><span class="linenos">39</span></a>            <span class="s2">&quot;US_tracks&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_tracks</span><span class="p">,</span>
-</span><span id="Analysis_Object-40"><a href="#Analysis_Object-40"><span class="linenos">40</span></a>            <span class="s2">&quot;US_segmentation_2d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_2d</span><span class="p">,</span>
-</span><span id="Analysis_Object-41"><a href="#Analysis_Object-41"><span class="linenos">41</span></a>            <span class="s2">&quot;US_segmentation_3d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_3d</span><span class="p">,</span>
-</span><span id="Analysis_Object-42"><a href="#Analysis_Object-42"><span class="linenos">42</span></a>        <span class="p">}</span>
+</span><span id="Analysis_Object-16"><a href="#Analysis_Object-16"><span class="linenos">16</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+</span><span id="Analysis_Object-17"><a href="#Analysis_Object-17"><span class="linenos">17</span></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="Analysis_Object-18"><a href="#Analysis_Object-18"><span class="linenos">18</span></a>        <span class="n">tracking_xarray</span><span class="p">,</span>
+</span><span id="Analysis_Object-19"><a href="#Analysis_Object-19"><span class="linenos">19</span></a>        <span class="n">segmentation_xarray</span><span class="p">,</span>
+</span><span id="Analysis_Object-20"><a href="#Analysis_Object-20"><span class="linenos">20</span></a>        <span class="n">US_features</span><span class="p">,</span>
+</span><span id="Analysis_Object-21"><a href="#Analysis_Object-21"><span class="linenos">21</span></a>        <span class="n">US_tracks</span><span class="p">,</span>
+</span><span id="Analysis_Object-22"><a href="#Analysis_Object-22"><span class="linenos">22</span></a>        <span class="n">US_segmentation_2d</span><span class="p">,</span>
+</span><span id="Analysis_Object-23"><a href="#Analysis_Object-23"><span class="linenos">23</span></a>        <span class="n">US_segmentation_3d</span><span class="p">,</span>
+</span><span id="Analysis_Object-24"><a href="#Analysis_Object-24"><span class="linenos">24</span></a>    <span class="p">):</span>
+</span><span id="Analysis_Object-25"><a href="#Analysis_Object-25"><span class="linenos">25</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">tracking_xarray</span> <span class="o">=</span> <span class="n">tracking_xarray</span>
+</span><span id="Analysis_Object-26"><a href="#Analysis_Object-26"><span class="linenos">26</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">segmentation_xarray</span> <span class="o">=</span> <span class="n">segmentation_xarray</span>
+</span><span id="Analysis_Object-27"><a href="#Analysis_Object-27"><span class="linenos">27</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_features</span> <span class="o">=</span> <span class="n">US_features</span>
+</span><span id="Analysis_Object-28"><a href="#Analysis_Object-28"><span class="linenos">28</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_tracks</span> <span class="o">=</span> <span class="n">US_tracks</span>
+</span><span id="Analysis_Object-29"><a href="#Analysis_Object-29"><span class="linenos">29</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_2d</span> <span class="o">=</span> <span class="n">US_segmentation_2d</span>
+</span><span id="Analysis_Object-30"><a href="#Analysis_Object-30"><span class="linenos">30</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_3d</span> <span class="o">=</span> <span class="n">US_segmentation_3d</span>
+</span><span id="Analysis_Object-31"><a href="#Analysis_Object-31"><span class="linenos">31</span></a>
+</span><span id="Analysis_Object-32"><a href="#Analysis_Object-32"><span class="linenos">32</span></a>    <span class="k">def</span> <span class="nf">return_analysis_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="Analysis_Object-33"><a href="#Analysis_Object-33"><span class="linenos">33</span></a>        <span class="k">return</span> <span class="p">{</span>
+</span><span id="Analysis_Object-34"><a href="#Analysis_Object-34"><span class="linenos">34</span></a>            <span class="s2">&quot;tracking_xarray&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracking_xarray</span><span class="p">,</span>
+</span><span id="Analysis_Object-35"><a href="#Analysis_Object-35"><span class="linenos">35</span></a>            <span class="s2">&quot;segmentation_xarray&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">segmentation_xarray</span><span class="p">,</span>
+</span><span id="Analysis_Object-36"><a href="#Analysis_Object-36"><span class="linenos">36</span></a>            <span class="s2">&quot;US_features&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_features</span><span class="p">,</span>
+</span><span id="Analysis_Object-37"><a href="#Analysis_Object-37"><span class="linenos">37</span></a>            <span class="s2">&quot;US_tracks&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_tracks</span><span class="p">,</span>
+</span><span id="Analysis_Object-38"><a href="#Analysis_Object-38"><span class="linenos">38</span></a>            <span class="s2">&quot;US_segmentation_2d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_2d</span><span class="p">,</span>
+</span><span id="Analysis_Object-39"><a href="#Analysis_Object-39"><span class="linenos">39</span></a>            <span class="s2">&quot;US_segmentation_3d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_3d</span><span class="p">,</span>
+</span><span id="Analysis_Object-40"><a href="#Analysis_Object-40"><span class="linenos">40</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 
@@ -184,21 +181,21 @@
 
     </div>
     <a class="headerlink" href="#Analysis_Object.__init__"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Analysis_Object.__init__-17"><a href="#Analysis_Object.__init__-17"><span class="linenos">17</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-</span><span id="Analysis_Object.__init__-18"><a href="#Analysis_Object.__init__-18"><span class="linenos">18</span></a>        <span class="bp">self</span><span class="p">,</span>
-</span><span id="Analysis_Object.__init__-19"><a href="#Analysis_Object.__init__-19"><span class="linenos">19</span></a>        <span class="n">tracking_xarray</span><span class="p">,</span>
-</span><span id="Analysis_Object.__init__-20"><a href="#Analysis_Object.__init__-20"><span class="linenos">20</span></a>        <span class="n">segmentation_xarray</span><span class="p">,</span>
-</span><span id="Analysis_Object.__init__-21"><a href="#Analysis_Object.__init__-21"><span class="linenos">21</span></a>        <span class="n">US_features</span><span class="p">,</span>
-</span><span id="Analysis_Object.__init__-22"><a href="#Analysis_Object.__init__-22"><span class="linenos">22</span></a>        <span class="n">US_tracks</span><span class="p">,</span>
-</span><span id="Analysis_Object.__init__-23"><a href="#Analysis_Object.__init__-23"><span class="linenos">23</span></a>        <span class="n">US_segmentation_2d</span><span class="p">,</span>
-</span><span id="Analysis_Object.__init__-24"><a href="#Analysis_Object.__init__-24"><span class="linenos">24</span></a>        <span class="n">US_segmentation_3d</span><span class="p">,</span>
-</span><span id="Analysis_Object.__init__-25"><a href="#Analysis_Object.__init__-25"><span class="linenos">25</span></a>    <span class="p">):</span>
-</span><span id="Analysis_Object.__init__-26"><a href="#Analysis_Object.__init__-26"><span class="linenos">26</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">tracking_xarray</span> <span class="o">=</span> <span class="n">tracking_xarray</span>
-</span><span id="Analysis_Object.__init__-27"><a href="#Analysis_Object.__init__-27"><span class="linenos">27</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">segmentation_xarray</span> <span class="o">=</span> <span class="n">segmentation_xarray</span>
-</span><span id="Analysis_Object.__init__-28"><a href="#Analysis_Object.__init__-28"><span class="linenos">28</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_features</span> <span class="o">=</span> <span class="n">US_features</span>
-</span><span id="Analysis_Object.__init__-29"><a href="#Analysis_Object.__init__-29"><span class="linenos">29</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_tracks</span> <span class="o">=</span> <span class="n">US_tracks</span>
-</span><span id="Analysis_Object.__init__-30"><a href="#Analysis_Object.__init__-30"><span class="linenos">30</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_2d</span> <span class="o">=</span> <span class="n">US_segmentation_2d</span>
-</span><span id="Analysis_Object.__init__-31"><a href="#Analysis_Object.__init__-31"><span class="linenos">31</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_3d</span> <span class="o">=</span> <span class="n">US_segmentation_3d</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Analysis_Object.__init__-16"><a href="#Analysis_Object.__init__-16"><span class="linenos">16</span></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+</span><span id="Analysis_Object.__init__-17"><a href="#Analysis_Object.__init__-17"><span class="linenos">17</span></a>        <span class="bp">self</span><span class="p">,</span>
+</span><span id="Analysis_Object.__init__-18"><a href="#Analysis_Object.__init__-18"><span class="linenos">18</span></a>        <span class="n">tracking_xarray</span><span class="p">,</span>
+</span><span id="Analysis_Object.__init__-19"><a href="#Analysis_Object.__init__-19"><span class="linenos">19</span></a>        <span class="n">segmentation_xarray</span><span class="p">,</span>
+</span><span id="Analysis_Object.__init__-20"><a href="#Analysis_Object.__init__-20"><span class="linenos">20</span></a>        <span class="n">US_features</span><span class="p">,</span>
+</span><span id="Analysis_Object.__init__-21"><a href="#Analysis_Object.__init__-21"><span class="linenos">21</span></a>        <span class="n">US_tracks</span><span class="p">,</span>
+</span><span id="Analysis_Object.__init__-22"><a href="#Analysis_Object.__init__-22"><span class="linenos">22</span></a>        <span class="n">US_segmentation_2d</span><span class="p">,</span>
+</span><span id="Analysis_Object.__init__-23"><a href="#Analysis_Object.__init__-23"><span class="linenos">23</span></a>        <span class="n">US_segmentation_3d</span><span class="p">,</span>
+</span><span id="Analysis_Object.__init__-24"><a href="#Analysis_Object.__init__-24"><span class="linenos">24</span></a>    <span class="p">):</span>
+</span><span id="Analysis_Object.__init__-25"><a href="#Analysis_Object.__init__-25"><span class="linenos">25</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">tracking_xarray</span> <span class="o">=</span> <span class="n">tracking_xarray</span>
+</span><span id="Analysis_Object.__init__-26"><a href="#Analysis_Object.__init__-26"><span class="linenos">26</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">segmentation_xarray</span> <span class="o">=</span> <span class="n">segmentation_xarray</span>
+</span><span id="Analysis_Object.__init__-27"><a href="#Analysis_Object.__init__-27"><span class="linenos">27</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_features</span> <span class="o">=</span> <span class="n">US_features</span>
+</span><span id="Analysis_Object.__init__-28"><a href="#Analysis_Object.__init__-28"><span class="linenos">28</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_tracks</span> <span class="o">=</span> <span class="n">US_tracks</span>
+</span><span id="Analysis_Object.__init__-29"><a href="#Analysis_Object.__init__-29"><span class="linenos">29</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_2d</span> <span class="o">=</span> <span class="n">US_segmentation_2d</span>
+</span><span id="Analysis_Object.__init__-30"><a href="#Analysis_Object.__init__-30"><span class="linenos">30</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_3d</span> <span class="o">=</span> <span class="n">US_segmentation_3d</span>
 </span></pre></div>
 
 
@@ -282,16 +279,15 @@
 
     </div>
     <a class="headerlink" href="#Analysis_Object.return_analysis_dictionary"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="Analysis_Object.return_analysis_dictionary-33"><a href="#Analysis_Object.return_analysis_dictionary-33"><span class="linenos">33</span></a>    <span class="k">def</span> <span class="nf">return_analysis_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-</span><span id="Analysis_Object.return_analysis_dictionary-34"><a href="#Analysis_Object.return_analysis_dictionary-34"><span class="linenos">34</span></a>
-</span><span id="Analysis_Object.return_analysis_dictionary-35"><a href="#Analysis_Object.return_analysis_dictionary-35"><span class="linenos">35</span></a>        <span class="k">return</span> <span class="p">{</span>
-</span><span id="Analysis_Object.return_analysis_dictionary-36"><a href="#Analysis_Object.return_analysis_dictionary-36"><span class="linenos">36</span></a>            <span class="s2">&quot;tracking_xarray&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracking_xarray</span><span class="p">,</span>
-</span><span id="Analysis_Object.return_analysis_dictionary-37"><a href="#Analysis_Object.return_analysis_dictionary-37"><span class="linenos">37</span></a>            <span class="s2">&quot;segmentation_xarray&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">segmentation_xarray</span><span class="p">,</span>
-</span><span id="Analysis_Object.return_analysis_dictionary-38"><a href="#Analysis_Object.return_analysis_dictionary-38"><span class="linenos">38</span></a>            <span class="s2">&quot;US_features&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_features</span><span class="p">,</span>
-</span><span id="Analysis_Object.return_analysis_dictionary-39"><a href="#Analysis_Object.return_analysis_dictionary-39"><span class="linenos">39</span></a>            <span class="s2">&quot;US_tracks&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_tracks</span><span class="p">,</span>
-</span><span id="Analysis_Object.return_analysis_dictionary-40"><a href="#Analysis_Object.return_analysis_dictionary-40"><span class="linenos">40</span></a>            <span class="s2">&quot;US_segmentation_2d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_2d</span><span class="p">,</span>
-</span><span id="Analysis_Object.return_analysis_dictionary-41"><a href="#Analysis_Object.return_analysis_dictionary-41"><span class="linenos">41</span></a>            <span class="s2">&quot;US_segmentation_3d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_3d</span><span class="p">,</span>
-</span><span id="Analysis_Object.return_analysis_dictionary-42"><a href="#Analysis_Object.return_analysis_dictionary-42"><span class="linenos">42</span></a>        <span class="p">}</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="Analysis_Object.return_analysis_dictionary-32"><a href="#Analysis_Object.return_analysis_dictionary-32"><span class="linenos">32</span></a>    <span class="k">def</span> <span class="nf">return_analysis_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="Analysis_Object.return_analysis_dictionary-33"><a href="#Analysis_Object.return_analysis_dictionary-33"><span class="linenos">33</span></a>        <span class="k">return</span> <span class="p">{</span>
+</span><span id="Analysis_Object.return_analysis_dictionary-34"><a href="#Analysis_Object.return_analysis_dictionary-34"><span class="linenos">34</span></a>            <span class="s2">&quot;tracking_xarray&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tracking_xarray</span><span class="p">,</span>
+</span><span id="Analysis_Object.return_analysis_dictionary-35"><a href="#Analysis_Object.return_analysis_dictionary-35"><span class="linenos">35</span></a>            <span class="s2">&quot;segmentation_xarray&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">segmentation_xarray</span><span class="p">,</span>
+</span><span id="Analysis_Object.return_analysis_dictionary-36"><a href="#Analysis_Object.return_analysis_dictionary-36"><span class="linenos">36</span></a>            <span class="s2">&quot;US_features&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_features</span><span class="p">,</span>
+</span><span id="Analysis_Object.return_analysis_dictionary-37"><a href="#Analysis_Object.return_analysis_dictionary-37"><span class="linenos">37</span></a>            <span class="s2">&quot;US_tracks&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_tracks</span><span class="p">,</span>
+</span><span id="Analysis_Object.return_analysis_dictionary-38"><a href="#Analysis_Object.return_analysis_dictionary-38"><span class="linenos">38</span></a>            <span class="s2">&quot;US_segmentation_2d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_2d</span><span class="p">,</span>
+</span><span id="Analysis_Object.return_analysis_dictionary-39"><a href="#Analysis_Object.return_analysis_dictionary-39"><span class="linenos">39</span></a>            <span class="s2">&quot;US_segmentation_3d&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">US_segmentation_3d</span><span class="p">,</span>
+</span><span id="Analysis_Object.return_analysis_dictionary-40"><a href="#Analysis_Object.return_analysis_dictionary-40"><span class="linenos">40</span></a>        <span class="p">}</span>
 </span></pre></div>
 
 

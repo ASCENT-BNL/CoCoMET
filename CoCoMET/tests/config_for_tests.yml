@@ -62,14 +62,14 @@ wrf:
         analysis: # Optional
             merge_split-2d: { variable: "DBZ", segmentation_type: "2d", cell_footprint_height: 2 }
             merge_split-3d: { variable: "DBZ", segmentation_type: "3d" }
-            var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
+            var_max_height: { variable: "DBZ", cell_footprint_height: 1, threshold: 15 }
             area-low: { height: 2 }
             area-high: { height: 4, threshold: 15 }
             volume: { threshold: 15 }
             volume-high: { threshold: 30 }
             velocity: {}
             perimeter: {}
-            cell_growth: {}
+            cell_growth: { variable: "area" }
             irregularity: { irregularity_metrics: ["sphericity", "convexity"] }
             
     moaap:
@@ -364,7 +364,7 @@ standard_radar:
             
         analysis:
             merge_split: { variable: "DBZ" }
-            var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
+            #var_max_height: { variable: "DBZ", cell_footprint_height: 2, threshold: 15 }
             area: { height: 2 }
             #volume: {}
 

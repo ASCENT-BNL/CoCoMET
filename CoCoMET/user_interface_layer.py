@@ -122,11 +122,9 @@ def CoCoMET_start(
     start_time = time.perf_counter()
 
     # Create empty dictionaries for each data type
-    wrf_data = (
-        mesonh_data
-    ) = (
-        nexrad_data
-    ) = multi_nexrad_data = standard_radar_data = rams_data = goes_data = {}
+    wrf_data = mesonh_data = nexrad_data = multi_nexrad_data = standard_radar_data = (
+        rams_data
+    ) = goes_data = {}
 
     # if wrf is present in CONFIG, run the necessary wrf functions
     if "wrf" in CONFIG:

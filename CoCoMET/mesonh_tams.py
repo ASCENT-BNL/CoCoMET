@@ -33,7 +33,7 @@ def mesonh_run_tams(mesonh_xarray, CONFIG):
     )
     mesonh_for_tams_copy["ctt"].chunk(mesonh_xarray["top"].chunksizes)
     mesonh_xarray = mesonh_xarray.assign(TB=mesonh_for_tams_copy["ctt"])
-    
+
     # # if precipitation rate is already in mesonh_xarray use it
     # if "PR" not in mesonh_xarray:
     #     pr = mesonh_calculate_precip_rate(mesonh_xarray)

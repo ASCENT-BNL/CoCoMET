@@ -9,8 +9,6 @@ from CoCoMET.analysis.analysis_object import Analysis_Object
 from CoCoMET.analysis.calc_var import calc_var
 from CoCoMET.post_processor import filter_cells
 
-# Loading these is not memory or time intensive and is best practice to do so in the file header.
-
 # Observations
 from .goes_load import goes_load_netcdf_iris
 from .goes_tams import goes_run_tams
@@ -19,39 +17,27 @@ from .goes_tobac import (
     goes_tobac_linking,
     goes_tobac_segmentation,
 )
-
-from .nexrad_load import nexrad_load_netcdf_iris
-from .nexrad_tobac import (
-    nexrad_tobac_feature_id,
-    nexrad_tobac_linking,
-    nexrad_tobac_segmentation,
+from .mesonh_calculate_products import mesonh_calculate_reflectivity
+from .mesonh_load import mesonh_load_netcdf_iris
+from .mesonh_moaap import mesonh_run_moaap
+from .mesonh_tams import mesonh_run_tams
+from .mesonh_tobac import (
+    mesonh_tobac_feature_id,
+    mesonh_tobac_linking,
+    mesonh_tobac_segmentation,
 )
-
 from .multi_nexrad_load import multi_nexrad_load_netcdf_iris
 from .multi_nexrad_tobac import (
     multi_nexrad_tobac_feature_id,
     multi_nexrad_tobac_linking,
     multi_nexrad_tobac_segmentation,
 )
-
-from .standard_radar_load import standard_radar_load_netcdf_iris
-from .standard_radar_tobac import (
-    standard_radar_tobac_feature_id,
-    standard_radar_tobac_linking,
-    standard_radar_tobac_segmentation,
+from .nexrad_load import nexrad_load_netcdf_iris
+from .nexrad_tobac import (
+    nexrad_tobac_feature_id,
+    nexrad_tobac_linking,
+    nexrad_tobac_segmentation,
 )
-
-# Models
-from .wrf_calculate_products import wrf_calculate_reflectivity
-from .wrf_load import wrf_load_netcdf_iris
-from .wrf_moaap import wrf_run_moaap
-from .wrf_tams import wrf_run_tams
-from .wrf_tobac import (
-    wrf_tobac_feature_id, 
-    wrf_tobac_linking, 
-    wrf_tobac_segmentation
-)
-
 from .rams_calculate_products import rams_calculate_reflectivity
 from .rams_load import rams_load_netcdf_iris
 from .rams_moaap import rams_run_moaap
@@ -61,15 +47,11 @@ from .rams_tobac import (
     rams_tobac_linking,
     rams_tobac_segmentation,
 )
-
-from .mesonh_calculate_products import mesonh_calculate_reflectivity
-from .mesonh_load import mesonh_load_netcdf_iris
-from .mesonh_moaap import mesonh_run_moaap
-from .mesonh_tams import mesonh_run_tams
-from .mesonh_tobac import (
-    mesonh_tobac_feature_id,
-    mesonh_tobac_linking,
-    mesonh_tobac_segmentation,
+from .standard_radar_load import standard_radar_load_netcdf_iris
+from .standard_radar_tobac import (
+    standard_radar_tobac_feature_id,
+    standard_radar_tobac_linking,
+    standard_radar_tobac_segmentation,
 )
 
 # Load the US converting functions
@@ -80,6 +62,17 @@ from .tracker_output_translation_layer import (
     linking_to_US,
     segmentation_to_US,
 )
+
+# Models
+from .wrf_calculate_products import wrf_calculate_reflectivity
+from .wrf_load import wrf_load_netcdf_iris
+from .wrf_moaap import wrf_run_moaap
+from .wrf_tams import wrf_run_tams
+from .wrf_tobac import wrf_tobac_feature_id, wrf_tobac_linking, wrf_tobac_segmentation
+
+# Loading these is not memory or time intensive and is best practice to do so in the file header.
+
+
 ################################################################
 #################### RUN TRACKING PROGRAMS #####################
 ################################################################
@@ -341,7 +334,7 @@ def _run_tracker_det_and_seg(
                 tracking_xarray, CONFIG
             )
 
-            try: # TODO: the models and observations have different naming conventions for their projection coordinates
+            try:  # TODO: the models and observations have different naming conventions for their projection coordinates
                 projection_x = tracking_xarray.PROJX.values
                 projection_y = tracking_xarray.PROJY.values
             except:
@@ -439,15 +432,9 @@ def _tobac_analysis(
 
         # Calcaulte each variable of interest and append to analysis data array
         for var in analysis_vars:
-            # Make sure that ETH is calculated with reflectivity
-            if var == "eth":
-                CONFIG[dataset_name]["tobac"]["analysis"][var]["variable"] = "DBZ"
 
             # Add default tracking featured_id variable in place of variable if not present
-            elif "variable" not in CONFIG[dataset_name]["tobac"]["analysis"][var]:
-
-                if var == "cell_growth":
-                    raise Exception("!=====Must input a variable for cell growth/dissipation rate=====!")
+            if "variable" not in CONFIG[dataset_name]["tobac"]["analysis"][var]:
 
                 CONFIG[dataset_name]["tobac"]["analysis"][var]["variable"] = CONFIG[
                     dataset_name

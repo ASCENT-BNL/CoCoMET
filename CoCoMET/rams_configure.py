@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 # TODO: Remove this and replace with RAMS-MAT package
-def configure_rams(dataset0, path_to_header, CONFIG=None, configure_variables = []):
+def configure_rams(dataset0, path_to_header, CONFIG=None, configure_variables=[]):
     """
     Serves to set up proper attributes, coordinates, and dimensions so that the RAMS data set is compatible with CoCoMET
     Inputs:
@@ -20,7 +20,7 @@ def configure_rams(dataset0, path_to_header, CONFIG=None, configure_variables = 
     # avoid errors with CONFIG file
     if CONFIG is None:
         CONFIG = {"verbose": False, "rams": {}}
-    
+
     # since grid 3 of RAMS dataset is large, create a list of only the necessary variables and a new dataset to reduce required computational power
     ListOfNeededVariables = [
         "GLAT",
@@ -78,7 +78,7 @@ def configure_rams(dataset0, path_to_header, CONFIG=None, configure_variables = 
                     dataset[var].chunk(
                         dataset0[var][:, 1:, 1:, 1:].chunksizes
                     )  # rechunk the variables
-            
+
             except:
                 continue
 
@@ -97,7 +97,7 @@ def configure_rams(dataset0, path_to_header, CONFIG=None, configure_variables = 
                     dataset[var].chunk(
                         dataset0[var][:, 1:, 1:, 1:].chunksizes
                     )  # rechunk the variables]
-            
+
             except:
                 continue
 
@@ -187,18 +187,15 @@ def configure_rams(dataset0, path_to_header, CONFIG=None, configure_variables = 
             time_now -= minute * 60
             second = int(time_now)
             date_str_unformatted = f"{year}-{month}-{date} {int(itime[:2]) + hour}:{int(itime[2:]) + minute}:{second}"
-            datetime_date = datetime.strptime(
-                date_str_unformatted, "%Y-%m-%d %H:%M:%S"
-            )
+            datetime_date = datetime.strptime(date_str_unformatted, "%Y-%m-%d %H:%M:%S")
             datetime_times.append(datetime_date)
 
             # declare the units from the initial time
             if ind == 0:
                 date_str_formatted = datetime.strftime(
                     datetime_date, "%Y-%m-%d %H:%M:%S"
-                    )                
+                )
                 dataset.attrs["date"] = f"minutes since {date_str_formatted}"
-        
 
         DT = times[1:] - times[:-1]
         if sum(~(DT == DT[0])) != 0:

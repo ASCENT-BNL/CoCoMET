@@ -6,11 +6,13 @@ import numpy as np
 import xarray as xr
 from tqdm import tqdm
 
+
 # Calculate nearest item in list to given pivot
 def find_nearest(array: np.ndarray, pivot) -> int:
     array = np.asarray(array)
     idx = (np.abs(array - pivot)).argmin()
     return idx
+
 
 # TODO: This file needs a lot more explanation
 def rams_calculate_brightness_temp(rams_xarray: xr.Dataset) -> xr.DataArray:
@@ -53,7 +55,7 @@ def rams_calculate_brightness_temp(rams_xarray: xr.Dataset) -> xr.DataArray:
 
 
 def rams_calculate_precip_rate(
-    rams_xarray: xr.Dataset, calculation_type : str | None = None
+    rams_xarray: xr.Dataset, calculation_type: str | None = None
 ) -> xr.DataArray:
     """
 
@@ -95,33 +97,65 @@ def rams_calculate_precip_rate(
 
     # based on the calculation type, calculate precipitation rate
     if calculation_type == "surface time averaged precipitation rate":
-        accumulated_rainfall_vars = ["ACCPR", "ACCPP", "ACCPS", "ACCPA", "ACCPG", "ACCPH", "ACCPD", "ACONPR", "ACCPIP", "ACCPIC", "ACCPID"]
+        accumulated_rainfall_vars = [
+            "ACCPR",
+            "ACCPP",
+            "ACCPS",
+            "ACCPA",
+            "ACCPG",
+            "ACCPH",
+            "ACCPD",
+            "ACONPR",
+            "ACCPIP",
+            "ACCPIC",
+            "ACCPID",
+        ]
 
         if "ACCPR" not in rams_xarray:
-            raise Exception("If calculating precipitation with accumulation variables, ACCPR must be present")
+            raise Exception(
+                "If calculating precipitation with accumulation variables, ACCPR must be present"
+            )
 
         total_accumulation = rams_xarray["ACCPR"]
         for avar in accumulated_rainfall_vars[1:]:
             if avar in rams_xarray:
                 total_accumulation += rams_xarray[avar]
-        
+
         pr = np.zeros_like(total_accumulation)
-        
+
         for tt in tqdm(
             range(pr.shape[0] - 1),
             desc="=====Calculating RAMS Precipitation Rate=====",
-            total=pr.shape[0] - 1
+            total=pr.shape[0] - 1,
         ):
-            pr[tt] = (total_accumulation[tt] - total_accumulation[tt - 1]) / rams_xarray.DT # in kg / m^2 / s
+            pr[tt] = (
+                total_accumulation[tt] - total_accumulation[tt - 1]
+            ) / rams_xarray.DT  # in kg / m^2 / s
 
         # pr = pr / 1000 * 1000 # convert to mm / s, (kg / m^2 / s) * (1/1000 m^3/kg) * (1000 mm / m)
-        pr = xr.DataArray(pr, dims=["Time", "south_north", "west_east"]).chunk(rams_xarray["TOPT"].chunksizes)
+        pr = xr.DataArray(pr, dims=["Time", "south_north", "west_east"]).chunk(
+            rams_xarray["TOPT"].chunksizes
+        )
 
     elif calculation_type == "surface instantaneous precipitation rate":
-        instantaneous_rainfall_vars = ["PCPRR", "PCPRP", "PCPRS", "PCPRA", "PCPRG", "PCPRH", "PCPRD", "CONPRR", "PCPRIP", "PCPRIC", "PCPRID"]
-            
+        instantaneous_rainfall_vars = [
+            "PCPRR",
+            "PCPRP",
+            "PCPRS",
+            "PCPRA",
+            "PCPRG",
+            "PCPRH",
+            "PCPRD",
+            "CONPRR",
+            "PCPRIP",
+            "PCPRIC",
+            "PCPRID",
+        ]
+
         if "PCPRR" not in rams_xarray:
-            raise Exception("If calculating precipitation with instantaneous variables, PCPRR must be present")
+            raise Exception(
+                "If calculating precipitation with instantaneous variables, PCPRR must be present"
+            )
 
         pr = rams_xarray["PCPRR"]
         for avar in instantaneous_rainfall_vars[1:]:
@@ -131,10 +165,24 @@ def rams_calculate_precip_rate(
         pr = pr.chunk(rams_xarray["TOPT"].chunksizes)
 
     elif calculation_type == "volumetric instantaneous precipitation rate":
-        instantaneous_rainfall_vars = ["PCPVR", "PCPVP", "PCPVS", "PCPVA", "PCPVG", "PCPVH", "PCPVD", "CONPRR", "PCPVIP", "PCPVIC", "PCPVID"]
-            
+        instantaneous_rainfall_vars = [
+            "PCPVR",
+            "PCPVP",
+            "PCPVS",
+            "PCPVA",
+            "PCPVG",
+            "PCPVH",
+            "PCPVD",
+            "CONPRR",
+            "PCPVIP",
+            "PCPVIC",
+            "PCPVID",
+        ]
+
         if "PCPVR" not in rams_xarray:
-            raise Exception("If calculating precipitation with the volumetric instantaneous variables, PCPVR must be present")
+            raise Exception(
+                "If calculating precipitation with the volumetric instantaneous variables, PCPVR must be present"
+            )
 
         pr = rams_xarray["PCPVR"]
         for avar in instantaneous_rainfall_vars[1:]:

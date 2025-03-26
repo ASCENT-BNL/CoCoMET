@@ -86,7 +86,7 @@ def convexity(
 
                 try:
                     convex_hull = sp.ConvexHull(
-                        points=points_proj, qhull_options='QJ Pp'
+                        points=points_proj, qhull_options="QJ Pp"
                     )  # generate convex hull using segmentation coords
                 except:
                     convexities.append(np.NaN)
@@ -146,7 +146,7 @@ def convexity(
 
                 try:
                     convex_hull = sp.ConvexHull(
-                        points=points, qhull_options='QJ Pp'
+                        points=points, qhull_options="QJ Pp"
                     )  # generate convex hull using segmentation coords
                     convex_perim = convex_hull.area  # extract perimeter
                 except:

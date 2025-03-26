@@ -95,7 +95,7 @@ def wrf_load_netcdf_iris(
         if "bounds" in CONFIG["wrf"]:
             # If it is idealized data, print a warning
             if "is_idealized" in CONFIG["wrf"]:
-                if CONFIG["wrf"]["is_idealized"]:      
+                if CONFIG["wrf"]["is_idealized"]:
                     logging.warning("!=====Setting bounds for idealized data=====!")
 
             mask_lon = (wrf_xarray.XLONG >= CONFIG["wrf"]["bounds"][0]) & (

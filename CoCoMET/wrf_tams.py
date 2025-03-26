@@ -11,7 +11,7 @@ from .wrf_calculate_products import (
 
 
 def wrf_run_tams(
-    wrf_xarray: xr.Dataset, 
+    wrf_xarray: xr.Dataset,
     CONFIG: dict,
 ) -> tuple[gpd.GeoDataFrame, tuple]:
     """
@@ -50,7 +50,7 @@ def wrf_run_tams(
     )
     wrf_for_tams_copy["ctt"].chunk(wrf_xarray["XLAT"].chunksizes)
     wrf_xarray = wrf_xarray.assign(TB=wrf_for_tams_copy["ctt"])
-    
+
     # # if precipitation rate is already in wrf_xarray use it
     # if "PR" not in wrf_xarray:
     #     pr = xr.DataArray(
@@ -58,10 +58,9 @@ def wrf_run_tams(
     #         dims=["Time", "south_north", "west_east"],
     #     )
 
-
     # else:
     #     wrf_for_tams_copy["pr"] = wrf_xarray["PR"]
-    
+
     # wrf_for_tams_copy["pr"] = pr.assign_attrs(
     #     {"long_name": "Precipitation rate", "units": "mm h-1"}
     # )

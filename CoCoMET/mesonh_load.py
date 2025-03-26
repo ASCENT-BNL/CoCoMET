@@ -12,8 +12,8 @@ Created on Fri Jun 21 18:01:16 2024
 
 import datetime
 import glob
-import os
 import logging
+import os
 
 import iris
 import iris.cube
@@ -176,7 +176,7 @@ def mesonh_load_netcdf_iris(
     if "bounds" in CONFIG["mesonh"]:
         # If it is idealized data, print a warning
         if "is_idealized" in CONFIG["mesonh"]:
-            if CONFIG["mesonh"]["is_idealized"]:      
+            if CONFIG["mesonh"]["is_idealized"]:
                 logging.warning("!=====Setting bounds for idealized data=====!")
 
         mask_lon = (mesonh_xarray.lon >= CONFIG["mesonh"]["bounds"][0]) & (
@@ -216,7 +216,7 @@ def mesonh_load_netcdf_iris(
 
         # Add altitudes as another data variable
         mesonh_xarray["altitudes"] = (["z"], correct_alts)
-        
+
     elif tracking_var.lower() == "tb":
         # Brightness temperature is only 2d so no heights needed
         mesonh_xarray["TB"] = (
@@ -251,7 +251,7 @@ def mesonh_load_netcdf_iris(
 
         # Add altitudes as another data variable
         mesonh_xarray["altitudes"] = (["z"], correct_alts)
-        
+
     elif tracking_var.lower() == "pr":
         # precipitation rate is only 2d so no heights needed
         mesonh_xarray["PR"] = mesonh_xarray["pcp_rate"]
