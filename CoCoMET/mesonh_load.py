@@ -12,6 +12,7 @@ Created on Fri Jun 21 18:01:16 2024
 
 import datetime
 import glob
+import logging
 import os
 
 import iris
@@ -171,6 +172,22 @@ def mesonh_load_netcdf_iris(
     )
     mesonh_xarray = mesonh_xarray.unify_chunks()
 
+    # mesonh should be in CONFIG from previous check, check bounds after lat/lon correction
+    if "bounds" in CONFIG["mesonh"]:
+        # If it is idealized data, print a warning
+        if "is_idealized" in CONFIG["mesonh"]:
+            if CONFIG["mesonh"]["is_idealized"]:
+                logging.warning("!=====Setting bounds for idealized data=====!")
+
+        mask_lon = (mesonh_xarray.lon >= CONFIG["mesonh"]["bounds"][0]) & (
+            mesonh_xarray.lon <= CONFIG["mesonh"]["bounds"][1]
+        )
+        mask_lat = (mesonh_xarray.lat >= CONFIG["mesonh"]["bounds"][2]) & (
+            mesonh_xarray.lat <= CONFIG["mesonh"]["bounds"][3]
+        )
+
+        mesonh_xarray = mesonh_xarray.where(mask_lon & mask_lat, drop=True)
+
     dx, dy = guess_horizontal_spacing(mesonh_xarray, filename)
 
     # Add projection x and y coordinates to MesoNH
@@ -196,6 +213,9 @@ def mesonh_load_netcdf_iris(
         mesonh_xarray["DBZ"] = mesonh_xarray["DBZ"].assign_coords(
             altitude=("z", correct_alts)
         )
+
+        # Add altitudes as another data variable
+        mesonh_xarray["altitudes"] = (["z"], correct_alts)
 
     elif tracking_var.lower() == "tb":
         # Brightness temperature is only 2d so no heights needed
@@ -229,6 +249,9 @@ def mesonh_load_netcdf_iris(
             altitude=("z", correct_alts)
         )
 
+        # Add altitudes as another data variable
+        mesonh_xarray["altitudes"] = (["z"], correct_alts)
+
     elif tracking_var.lower() == "pr":
         # precipitation rate is only 2d so no heights needed
         mesonh_xarray["PR"] = mesonh_xarray["pcp_rate"]
@@ -258,6 +281,9 @@ def mesonh_load_netcdf_iris(
                 mesonh_xarray[tracking_var] = mesonh_xarray[tracking_var].assign_coords(
                     altitude=("z", correct_alts)
                 )
+
+                # Add altitudes as another data variable
+                mesonh_xarray["altitudes"] = (["z"], correct_alts)
 
         except:
             raise Exception(

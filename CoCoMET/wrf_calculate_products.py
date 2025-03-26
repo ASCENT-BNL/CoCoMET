@@ -81,8 +81,11 @@ def wrf_calculate_reflectivity(wrf_xarray: xr.Dataset) -> xr.DataArray:
         Z_e = Z_er + Z_es + Z_eg
 
         # Make sure minimum value is -30dBZ and remove any NaNs (replace NaNs with -30dBZ)
-        Z_e.values = np.clip(Z_e.values, 0.001, 1e99)
-        np.nan_to_num(Z_e.values, copy=False, nan=0.001)
+        # Z_e.values = np.clip(Z_e.values, 0.001, 1e99)
+        # np.nan_to_num(Z_e.values, copy=False, nan=0.001)
+
+        Z_e = Z_e.clip(0.001, 1e99)
+        # np.nan_to_num(Z_e.values, copy=False, nan=0.001)
 
         dBZ = 10 * np.log10(Z_e)
 

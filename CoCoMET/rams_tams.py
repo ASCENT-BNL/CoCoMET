@@ -7,6 +7,7 @@ from .rams_calculate_products import (
     rams_calculate_brightness_temp,
     rams_calculate_precip_rate,
 )
+from .rams_load import rams_load_netcdf_iris
 from .TAMS import run
 
 
@@ -38,23 +39,27 @@ def rams_run_tams(
     # if brightness temperature is already in rams_xarray use it
     if "TB" not in rams_xarray:
         tb = rams_calculate_brightness_temp(rams_xarray)
-        rams_for_tams_copy["ctt"] = tb.assign_attrs(
-            {"long_name": "Brightness temperature", "units": "K"}
-        )
-        rams_for_tams_copy["ctt"].chunk(rams_xarray["TOPT"].chunksizes)
-        rams_xarray = rams_xarray.assign(TB=rams_for_tams_copy["ctt"])
+
     else:
         tb = rams_xarray["TB"]
 
-    # if precipitation rate is already in rams_xarray use it
-    if "PR" not in rams_xarray:
-        pr = rams_calculate_precip_rate(rams_xarray)
-        rams_for_tams_copy["pr"] = pr.assign_attrs(
-            {"long_name": "Precipitation rate", "units": "mm h-1"}
-        )
-        rams_for_tams_copy["pr"].chunk(rams_xarray["TOPT"].chunksizes)
-    else:
-        pr = rams_xarray["PR"]
+    rams_for_tams_copy["ctt"] = tb.assign_attrs(
+        {"long_name": "Brightness temperature", "units": "K"}
+    )
+    rams_for_tams_copy["ctt"].chunk(rams_xarray["TOPT"].chunksizes)
+    rams_xarray = rams_xarray.assign(TB=rams_for_tams_copy["ctt"])
+
+    # # if precipitation rate is already in rams_xarray use it
+    # if "PR" not in rams_xarray:
+    #     pr = rams_load_netcdf_iris(CONFIG["rams"]["path_to_data"], "PR", CONFIG["rams"]["path_to_header"], CONFIG)[1]["PR"] # TODO: it is cumbersome to reload the rams_xarray just to calculate precipitation. This needs major reworking
+
+    # else:
+    #     pr = rams_xarray["PR"]
+
+    # rams_for_tams_copy["pr"] = pr.assign_attrs(
+    #     {"long_name": "Precipitation rate", "units": "mm h-1"}
+    # )
+    # rams_for_tams_copy["pr"].chunk(rams_xarray["TOPT"].chunksizes)
 
     # format the times into a list of datetime objects
     dt = rams_xarray.DT

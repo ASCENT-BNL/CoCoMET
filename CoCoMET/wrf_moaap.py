@@ -53,11 +53,11 @@ def wrf_run_moaap(wrf_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
     # Get basic setup variables including lat/lon, delta time, a pandas time range vector (TODO: adjust output to )
     latitudes = wrf_xarray.XLAT[0].values
     longitudes = wrf_xarray.XLONG[0].values
-    dt = wrf_xarray.DT
+    dt = wrf_xarray.DT  # in s
     times = pd.date_range(
-        start=wrf_xarray.XTIME[0].values,
-        end=wrf_xarray.XTIME[-1].values,
-        freq=str(dt) + "min",
+        start=wrf_xarray.XTIME[0].values,  # .astype('datetime64[s]'),
+        end=wrf_xarray.XTIME[-1].values,  # .astype('datetime64[s]'),
+        freq=str(dt / 60) + "min",
     )
     mask = np.ones(latitudes.shape)
 
@@ -138,7 +138,7 @@ def wrf_run_moaap(wrf_xarray: xr.Dataset, CONFIG: dict) -> xr.Dataset:
         longitudes,
         latitudes,
         times,
-        dt / 3600,
+        dt / 3600,  # convert to hr
         mask,
         DataName="CoMET_WRF_MOAAP_TRACKING",
         OutputFolder=CONFIG["wrf"]["moaap"]["tracking_save_path"],

@@ -93,10 +93,24 @@ def standard_radar_load_netcdf_iris(
                     radar_xarray.lat >= CONFIG["standard_radar"]["bounds"][2]
                 ) & (radar_xarray.lat <= CONFIG["standard_radar"]["bounds"][3])
 
-                radar_xarray = radar_xarray.where(mask_lon & mask_lat, drop=True)
+                try:
+                    radar_xarray = radar_xarray.where(mask_lon & mask_lat, drop=True)
+                except:
+                    radar_xarray = radar_xarray.where(
+                        np.logical_and(mask_lon, mask_lat).compute(), drop=True
+                    )
 
         else:
             raise Exception("""!=====CONFIG Missing "standard_radar" Field=====!""")
+
+        # Create DT attribute
+        dt_array = (
+            np.diff(radar_xarray.time.values).astype("timedelta64[s]").astype(int)
+        )
+        if len(np.unique(dt_array)) != 1:
+            radar_xarray.attrs["DT"] = dt_array
+        else:
+            radar_xarray.attrs["DT"] = dt_array[0]
 
         first_time = radar_xarray.time.values[0]
 
@@ -116,20 +130,25 @@ def standard_radar_load_netcdf_iris(
             }
         )
 
+        # if not("projection_x_coordinate" in radar_xarray.coords) and not("projection_y_coordinate" in radar_xarray.coords):
+
         radar_xarray = radar_xarray.assign_coords(
             projection_x_coordinate=("x", radar_xarray.proj_x.values),
             projection_y_coordinate=("y", radar_xarray.proj_y.values),
         )
 
-        radar_xarray[
-            "projection_x_coordinate"
-        ] = radar_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-        radar_xarray[
-            "projection_y_coordinate"
-        ] = radar_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+        radar_xarray["projection_x_coordinate"] = (
+            radar_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+        )
+        radar_xarray["projection_y_coordinate"] = (
+            radar_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+        )
 
         # Drop altitude coordinate temporarily when making iris cube
-        radar_xarray = radar_xarray.drop_vars(["altitude", "proj_x", "proj_y"])
+        drop_variables = ["altitude", "proj_x", "proj_y"]
+        for dv in drop_variables:
+            if dv in radar_xarray.coords:
+                radar_xarray = radar_xarray.drop_vars(dv)
         radar_cube = radar_xarray.to_iris()
 
         radar_xarray = radar_xarray.assign_coords(altitude=("z", radar_xarray.z.values))

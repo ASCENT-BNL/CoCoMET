@@ -28,7 +28,7 @@ from .irregularity.projection_calc_3d import (
 
 def merge_split(
     analysis_object: dict,
-    segmentation_type: str = "2d",
+    merge_analysis_type: str = "2d",
     **args: dict,
 ) -> tuple[pd.DataFrame, pd.DataFrame] | None:
     """
@@ -38,7 +38,7 @@ def merge_split(
     ----------
     analysis_object : dict
         Standard CoCoCoMET-US Analysis_Object.
-    segmentation_type : str, optional
+    merge_analysis_type : str, optional
         Type of merging and splitting to analyze. The default is "2d".
     **args : dict
         Throw away args.
@@ -58,15 +58,19 @@ def merge_split(
     """
 
     if (
-        segmentation_type.lower() == "3d"
+        merge_analysis_type.lower() == "3d"
         and analysis_object["US_segmentation_3d"] is not None
     ):
+
         merge_df, split_df = _merge_split_3d(analysis_object, **args)
+
     elif (
-        segmentation_type.lower() == "2d"
+        merge_analysis_type.lower() == "2d"
         and analysis_object["US_segmentation_2d"] is not None
     ):
+
         merge_df, split_df = _merge_split_2d(analysis_object, **args)
+
     else:
         raise ValueError("!=====Missing Desired Segmentation Input=====!")
 
@@ -93,6 +97,7 @@ def _merge_split_2d(
     radius_multiplyer: float = 0.1,
     overlap_threshold: float = 0.5,
     steps_forward_back: int = 2,
+    height: int | None = None,
     **args: dict,
 ) -> tuple[pd.DataFrame, pd.DataFrame] | None:
     """
@@ -124,6 +129,8 @@ def _merge_split_2d(
         The amount two cells need to overlap [0 to 1]. The default is 0.5.
     steps_forward_back : int, optional
         The number of steps to look forward or back to detect mergers/splitters. The default is 2.
+    height:
+        The height in km to calculate mergers and splitters at in 2D if variable if 3D. The default is None.
     **args : dict
         Throw away params.
 
@@ -131,6 +138,7 @@ def _merge_split_2d(
     ------
     Exception
         Exception if missing segmentation input.
+        Exception if variable is 3D and height is None.
 
     Returns
     -------
@@ -170,6 +178,23 @@ def _merge_split_2d(
 
     elif analysis_object["US_segmentation_2d"] is not None:
         footprint_data = analysis_object["US_segmentation_2d"].Feature_Segmentation
+
+        # if there is a 3D variable field, but only 2D segmentation, reduce the variable field dimensionality
+        if (
+            len(variable_field.shape) == 4 and variable_field.shape[1] != 1
+        ):  # radar observations are 2D, but still have a z axis
+            if height is None:
+                raise Exception(
+                    '2D merging and splitting on a 3D variable requires a "height" parameter. Either do 3D merging and splitting or set height'
+                )
+
+            try:  # TODO: reconcile this later, the models have attribute altitudes, but the observations have attribute altitude
+                altitudes = analysis_object["segmentation_xarray"]["altitude"]
+            except:
+                altitudes = analysis_object["segmentation_xarray"]["altitudes"]
+
+            vf_height_index = find_nearest(altitudes, height * 1000)
+            variable_field = variable_field[:, vf_height_index]
 
     else:
         raise ValueError("!=====Missing Segmentation Input=====!")

@@ -122,11 +122,9 @@ def CoCoMET_start(
     start_time = time.perf_counter()
 
     # Create empty dictionaries for each data type
-    wrf_data = (
-        mesonh_data
-    ) = (
-        nexrad_data
-    ) = multi_nexrad_data = standard_radar_data = rams_data = goes_data = {}
+    wrf_data = mesonh_data = nexrad_data = multi_nexrad_data = standard_radar_data = (
+        rams_data
+    ) = goes_data = {}
 
     # if wrf is present in CONFIG, run the necessary wrf functions
     if "wrf" in CONFIG:
@@ -807,6 +805,11 @@ def run_goes(
     if "tobac" in CONFIG["goes"]:
         user_return_dict, tracking_info = run_tracker(
             "goes", "tobac", user_return_dict, tracking_info, CONFIG
+        )
+
+    if "tams" in CONFIG["goes"]:
+        user_return_dict, tracking_info = run_tracker(
+            "goes", "tams", user_return_dict, tracking_info, CONFIG
         )
 
     # Send return dict to queue if there is a queue object passed

@@ -413,6 +413,13 @@ def multi_nexrad_load_netcdf_iris(
                 model_level_number=("z", np.arange(nexrad_xarray.shape[1])),
             )
 
+            # Create DT attribute
+            dt_array = np.diff(nexrad_xarray.time.values)
+            if len(np.unique(dt_array)) != 1:
+                nexrad_xarray.attrs["DT"] = dt_array * 60  # min -> s
+            else:
+                nexrad_xarray.attrs["DT"] = dt_array[0] * 60  # min -> s
+
             # Adjust dimension names to be standards accepted by iris
             nexrad_xarray["time"] = nexrad_xarray.time.assign_attrs(
                 {
@@ -430,12 +437,12 @@ def multi_nexrad_load_netcdf_iris(
             nexrad_xarray["lon"] = nexrad_xarray.lon.assign_attrs(
                 {"standard_name": "longitude"}
             )
-            nexrad_xarray[
-                "projection_x_coordinate"
-            ] = nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-            nexrad_xarray[
-                "projection_y_coordinate"
-            ] = nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+            nexrad_xarray["projection_x_coordinate"] = (
+                nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+            )
+            nexrad_xarray["projection_y_coordinate"] = (
+                nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+            )
 
             # Add altitude dimension to xarray but not to cube
             nexrad_cube = nexrad_xarray.to_iris()
@@ -532,6 +539,13 @@ def multi_nexrad_load_netcdf_iris(
                 model_level_number=("z", np.arange(nexrad_xarray.shape[1])),
             )
 
+            # Create DT attribute
+            dt_array = np.diff(nexrad_xarray.time.values)
+            if len(np.unique(dt_array)) != 1:
+                nexrad_xarray.attrs["DT"] = dt_array * 60  # min -> s
+            else:
+                nexrad_xarray.attrs["DT"] = dt_array[0] * 60  # min -> s
+
             # Adjust dimension names to be standards accepted by iris
             nexrad_xarray["time"] = nexrad_xarray.time.assign_attrs(
                 {
@@ -549,12 +563,12 @@ def multi_nexrad_load_netcdf_iris(
             nexrad_xarray["lon"] = nexrad_xarray.lon.assign_attrs(
                 {"standard_name": "longitude"}
             )
-            nexrad_xarray[
-                "projection_x_coordinate"
-            ] = nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-            nexrad_xarray[
-                "projection_y_coordinate"
-            ] = nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+            nexrad_xarray["projection_x_coordinate"] = (
+                nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+            )
+            nexrad_xarray["projection_y_coordinate"] = (
+                nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+            )
 
             # Add altitude dimension to xarray but not to cube
             nexrad_cube = nexrad_xarray.to_iris()
@@ -714,12 +728,12 @@ def multi_nexrad_load_netcdf(
             nexrad_xarray["lon"] = nexrad_xarray.lon.assign_attrs(
                 {"standard_name": "longitude"}
             )
-            nexrad_xarray[
-                "projection_x_coordinate"
-            ] = nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-            nexrad_xarray[
-                "projection_y_coordinate"
-            ] = nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+            nexrad_xarray["projection_x_coordinate"] = (
+                nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+            )
+            nexrad_xarray["projection_y_coordinate"] = (
+                nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+            )
             nexrad_xarray["altitude"] = nexrad_xarray.altitude.assign_attrs(
                 {"standard_name": "altitude", "units": "m"}
             )
@@ -818,12 +832,12 @@ def multi_nexrad_load_netcdf(
             nexrad_xarray["lon"] = nexrad_xarray.lon.assign_attrs(
                 {"standard_name": "longitude"}
             )
-            nexrad_xarray[
-                "projection_x_coordinate"
-            ] = nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-            nexrad_xarray[
-                "projection_y_coordinate"
-            ] = nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+            nexrad_xarray["projection_x_coordinate"] = (
+                nexrad_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+            )
+            nexrad_xarray["projection_y_coordinate"] = (
+                nexrad_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+            )
             nexrad_xarray["altitude"] = nexrad_xarray.altitude.assign_attrs(
                 {"standard_name": "altitude", "units": "m"}
             )

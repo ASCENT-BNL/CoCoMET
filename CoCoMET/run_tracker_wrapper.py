@@ -9,7 +9,9 @@ from CoCoMET.analysis.analysis_object import Analysis_Object
 from CoCoMET.analysis.calc_var import calc_var
 from CoCoMET.post_processor import filter_cells
 
+# Observations
 from .goes_load import goes_load_netcdf_iris
+from .goes_tams import goes_run_tams
 from .goes_tobac import (
     goes_tobac_feature_id,
     goes_tobac_linking,
@@ -38,8 +40,6 @@ from .nexrad_tobac import (
 )
 from .rams_calculate_products import rams_calculate_reflectivity
 from .rams_load import rams_load_netcdf_iris
-
-# Loading these is not memory or time intensive and is best practice to do so in the file header.
 from .rams_moaap import rams_run_moaap
 from .rams_tams import rams_run_tams
 from .rams_tobac import (
@@ -62,11 +62,16 @@ from .tracker_output_translation_layer import (
     linking_to_US,
     segmentation_to_US,
 )
+
+# Models
 from .wrf_calculate_products import wrf_calculate_reflectivity
 from .wrf_load import wrf_load_netcdf_iris
 from .wrf_moaap import wrf_run_moaap
 from .wrf_tams import wrf_run_tams
 from .wrf_tobac import wrf_tobac_feature_id, wrf_tobac_linking, wrf_tobac_segmentation
+
+# Loading these is not memory or time intensive and is best practice to do so in the file header.
+
 
 ################################################################
 #################### RUN TRACKING PROGRAMS #####################
@@ -329,6 +334,13 @@ def _run_tracker_det_and_seg(
                 tracking_xarray, CONFIG
             )
 
+            try:  # TODO: the models and observations have different naming conventions for their projection coordinates
+                projection_x = tracking_xarray.PROJX.values
+                projection_y = tracking_xarray.PROJY.values
+            except:
+                projection_x = tracking_xarray.projection_x_coordinate.values
+                projection_y = tracking_xarray.projection_y_coordinate.values
+
             # Convert output to US and check if is None
             if tracker == "tams":
                 tams_output, latlon_coord_system = mask_output
@@ -339,16 +351,16 @@ def _run_tracker_det_and_seg(
                     US_values = bulk_tams_to_US(
                         tams_output,
                         latlon_coord_system,
-                        tracking_xarray.PROJX.values,
-                        tracking_xarray.PROJY.values,
+                        projection_x,
+                        projection_y,
                         convert_type=CONFIG[dataset_name]["tams"]["analysis_type"],
                     )
 
             elif tracker == "moaap":
                 US_values = bulk_moaap_to_US(
                     mask_output,
-                    tracking_xarray.PROJX.values,
-                    tracking_xarray.PROJY.values,
+                    projection_x,
+                    projection_y,
                     convert_type=CONFIG[dataset_name][tracker]["analysis_type"],
                 )
 
@@ -409,7 +421,7 @@ def _tobac_analysis(
         # Place the analysis variables which help calculate other variables first in the list if they are to be calculated
         analysis_dict = CONFIG[dataset_name]["tobac"]["analysis"]
         analysis_keys = list(analysis_dict.keys())
-        depended_variables = ["volume", "perimeter", "eth"]
+        depended_variables = ["volume", "perimeter", "area"]
 
         for dep_var in depended_variables:
             if dep_var in analysis_keys:
@@ -420,12 +432,10 @@ def _tobac_analysis(
 
         # Calcaulte each variable of interest and append to analysis data array
         for var in analysis_vars:
-            # Make sure that ETH is calculated with reflectivity
-            if var == "eth":
-                CONFIG[dataset_name]["tobac"]["analysis"][var]["variable"] = "DBZ"
 
             # Add default tracking featured_id variable in place of variable if not present
-            elif "variable" not in CONFIG[dataset_name]["tobac"]["analysis"][var]:
+            if "variable" not in CONFIG[dataset_name]["tobac"]["analysis"][var]:
+
                 CONFIG[dataset_name]["tobac"]["analysis"][var]["variable"] = CONFIG[
                     dataset_name
                 ]["feature_tracking_var"].upper()

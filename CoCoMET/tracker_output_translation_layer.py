@@ -860,9 +860,6 @@ def _points_from_polygons(polygons):
 
 
 def _return_gridpoints(points, latlon_coord_system):
-    # geom = ce.geometry[0]
-    # grid = partition(geom, 0.1)
-    # points = points_from_polygons(grid)
     gridpoints = []
     latcoords = latlon_coord_system[0].values[0]
     loncoords = latlon_coord_system[1].values[0]

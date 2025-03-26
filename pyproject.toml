@@ -24,6 +24,11 @@ dependencies = [
 ]
 authors = [
   { name="Travis Hahn", email="travis.hahn@psu.edu" },
+  { name="Hershel Weiner" },
+  { name="Calvin Brooks" },
+  { name="Jie Xi Li" },
+  { name="Siddhant Gupta" },
+  { name="Die Wang" }
 ]
 description = "Community Convective cloud Model Evaluation Toolkit (CoCoMET)"
 readme = "README.md"

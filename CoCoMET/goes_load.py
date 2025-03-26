@@ -192,12 +192,12 @@ def goes_load_netcdf_iris(
         goes_xarray["lon"] = goes_xarray.lon.assign_attrs(
             {"standard_name": "longitude"}
         )
-        goes_xarray[
-            "projection_x_coordinate"
-        ] = goes_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-        goes_xarray[
-            "projection_y_coordinate"
-        ] = goes_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+        goes_xarray["projection_x_coordinate"] = (
+            goes_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+        )
+        goes_xarray["projection_y_coordinate"] = (
+            goes_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+        )
 
         return (goes_xarray.to_iris(), goes_xarray)
 
@@ -323,12 +323,12 @@ def goes_load_netcdf(
         goes_xarray["lon"] = goes_xarray.lon.assign_attrs(
             {"standard_name": "longitude"}
         )
-        goes_xarray[
-            "projection_x_coordinate"
-        ] = goes_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
-        goes_xarray[
-            "projection_y_coordinate"
-        ] = goes_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+        goes_xarray["projection_x_coordinate"] = (
+            goes_xarray.projection_x_coordinate.assign_attrs({"units": "m"})
+        )
+        goes_xarray["projection_y_coordinate"] = (
+            goes_xarray.projection_y_coordinate.assign_attrs({"units": "m"})
+        )
 
         return goes_xarray
 

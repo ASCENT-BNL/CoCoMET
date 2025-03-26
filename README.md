@@ -30,7 +30,6 @@ Community Cloud Model Evaluation Toolkit.
       1. Updraft velcoity  
       1. Any MesoNH variables in the dataset (case sensitive)
    1. MOAAP tracking of MCSs and cloud shields
-   1. TAMS tracking of MCSs and cloud shields  
 1. **NEXRAD**:  
    1. Automatically grid radars  
    1. tobac tracking of variables:  
@@ -48,12 +47,8 @@ Community Cloud Model Evaluation Toolkit.
 1. **Analysis**:  
    1. Calculates areas at given height  
    1. Calculates volume  
-   1. Calculates echo top heights (or any variable maximum height exceeding a threshold)
-   1. Calculates the maximum intensity of any variable over the cell
-   1. Calculates feature perimeter and surface area
-   1. Calculates the cell growth and decay rates
-   1. Calculated cell shape irregularity
-   1. Identifies mergers and splitters in 2D and 3D
+   1. Calculates echo top heights  
+   1. Identifies mergers and splitters  
    1. Extracts ARM Products:  
       1. Links ARM VAP output to tracks  
       1. Links INTERPSONDE to tracks  
@@ -67,12 +62,13 @@ Community Cloud Model Evaluation Toolkit.
 1. Add IMERG Satellite Data
 1. Calculate ECAPE
 
+
 ## CoCoMET Workflow
 
-<img src="./docs/images/cocomet_workflow.png" alt="Internal Workflow"/>
+<img src="./docs/images/cocomet_workflow.png" alt="User workflow"/>
 
 ## Acknowledgments
 This project was supported by the U.S. Department of Energy (DOE) Early Career Research Program, Atmospheric System Research (ASR) program, 
 and the Office of Workforce Development for Teachers and Scientists (WDTS) under the Science Undergraduate Laboratory Internships Program (SULI).
 
-If you are using this software for a publication, please cite: Hahn et al. (2025)
+If you are using this software for a publication, please cite: ####

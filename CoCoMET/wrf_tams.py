@@ -11,7 +11,8 @@ from .wrf_calculate_products import (
 
 
 def wrf_run_tams(
-    wrf_xarray: xr.Dataset, CONFIG: dict
+    wrf_xarray: xr.Dataset,
+    CONFIG: dict,
 ) -> tuple[gpd.GeoDataFrame, tuple]:
     """
 
@@ -41,33 +42,31 @@ def wrf_run_tams(
             wrf_calculate_brightness_temp(wrf_xarray),
             dims=["Time", "south_north", "west_east"],
         )
-        wrf_for_tams_copy["ctt"] = tb.assign_attrs(
-            {"long_name": "Brightness temperature", "units": "K"}
-        )
-        wrf_for_tams_copy["ctt"].chunk(wrf_xarray["XLAT"].chunksizes)
-        wrf_xarray = wrf_xarray.assign(TB=wrf_for_tams_copy["ctt"])
     else:
         wrf_for_tams_copy["ctt"] = wrf_xarray["TB"]
 
-    # if precipitation rate is already in wrf_xarray use it
-    if "PR" not in wrf_xarray:
-        pr = xr.DataArray(
-            wrf_calculate_precip_rate(wrf_xarray),
-            dims=["Time", "south_north", "west_east"],
-        )
-        wrf_for_tams_copy["pr"] = pr.assign_attrs(
-            {"long_name": "Precipitation rate", "units": "mm h-1"}
-        )
-        wrf_for_tams_copy["pr"].chunk(wrf_xarray["XLAT"].chunksizes)
+    wrf_for_tams_copy["ctt"] = tb.assign_attrs(
+        {"long_name": "Brightness temperature", "units": "K"}
+    )
+    wrf_for_tams_copy["ctt"].chunk(wrf_xarray["XLAT"].chunksizes)
+    wrf_xarray = wrf_xarray.assign(TB=wrf_for_tams_copy["ctt"])
 
-        wrf_for_tams_copy
-    else:
-        wrf_for_tams_copy["pr"] = wrf_xarray["PR"]
+    # # if precipitation rate is already in wrf_xarray use it
+    # if "PR" not in wrf_xarray:
+    #     pr = xr.DataArray(
+    #         wrf_calculate_precip_rate(wrf_xarray),
+    #         dims=["Time", "south_north", "west_east"],
+    #     )
+
+    # else:
+    #     wrf_for_tams_copy["pr"] = wrf_xarray["PR"]
+
+    # wrf_for_tams_copy["pr"] = pr.assign_attrs(
+    #     {"long_name": "Precipitation rate", "units": "mm h-1"}
+    # )
+    # wrf_for_tams_copy["pr"].chunk(wrf_xarray["XLAT"].chunksizes)
 
     # format the times into a list of datetime objects
-    # dt = wrf_xarray.DT
-    # start_date = wrf_xarray.SIMULATION_START_DATE
-    # datetime_start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d_%H:%M:%S")
 
     time = []
     for t in wrf_xarray.XTIME.values:

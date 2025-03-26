@@ -19,6 +19,7 @@ from .calculate_bulk_cell_statistics import (
     calculate_irregularity,
     calculate_max_intensity,
     calculate_perimeter,
+    calculate_surface_area,
     calculate_var_max_height,
     calculate_velocity,
     calculate_volume,
@@ -51,16 +52,18 @@ def calc_var(analysis_object: Analysis_Object, var: str, **args: dict):
 
     Valid Variables
     ---------------
-        "eth",
-        "max_height",
+        "var_max_height",
         "max_intensity",
         "area",
         "volume",
         "velocity",
         "perimeter",
+        "surface_area",
         "cell_growth",
+        "irregularity",
         "merge_split",
         "arm",
+        "convective_indices"
 
     """
 
@@ -72,6 +75,7 @@ def calc_var(analysis_object: Analysis_Object, var: str, **args: dict):
         "volume": calculate_volume,
         "velocity": calculate_velocity,
         "perimeter": calculate_perimeter,
+        "surface_area": calculate_surface_area,
         "cell_growth": calculate_cell_growth,
         "irregularity": calculate_irregularity,
         "merge_split": merge_split,

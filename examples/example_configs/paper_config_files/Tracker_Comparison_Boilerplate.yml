@@ -1,0 +1,88 @@
+# ===========================================Welcome To CoMET===========================================
+# This is where most all functionality of CoMET can be specified. You can change any of the supplied 
+# variables OR you can use a default suite of paramateres setup for different model and observation
+# input types. 
+
+# SETUP VARIABLES: These determine basic CoMET functionality
+verbose: True # Whether to use verbose output
+parallel_processing: True # [bool] Whether or not to use parallel processing for certain tasks
+max_cores: 16 # Number of cores to use if parallel_processing==True; Enter None for unlimited
+
+# Structered in this form:
+# Observation Type:
+#   path_to_data
+#   additional_observation_parameters
+#
+#   tracker:
+#       tracker_params
+#
+#       analysis:
+#           analysis_variables
+        
+# WRF
+wrf:
+    path_to_data: "/D3/data/hweiner/WRF/wrfout_6_19_2013/wrfout*"
+    
+    is_idealized: False
+
+    feature_tracking_var: "TB" #DBZ, TB, WA, PR, Or other WRF Standard variable name (Case-Sensitive)
+    segmentation_var: "TB"
+
+    tobac:
+        feature_id:
+            threshold: [219, 235]
+            target: "maximum"
+            position_threshold: "weighted_diff"
+            sigma_threshold: 0.5
+            n_min_threshold: 4
+            #detect_subset: {1:(29, 47)}
+
+        linking:
+            method_linking: "predict"
+            adaptive_stop: 0.2
+            adaptive_step: 0.95
+            order: 1
+            subnetwork_size: 10
+            memory: 0
+            v_max: 20
+            time_cell_min: 120
+
+        segmentation_2d:
+            height: 2 # km
+            method: "watershed"
+            target: 'maximum'
+            threshold: 30
+    
+        analysis: # Optional
+            area: { height: 2 }
+            velocity: {}
+            perimeter: {}
+            cell_growth: {variable : "area"}
+
+    tams:
+
+        ctt_threshold: 235
+        ctt_core_threshold: 219
+        u_projection: 0
+        parallel: False # there is something weird when you have CoMET parallel processing and TAMS parallel processing at the same time
+
+        analysis_type: "cloud"
+        
+        analysis: # Optional
+            area: { height: 2 }
+            velocity: {}
+            perimeter: {}
+            cell_growth: {variable : "area"}
+
+    moaap:
+        tracking_save_path: "/D3/data/hweiner/Tracker_Comparison/moaap_out/"
+        Cthreshold: 219
+        CL_MaxT: 235
+        
+        analysis_type: "cloud"
+
+        analysis: # Optional
+            area: { height: 2 }
+            velocity: {}
+            perimeter: {}
+            cell_growth: {variable : "area"}
