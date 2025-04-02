@@ -12,7 +12,7 @@ from .projection_calc_3d import point_projection
 def convexity(
     analysis_dict: dict,
     surface_area_df: pd.DataFrame,  # What is this?
-    segmentation_type: str = "3d",
+    segmentation_type: str = None,
 ) -> pd.DataFrame:
     """
 
@@ -24,7 +24,7 @@ def convexity(
     surface_area_df : pd.DataFrame
         ???.
     segmentation_type : str, optional
-        Whether to calculate 2d or 3d convexity. The default is "3d".
+        Whether to calculate 2d or 3d convexity if convexity in irregularity_matrics. If None, will use 3d segmentation if it is available, or 2d segmentation if 3d segmentation is unavailable. The default is None.
 
     Raises
     ------
@@ -41,10 +41,18 @@ def convexity(
     # Returns a value between 0 and 1 which represents the convexity of the cell. Lower convexity represents more irregular edges
     tracks = analysis_dict["US_tracks"]
     tracks_and_perim = tracks.join(surface_area_df)
+
+    if segmentation_type is None:
+        if analysis_dict["US_segmentation_3d"] is not None:
+            segmentation_type = "3d"
+        elif analysis_dict["US_segmentation_2d"] is not None:
+            segmentation_type = "2d"
+        else:
+            raise ValueError("!=====Missing Segmentation Input=====!")
+
     # If 3D segmentation is available, use that
     if (
         segmentation_type.lower() == "3d"
-        and analysis_dict["US_segmentation_3d"] is not None
     ):
         footprint = analysis_dict["US_segmentation_3d"].Feature_Segmentation
         convexities = []
@@ -86,7 +94,7 @@ def convexity(
 
                 try:
                     convex_hull = sp.ConvexHull(
-                        points=points_proj, qhull_options='QJ Pp'
+                        points=points_proj, #qhull_options='QJ Pp'
                     )  # generate convex hull using segmentation coords
                 except:
                     convexities.append(np.NaN)
@@ -113,7 +121,6 @@ def convexity(
     # handle 2D case
     if (
         segmentation_type.lower() == "2d"
-        and analysis_dict["US_segmentation_2d"] is not None
     ):
         footprint_data = analysis_dict["US_segmentation_2d"].Feature_Segmentation
         frame_groups = tracks.groupby("frame")
@@ -146,7 +153,7 @@ def convexity(
 
                 try:
                     convex_hull = sp.ConvexHull(
-                        points=points, qhull_options='QJ Pp'
+                        points=points, #qhull_options='QJ Pp'
                     )  # generate convex hull using segmentation coords
                     convex_perim = convex_hull.area  # extract perimeter
                 except:
@@ -202,5 +209,3 @@ def convexity(
 
     if segmentation_type.lower() != "3d" and segmentation_type.lower() != "2d":
         raise ValueError("!=====Invalid Segmenation Type=====!")
-
-    raise ValueError("!=====Missing Segmentation Input=====!")

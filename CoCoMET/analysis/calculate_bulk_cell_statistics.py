@@ -242,6 +242,7 @@ def calculate_max_intensity(
         if len(feat_group["frame"].values) > 1:
             raise ValueError("More than one frame found per feature")
 
+        # TODO: this code is really slow, make this more efficient
         if feature_id in features_across_footprint:
             one_feat_array = np.where(
                 segmentation[frame].values == feature_id,
@@ -1111,7 +1112,7 @@ def calculate_irregularity(
     irregularity_metrics: str | list[str],
     variable: str | None = None,
     threshold: float | None = None,
-    segmentation_type: str = "3d",
+    segmentation_type: str = None,
     **args: dict,
 ) -> pd.DataFrame:
     """
@@ -1131,7 +1132,7 @@ def calculate_irregularity(
     threshold : float, optional
         Value of which the area should be greater than. The default is None.
     segmentation_type : str, optional
-        Whether to calculate 2d or 3d convexity if convexity in irregularity_matrics. The default is "3d".
+        Whether to calculate 2d or 3d convexity if convexity in irregularity_matrics. If None, will use 3d segmentation if it is available, or 2d segmentation if 3d segmentation is unavailable. The default is None.
     **args : dict
         Throw away variables.
 
