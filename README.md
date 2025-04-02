@@ -1,7 +1,7 @@
 # CoCoMET
 <img src="./docs/images/cocomet_logo.png" alt="Logo" width="200" height="200"/>
 
-Convective cloud Model Evaluation Toolkit.
+Community Cloud Model Evaluation Toolkit.
 
 **Current Features**:
 
@@ -63,13 +63,9 @@ Convective cloud Model Evaluation Toolkit.
 1. Calculate ECAPE
 
 
-## User Workflow
+## CoCoMET Workflow
 
-<img src="./docs/images/comet_user_workflow.png" alt="User workflow"/>
-
-## Internal Workflow
-
-<img src="./docs/images/comet_internal_workflow.png" alt="Internal Workflow"/>
+<img src="./docs/images/cocomet_workflow.png" alt="User workflow"/>
 
 ## Acknowledgments
 This project was supported by the U.S. Department of Energy (DOE) Early Career Research Program, Atmospheric System Research (ASR) program, 

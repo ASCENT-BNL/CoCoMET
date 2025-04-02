@@ -442,9 +442,7 @@ def calculate_interp_sonde_convective_properties(
             delqvl = 0
             if q_p > qs_p:
                 lcl = min(lcl, z[k] / 1e3)  # LCL height [km]
-                delqvl = (q_p - qs_p) / (
-                    1.0 + (qs_p * lv_p**2) / (cpd * Rv * ts_p**2)
-                )
+                delqvl = (q_p - qs_p) / (1.0 + (qs_p * lv_p**2) / (cpd * Rv * ts_p**2))
                 t_p = t_p + (delqvl * lv_p / cpd) / pii[k]
                 q_p = q_p - delqvl
 
@@ -507,12 +505,8 @@ def calculate_interp_sonde_convective_properties(
                 ice_loss = min(q_i, abs((1.0 - ratio) * (q_p - delq)))
                 liq_loss = min(q_l, abs(q_p - delq + ice_loss))
                 ice_loss = min(q_i, ice_loss + (delq - q_p - liq_loss - ice_loss))
-                delqvi = (ice_loss) / (
-                    1.0 + (qsi_p * ls_p**2) / (cpd * Rv * ts_p**2)
-                )
-                delqvl = (liq_loss) / (
-                    1.0 + (qs_p * lv_p**2) / (cpd * Rv * ts_p**2)
-                )
+                delqvi = (ice_loss) / (1.0 + (qsi_p * ls_p**2) / (cpd * Rv * ts_p**2))
+                delqvl = (liq_loss) / (1.0 + (qs_p * lv_p**2) / (cpd * Rv * ts_p**2))
                 t_p = t_p - ((delqvi * ls_p + delqvl * lv_p) / cpd) / (pii[k])
                 q_p = q_p + (delqvi + delqvl)
                 q_l = q_l - delqvl

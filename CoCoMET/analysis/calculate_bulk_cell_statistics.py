@@ -96,7 +96,10 @@ def calculate_var_max_height(
     else:
         raise ValueError("!=====Missing Segmentation Input=====!")
 
-    printout_string = ("Max Heights", "max_height")
+    printout_string = (
+        "Max Heights",
+        "max_height",
+    )  # ?????? what purpose does this serve?
 
     max_height_info = {
         "frame": [],
@@ -213,10 +216,10 @@ def calculate_max_intensity(
             )
 
             features_across_footprint = np.unique(segmentation[:, height_index])[1:]
-        
+
         else:
-            features_across_footprint = np.unique(segmentation)[1:]   
-            
+            features_across_footprint = np.unique(segmentation)[1:]
+
     elif analysis_object["US_segmentation_2d"] is not None:
         segmentation = analysis_object["US_segmentation_2d"].Feature_Segmentation
         features_across_footprint = np.unique(segmentation)[1:]
@@ -490,8 +493,6 @@ def calculate_volume(
 
 def calculate_velocity(
     analysis_object: dict,
-    variable: str | None = None,
-    threshold: float | None = None,
     **args: dict,
 ) -> pd.DataFrame:
     """
@@ -501,10 +502,6 @@ def calculate_velocity(
     ----------
     analysis_object : dict
         A CoCoMET-US standard analysis object containing at least US_tracks and tracking_xarray.
-    variable : str, optional
-        Variable to which we should apply the threshold. The default is None.
-    threshold : float, optional
-        Value of which the area should be greater than. The default is None.
     **args : dict
         Throw away variables.
 
@@ -512,7 +509,6 @@ def calculate_velocity(
     ------
     Exception
         Exception if missing tracks input from the analysis object.
-        Exception if the segmentation data is not 2D or 3D.
 
     Returns
     -------
@@ -524,13 +520,11 @@ def calculate_velocity(
     if analysis_object["US_tracks"] is None:
         raise ValueError("!=====Tracks Data is Required for Velocity Calculation=====!")
 
-    # Check if the code is 3D
-    if analysis_object["US_segmentation_3d"] is not None:
-        dim = 3
-    elif analysis_object["US_segmentation_2d"] is not None:
-        dim = 2
-    else:
-        raise ValueError("!=====Missing Segmentation Input=====!")
+    # Check if altitude values are present
+    dim = 2
+    if "up_down" in analysis_object["US_tracks"]:
+        if np.isfinite(np.nanmax(analysis_object["US_tracks"]["up_down"])):
+            dim = 3
 
     # Get dt
     if ("tracking_xarray" in analysis_object) and (
@@ -548,23 +542,25 @@ def calculate_velocity(
         y1 = row1["projection_y"]
         y2 = row2["projection_y"]
 
-        f2 = row1["frame"]
-        f1 = row2["frame"]
+        # f2 = row1["frame"]
+        # f1 = row2["frame"]
 
-        dt = np.sum(
-            dt_arr[f1:f2]
-        )  # If a cell is not tracked for a frame, account for this (e.x. cell is in frame 1 and 3)
+        t1 = row1["time"]
+        t2 = row2["time"]
+
+        dt = (
+            t2 - t1
+        ).total_seconds()  # If a cell is not tracked for a frame, account for this (e.x. cell is in frame 1 and 3)
 
         distancecomps = ((y2 - y1), (x2 - x1))
         distance = np.sqrt(distancecomps[0] ** 2 + distancecomps[1] ** 2)
 
         velocity = ((y2 - y1) / dt, (x2 - x1) / dt)
         speed = np.sqrt((velocity[0]) ** 2 + (velocity[1]) ** 2)
-        velocity /= speed
 
         if dim == 3:
-            z1 = row1["altitude"]
-            z2 = row2["altitude"]
+            z1 = row1["altitude"] * 1000
+            z2 = row2["altitude"] * 1000
 
             distancecomps = ((z2 - z1), (y2 - y1), (x2 - x1))
             distance = np.sqrt(
@@ -573,7 +569,6 @@ def calculate_velocity(
 
             velocity = ((z2 - z1) / dt, (y2 - y1) / dt, (x2 - x1) / dt)
             speed = np.sqrt(velocity[0] ** 2 + velocity[1] ** 2 + velocity[2] ** 2)
-            velocity /= speed
 
         return (distancecomps, distance, velocity, speed)
 
@@ -582,91 +577,128 @@ def calculate_velocity(
         "frame": [],
         "feature_id": [],
         "cell_id": [],
-        "velocity unit vector": [],  # in m / s
+        "velocity": [],  # in m / s
         "speed": [],  # in m / s
     }
 
     # Make dt into an array
-    if type(dt_from_tracking) == list or type(dt_from_tracking) == np.ndarray:
+    if type(dt_from_tracking) is list or type(dt_from_tracking) is np.ndarray:
         # Check that the number of frames and the number of dt"s are the same
         dt_array = list(dt_from_tracking)  # append the last value from the list
         dt_array.append(dt_from_tracking[-1])
     else:
         dt_array = np.ones(len(np.unique(Tracks["frame"])) + 1) * dt_from_tracking
 
-    for i in tqdm(
-        Tracks.index,
+    for cell in tqdm(
+        Tracks.groupby("cell_id"),
         desc="=====Calculating Cell Velocities=====",
-        total=len(Tracks.index),
+        total=len(np.unique(Tracks.cell_id.values)),
     ):
-        cell_id = Tracks.iloc[i]["cell_id"]
-        frame = Tracks.iloc[i]["frame"]
-        feature_id = Tracks.iloc[i]["feature_id"]
+        for ii in range(len(cell[1].feature_id.values)):
+            # check if last row
+            if ii == (len(cell[1].feature_id.values) - 1):
+                velocity_info["frame"].append(cell[1].iloc[ii].frame)
+                velocity_info["feature_id"].append(cell[1].iloc[ii].feature_id)
+                velocity_info["cell_id"].append(cell[0])
+                velocity_info["velocity"].append(np.nan)
+                velocity_info["speed"].append(np.nan)
+                continue
 
-        velocity_info["frame"].append(frame)
-        velocity_info["feature_id"].append(feature_id)
-        velocity_info["cell_id"].append(cell_id)
+            # else calculate speed / velocity based off of next frame
+            dat_out = calculate_row_velocity(
+                cell[1].iloc[ii], cell[1].iloc[ii + 1], dt_array, dim
+            )
 
-        if Tracks.iloc[i]["frame"] == np.min(Tracks["frame"]) and cell_id != -1:
-            velocity_info["velocity unit vector"].append(tuple(np.zeros(dim)))
-            velocity_info["speed"].append(0)
+            velocity_info["frame"].append(cell[1].iloc[ii].frame)
+            velocity_info["feature_id"].append(cell[1].iloc[ii].feature_id)
+            velocity_info["cell_id"].append(cell[0])
+            velocity_info["velocity"].append(dat_out[-2])
+            velocity_info["speed"].append(dat_out[-1])
 
-        elif cell_id not in Tracks[:i]["cell_id"].values:
+    # for i in tqdm(
+    #     Tracks.index,
+    #     desc="=====Calculating Cell Velocities=====",
+    #     total=len(Tracks.index),
+    # ):
+    #     cell_id = Tracks.iloc[i]["cell_id"]
+    #     frame = Tracks.iloc[i]["frame"]
+    #     feature_id = Tracks.iloc[i]["feature_id"]
 
-            # If this is a new cell, append 0
-            velocity_info["velocity unit vector"].append(tuple(np.zeros(dim)))
-            velocity_info["speed"].append(0)
+    #     velocity_info["frame"].append(frame)
+    #     velocity_info["feature_id"].append(feature_id)
+    #     velocity_info["cell_id"].append(cell_id)
 
-        else:
-            # if the cell is not new, determine velocity from the change in position from previous frame
-            index = np.argwhere(Tracks[:i]["cell_id"].values == cell_id)[-1][
-                0
-            ]  # index of previous row with same cell id
-            velocity_speed = calculate_row_velocity(
-                Tracks.iloc[i], Tracks.iloc[index], dt_array, dim
-            )[2:]
-            velocity_info["velocity unit vector"].append(velocity_speed[0])
-            velocity_info["speed"].append(velocity_speed[1])
+    #     if Tracks.iloc[i]["frame"] == np.min(Tracks["frame"]) and cell_id != -1:
+    #         velocity_info["velocity"].append(tuple(np.zeros(dim)))
+    #         velocity_info["speed"].append(0)
+
+    #     # why?????????
+    #     elif cell_id not in Tracks[:i]["cell_id"].values:  # check if this is a new cell
+    #         # if new, look for closest cell in same frame to copy velocity from
+    #         same_frame_index_list = Tracks.index[
+    #             Tracks["frame"] == Tracks.iloc[i]["frame"]
+    #         ].tolist()
+    #         same_frame_index_list.remove(i)
+    #         if len(same_frame_index_list) == 0:
+    #             velocity_info["velocity"].append(tuple(np.zeros(dim)))
+    #             velocity_info["speed"].append(0)
+    #             continue
+
+    #         min_distance = np.inf
+    #         closest_vel = tuple(np.zeros(dim))
+    #         closest_speed = 0
+    #         for j in same_frame_index_list:
+    #             target_row = Tracks.iloc[j]
+    #             if len(velocity_info["velocity"]) < j:
+    #                 continue
+
+    #             target_velocity = velocity_info["velocity"][j]
+    #             target_speed = velocity_info["speed"][j]
+
+    #             distance = calculate_row_velocity(
+    #                 Tracks.iloc[i], target_row, dt_array, dim
+    #             )[1]
+
+    #             if distance < min_distance:
+    #                 min_distance = distance
+    #                 closest_vel = target_velocity
+    #                 closest_speed = target_speed
+
+    #         # If there are no other cells in the frame, append 0
+    #         velocity_info["velocity"].append(closest_vel)
+    #         velocity_info["speed"].append(closest_speed)
+
+    #     else:
+    #         # if the cell is not new, determine velocity from the change in position from previous frame
+    #         index = np.argwhere(Tracks[:i]["cell_id"].values == cell_id)[-1][
+    #             0
+    #         ]  # index of previous row with same cell id
+    #         velocity_speed = calculate_row_velocity(
+    #             Tracks.iloc[i], Tracks.iloc[index], dt_array, dim
+    #         )[2:]
+    #         velocity_info["velocity"].append(velocity_speed[0])
+    #         velocity_info["speed"].append(velocity_speed[1])
+
+    # for i in Tracks.index:
+    #     cell_id = Tracks.iloc[i]["cell_id"]
+    #     if velocity_info["velocity"][i] == tuple(
+    #         np.zeros(dim)
+    #     ):  # go back and look at where velocity was set to zero and see if we can extrapolate backwards
+    #         index_list = list(np.argwhere(Tracks["cell_id"].values == cell_id))
+    #         index_list.remove(i)
+    #         if len(index_list) == 0:
+    #             continue
+    #         velocity_info["velocity"][i] = velocity_info["velocity"][index_list[0][0]]
+    #         velocity_info["speed"][i] = velocity_info["speed"][index_list[0][0]]
 
     velocity_info_df = pd.DataFrame(velocity_info)
-    velocity_groups = velocity_info_df.groupby("cell_id")
-
-    # shift each velocity back one feature, append nan to the last feature, and get rid of the first feature's velocity of 0
-    for cell_id, cell_group in velocity_groups:
-        cell_velocity_list = cell_group["velocity unit vector"].values.tolist()
-        cell_speed_list = cell_group["speed"].values.tolist()
-        
-        cell_velocity_list.append(np.nan)
-        cell_speed_list.append(np.nan)
-        
-        inds = cell_group.index.values
-        velocity_info_df["velocity unit vector"].iloc[inds] = cell_velocity_list[1:]
-        velocity_info_df["speed"].iloc[inds] = cell_speed_list[1:]
-
-    # Enforce the threshold
-    if threshold is not None:
-        # Load background varaible
-        if type(analysis_object["segmentation_xarray"]) == xr.core.dataarray.DataArray:
-            variable_field = analysis_object["segmentation_xarray"]
-        else:
-            variable_field = analysis_object["segmentation_xarray"][variable]
-
-        if len(variable_field.shape) != 4 and len(variable_field.shape) != 3:
-            raise ValueError("=====The segmentation must be 2D or 3D=====")
-
-        feature_mask = analysis_object[f"US_segmentation_{dim}d"].Feature_Segmentation
-        feature_mask.values[variable_field.values < threshold] = -1
-        uncut_feature_list = np.unique(feature_mask)[1:]  # don"t use -1
-        velocity_info_df = velocity_info_df[
-            velocity_info_df["feature_id"].isin(uncut_feature_list)
-        ]
 
     return velocity_info_df
 
 
 def calculate_cell_growth(
     analysis_object: dict,
-    variable: str | None = None,
+    variable: str,
     threshold: float | None = None,
     **args: dict,
 ) -> pd.DataFrame:
@@ -677,8 +709,8 @@ def calculate_cell_growth(
     ----------
     analysis_object : dict
         A CoCoMET-US standard analysis object containing at least US_tracks.
-    variable : str, optional
-        Variable to which we should apply the threshold. The default is None.
+    variable : str
+        Variable to which we should apply the threshold.
     threshold : float, optional
         Value of which the area should be greater than. The default is None.
     **args : dict
@@ -697,11 +729,13 @@ def calculate_cell_growth(
 
     """
 
+    print(variable)
+
     if analysis_object["US_tracks"] is None:
         raise ValueError("!=====Tracks Data is Required for Velocity Calculation=====!")
 
     def _variable_lookup(analysis_object, var, **args):
-        
+
         if var == "var_max_height":
             variable = "max_height"
             return calculate_var_max_height(analysis_object, **args)["max_height"]
@@ -724,24 +758,26 @@ def calculate_cell_growth(
             raise KeyError("!=====Invalid variable for cell growth rate=====!")
 
     # Check if the code is 3D
-    if analysis_object["US_segmentation_3d"]is not None:
-        
+    if analysis_object["US_segmentation_3d"] is not None:
+
         dim = 3
 
         # If there is a given variable use that
         # TODO: there's definitely a better way to do this. in _variable_lookup maybe if variable is None default to either volume or area
-        if variable != None:
-            if variable in args:
-                var = args[variable][variable]
-            else:
-                var = _variable_lookup(analysis_object, var=variable, **args)
+        var = _variable_lookup(analysis_object, var=variable, **args)
+        # if variable is not None:
+        #     if variable in args:
+        #         var = args[variable][variable]
+        #     else:
+        #         var = _variable_lookup(analysis_object, var=variable, **args)
 
-        # If there is no variable, default to volume
-        else:
-            if "volume" in args:
-                var = args["volume"]["volume"]
-            else:
-                var = _variable_lookup(analysis_object, var="volume", **args)
+        # # If there is no variable, default to volume
+        # else:
+        #     if "area" in args:
+        #         print(args)
+        #         var = args["area"]["area"]
+        #     else:
+        #         var = _variable_lookup(analysis_object, var="volume", **args)
 
     # If there is no 3D segmentation check if there is 2D
     elif analysis_object["US_segmentation_2d"] is not None:
@@ -764,7 +800,7 @@ def calculate_cell_growth(
 
     else:
         raise Exception("!=====Missing Segmentation Input=====!")
-    
+
     # Get Tracks
     Tracks = analysis_object["US_tracks"]
     Tracks_with_var = deepcopy(Tracks).join(var)
@@ -777,7 +813,7 @@ def calculate_cell_growth(
     else:
         dt_from_tracking = 1.0
         logging.warning("Could not find DT in dataset, computing velocity in m/frame")
-    
+
     # Cell Growth Rate
     cell_growth_info = {"frame": [], "feature_id": [], "cell_id": [], "cell_growth": []}
 
@@ -794,14 +830,14 @@ def calculate_cell_growth(
         cell_arr = [cell_id] * len(cell_frame_arr)
 
         if dim == 3 and variable is None:
-            cell_var_arr = np.array(cell_g['volume'])
+            cell_var_arr = np.array(cell_g["volume"])
 
         elif dim == 2 and variable is None:
-            cell_var_arr = np.array(cell_g['area'])
-        
+            cell_var_arr = np.array(cell_g["area"])
+
         else:
             cell_var_arr = np.array(cell_g[cell_g.columns[-1]])
-        
+
         cell_lifetime_arr = np.array(
             cell_g["lifetime"] / np.timedelta64(1, "s")
         )  # convert from ns to s
@@ -824,8 +860,11 @@ def calculate_cell_growth(
             dt = dt_from_tracking[cell_frame_arr[0] : cell_frame_arr[-1]]
 
         elif type(dt_from_tracking) == list:
-            dt = [dt_from_tracking[cf] for cf in range(cell_frame_arr[0], cell_frame_arr[-1])]
-            
+            dt = [
+                dt_from_tracking[cf]
+                for cf in range(cell_frame_arr[0], cell_frame_arr[-1])
+            ]
+
         else:
             dt = dt_from_tracking
 
@@ -867,7 +906,7 @@ def calculate_cell_growth(
     return cell_growth_df
 
 
-def calculate_perimeter( # TODO: split into surface area and perimeter
+def calculate_perimeter(  # TODO: split into surface area and perimeter
     analysis_object: dict,
     variable: str | None = None,
     threshold: float | None = None,
@@ -907,8 +946,10 @@ def calculate_perimeter( # TODO: split into surface area and perimeter
         altitudes = analysis_object["segmentation_xarray"]["altitudes"]
 
         height_index = find_nearest(altitudes, args["height"] * 1000)
-        feature_seg = analysis_object["US_segmentation_3d"].Feature_Segmentation[:, height_index]    
-    
+        feature_seg = analysis_object["US_segmentation_3d"].Feature_Segmentation[
+            :, height_index
+        ]
+
         # define some useful variables
         proj_x = analysis_object[f"US_segmentation_3d"].projection_x_coordinate
         proj_y = analysis_object[f"US_segmentation_3d"].projection_y_coordinate
@@ -921,7 +962,9 @@ def calculate_perimeter( # TODO: split into surface area and perimeter
         proj_y = analysis_object[f"US_segmentation_2d"].projection_y_coordinate
 
     else:
-        raise Exception("!=====Missing Invalid Segmentation Input, needs either 2D segmetation or 3D segmentation with height [km] parameter=====!")
+        raise Exception(
+            "!=====Missing Invalid Segmentation Input, needs either 2D segmetation or 3D segmentation with height [km] parameter=====!"
+        )
 
     perimeter_info = {"frame": [], "feature_id": [], "cell_id": [], "perimeter": []}
     Tracks = analysis_object["US_tracks"]
@@ -978,7 +1021,7 @@ def calculate_perimeter( # TODO: split into surface area and perimeter
 
         if len(variable_field.shape) != 3:
             raise ValueError("=====The segmentation must be 2D=====")
-        
+
         feature_mask = analysis_object["US_segmentation_2d"].Feature_Segmentation
         # TODO: if user only has 3D segmentation and height for perimeter and has a threshold set
         feature_mask.values[variable_field.values < threshold] = -1
@@ -986,6 +1029,7 @@ def calculate_perimeter( # TODO: split into surface area and perimeter
         perimeter_df = perimeter_df[perimeter_df["feature_id"].isin(uncut_feature_list)]
 
     return perimeter_df
+
 
 def calculate_surface_area(
     analysis_object: dict,
@@ -1020,16 +1064,23 @@ def calculate_surface_area(
     """
 
     if analysis_object["US_tracks"] is None:
-        raise Exception("!=====Tracks Data is Required for Surface Area Calculation=====!")
+        raise Exception(
+            "!=====Tracks Data is Required for Surface Area Calculation=====!"
+        )
 
     # Check if there is 3D segmentation
     if analysis_object["US_segmentation_3d"] is not None:
         feature_seg = analysis_object["US_segmentation_3d"].Feature_Segmentation
-    
+
     else:
         raise Exception("!=====Missing 3D Segmentation Input=====!")
 
-    surface_area_info = {"frame": [], "feature_id": [], "cell_id": [], "surface_area": []}
+    surface_area_info = {
+        "frame": [],
+        "feature_id": [],
+        "cell_id": [],
+        "surface_area": [],
+    }
     Tracks = analysis_object["US_tracks"]
 
     # define some useful variables
@@ -1103,9 +1154,12 @@ def calculate_surface_area(
         feature_mask = analysis_object[f"US_segmentation_3d"].Feature_Segmentation
         feature_mask.values[variable_field.values < threshold] = -1
         uncut_feature_list = np.unique(feature_mask)[1:]  # don"t use -1
-        surface_area_df = surface_area_df[surface_area_df["feature_id"].isin(uncut_feature_list)]
+        surface_area_df = surface_area_df[
+            surface_area_df["feature_id"].isin(uncut_feature_list)
+        ]
 
     return surface_area_df
+
 
 def calculate_irregularity(
     analysis_object: dict,

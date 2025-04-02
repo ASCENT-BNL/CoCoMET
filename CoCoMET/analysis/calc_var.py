@@ -52,16 +52,18 @@ def calc_var(analysis_object: Analysis_Object, var: str, **args: dict):
 
     Valid Variables
     ---------------
-        "eth",
-        "max_height",
+        "var_max_height",
         "max_intensity",
         "area",
         "volume",
         "velocity",
         "perimeter",
+        "surface_area",
         "cell_growth",
+        "irregularity",
         "merge_split",
         "arm",
+        "convective_indices"
 
     """
 

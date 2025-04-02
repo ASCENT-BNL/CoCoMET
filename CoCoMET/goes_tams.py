@@ -1,14 +1,15 @@
-import re
 import datetime
-from dateutil.parser import isoparse
+import re
 
 import geopandas as gpd
 import xarray as xr
+from dateutil.parser import isoparse
 
 from .TAMS import run
 
+
 def goes_run_tams(
-    goes_xarray: xr.DataArray, 
+    goes_xarray: xr.DataArray,
     CONFIG: dict,
 ) -> tuple[gpd.GeoDataFrame, tuple]:
     """
@@ -42,7 +43,7 @@ def goes_run_tams(
         {"long_name": "Brightness temperature", "units": "K"}
     )
 
-    start_date = re.sub( "^\\D*(\\d)", "\\1", goes_xarray["t"].attrs['units'] )
+    start_date = re.sub("^\\D*(\\d)", "\\1", goes_xarray["t"].attrs["units"])
 
     start_datetime = isoparse(start_date)
     start_year = start_datetime.year
@@ -58,12 +59,13 @@ def goes_run_tams(
 
         new_temp_minute = int(start_minute + minutes_since)
         new_hour = int(start_hour + new_temp_minute // 60)
-        new_second = int(start_second + new_temp_minute % 1 )
+        new_second = int(start_second + new_temp_minute % 1)
         new_minute = new_temp_minute % 60 // 1
 
-        new_time = datetime.datetime(start_year, start_month, start_day, new_hour, new_minute, new_second)
+        new_time = datetime.datetime(
+            start_year, start_month, start_day, new_hour, new_minute, new_second
+        )
         time.append(new_time)
-    
 
     # make the coordinates and rename the dimensions
     goes_for_tams_copy = goes_for_tams_copy.rename(
@@ -84,8 +86,12 @@ def goes_run_tams(
 
     # the latitude longitude coordinate systems are only in dimesions lat, lon. Add time dimension to them
     total_time = len(goes_for_tams_copy["time"])
-    lat_coord_sys = latlon_coord_system_2d[0].expand_dims(dim={"time" : range(total_time)})
-    lon_coord_sys = latlon_coord_system_2d[1].expand_dims(dim={"time" : range(total_time)})
+    lat_coord_sys = latlon_coord_system_2d[0].expand_dims(
+        dim={"time": range(total_time)}
+    )
+    lon_coord_sys = latlon_coord_system_2d[1].expand_dims(
+        dim={"time": range(total_time)}
+    )
     latlon_coord_system = (lat_coord_sys, lon_coord_sys)
-    
+
     return ce, latlon_coord_system

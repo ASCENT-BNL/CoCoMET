@@ -1735,9 +1735,9 @@ def BreakupObjects(
                         rgiObActCP.remove(ob1)
                         continue
                     elif len(tt1_obj) == 1:
-                        rgiObjects2D_ACT[
-                            tt, rgiObjects2D_ACT[tt, :] == tt1_obj[0]
-                        ] = ob1
+                        rgiObjects2D_ACT[tt, rgiObjects2D_ACT[tt, :] == tt1_obj[0]] = (
+                            ob1
+                        )
                     else:
                         VOL = [
                             np.sum(rgiObjects2D_ACT[tt, :] == tt1_obj[jj])
@@ -2765,8 +2765,7 @@ def MCStracking(pr_data, bt_data, times, Lon, Lat, nc_file, DataOutDir, DataName
         pr_object_majoraxislen = np.array(
             [
                 regionprops(pr_object_act[tt, :, :].astype(int))[0].major_axis_length
-                * np.mean(area_act[tt, (pr_object_act[tt, :, :] == 1)] / 1000**2)
-                ** 0.5
+                * np.mean(area_act[tt, (pr_object_act[tt, :, :] == 1)] / 1000**2) ** 0.5
                 for tt in range(pr_object_act.shape[0])
             ]
         )

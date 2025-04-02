@@ -106,7 +106,7 @@ def rams_load_netcdf_iris(
         if "bounds" in CONFIG["rams"]:
             # If it is idealized data, print a warning
             if "is_idealized" in CONFIG["rams"]:
-                if CONFIG["rams"]["is_idealized"]:      
+                if CONFIG["rams"]["is_idealized"]:
                     logging.warning("!=====Setting bounds for idealized data=====!")
 
             mask_lon = (rams_xarray.GLON >= CONFIG["rams"]["bounds"][0]) & (
@@ -145,8 +145,12 @@ def rams_load_netcdf_iris(
     if tracking_var.lower() == "tb":
 
         # Configure rams xarray for brightness temperature
-        rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
-                                        configure_variables=["TOA_OLR", "LWUP"])
+        rams_xarray = configure_rams(
+            rams_xarray,
+            path_to_header,
+            CONFIG=CONFIG,
+            configure_variables=["TOA_OLR", "LWUP"],
+        )
 
         # Brightness temperature is only 2d so no heights needed
         rams_xarray["TB"] = rams_calculate_brightness_temp(rams_xarray)
@@ -154,51 +158,171 @@ def rams_load_netcdf_iris(
 
         cube = load(rams_xarray, "TB")
 
-
     elif tracking_var.lower() == "pr":
-        
+
         use_available_variables = False
         # Configure rams xarray for brightness temperature
 
         # If there is a specified calculation type for precipitation, use that
         if "calculation_type" in CONFIG["rams"]:
-            if CONFIG["rams"]["calculation_type"] == "surface time averaged precipitation rate" or CONFIG["rams"]["calculation_type"] is None:
-                rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
-                                                configure_variables=["ACCPR", "ACCPP", "ACCPS", "ACCPA", "ACCPG", "ACCPH", "ACCPD", "ACONPR", "ACCPIP", "ACCPIC", "ACCPID"])
-                rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, calculation_type = CONFIG["rams"]["calculation_type"])
+            if (
+                CONFIG["rams"]["calculation_type"]
+                == "surface time averaged precipitation rate"
+                or CONFIG["rams"]["calculation_type"] is None
+            ):
+                rams_xarray = configure_rams(
+                    rams_xarray,
+                    path_to_header,
+                    CONFIG=CONFIG,
+                    configure_variables=[
+                        "ACCPR",
+                        "ACCPP",
+                        "ACCPS",
+                        "ACCPA",
+                        "ACCPG",
+                        "ACCPH",
+                        "ACCPD",
+                        "ACONPR",
+                        "ACCPIP",
+                        "ACCPIC",
+                        "ACCPID",
+                    ],
+                )
+                rams_xarray["PR"] = rams_calculate_precip_rate(
+                    rams_xarray, calculation_type=CONFIG["rams"]["calculation_type"]
+                )
 
-            elif CONFIG["rams"]["calculation_type"] == "surface instantaneous precipitation rate":
-                rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
-                                                configure_variables=["PCPRR", "PCPRP", "PCPRS", "PCPRA", "PCPRG", "PCPRH", "PCPRD", "CONPRR", "PCPRIP", "PCPRIC", "PCPRID"])
-                rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, calculation_type = CONFIG["rams"]["calculation_type"])
+            elif (
+                CONFIG["rams"]["calculation_type"]
+                == "surface instantaneous precipitation rate"
+            ):
+                rams_xarray = configure_rams(
+                    rams_xarray,
+                    path_to_header,
+                    CONFIG=CONFIG,
+                    configure_variables=[
+                        "PCPRR",
+                        "PCPRP",
+                        "PCPRS",
+                        "PCPRA",
+                        "PCPRG",
+                        "PCPRH",
+                        "PCPRD",
+                        "CONPRR",
+                        "PCPRIP",
+                        "PCPRIC",
+                        "PCPRID",
+                    ],
+                )
+                rams_xarray["PR"] = rams_calculate_precip_rate(
+                    rams_xarray, calculation_type=CONFIG["rams"]["calculation_type"]
+                )
 
-            elif CONFIG["rams"]["calculation_type"] == "volumetric instantaneous precipitation rate":
-                rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
-                                                configure_variables=["PCPVR", "PCPVP", "PCPVS", "PCPVA", "PCPVG", "PCPVH", "PCPVD", "CONPRR", "PCPVIP", "PCPVIC", "PCPVID"])
-                rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, calculation_type = CONFIG["rams"]["calculation_type"])
+            elif (
+                CONFIG["rams"]["calculation_type"]
+                == "volumetric instantaneous precipitation rate"
+            ):
+                rams_xarray = configure_rams(
+                    rams_xarray,
+                    path_to_header,
+                    CONFIG=CONFIG,
+                    configure_variables=[
+                        "PCPVR",
+                        "PCPVP",
+                        "PCPVS",
+                        "PCPVA",
+                        "PCPVG",
+                        "PCPVH",
+                        "PCPVD",
+                        "CONPRR",
+                        "PCPVIP",
+                        "PCPVIC",
+                        "PCPVID",
+                    ],
+                )
+                rams_xarray["PR"] = rams_calculate_precip_rate(
+                    rams_xarray, calculation_type=CONFIG["rams"]["calculation_type"]
+                )
 
             else:
-                print("No calculation type found in CONFIG file, using available variables")
+                print(
+                    "No calculation type found in CONFIG file, using available variables"
+                )
                 use_available_variables = True
 
         # If there is no calculation type, see which variables are available and use those
         if "calculation_type" not in CONFIG["rams"] or use_available_variables:
             if "ACCPR" in rams_xarray:
-                rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
-                                    configure_variables=["ACCPR", "ACCPP", "ACCPS", "ACCPA", "ACCPG", "ACCPH", "ACCPD", "ACONPR", "ACCPIP", "ACCPIC", "ACCPID"])
-                rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, calculation_type = "surface time averaged precipitation rate")
+                rams_xarray = configure_rams(
+                    rams_xarray,
+                    path_to_header,
+                    CONFIG=CONFIG,
+                    configure_variables=[
+                        "ACCPR",
+                        "ACCPP",
+                        "ACCPS",
+                        "ACCPA",
+                        "ACCPG",
+                        "ACCPH",
+                        "ACCPD",
+                        "ACONPR",
+                        "ACCPIP",
+                        "ACCPIC",
+                        "ACCPID",
+                    ],
+                )
+                rams_xarray["PR"] = rams_calculate_precip_rate(
+                    rams_xarray,
+                    calculation_type="surface time averaged precipitation rate",
+                )
 
             elif "PCPRR" in rams_xarray:
-                rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
-                                    configure_variables=["PCPRR", "PCPRP", "PCPRS", "PCPRA", "PCPRG", "PCPRH", "PCPRD", "CONPRR", "PCPRIP", "PCPRIC", "PCPRID"])
-                rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, calculation_type = "surface instantaneous precipitation rate")
-
+                rams_xarray = configure_rams(
+                    rams_xarray,
+                    path_to_header,
+                    CONFIG=CONFIG,
+                    configure_variables=[
+                        "PCPRR",
+                        "PCPRP",
+                        "PCPRS",
+                        "PCPRA",
+                        "PCPRG",
+                        "PCPRH",
+                        "PCPRD",
+                        "CONPRR",
+                        "PCPRIP",
+                        "PCPRIC",
+                        "PCPRID",
+                    ],
+                )
+                rams_xarray["PR"] = rams_calculate_precip_rate(
+                    rams_xarray,
+                    calculation_type="surface instantaneous precipitation rate",
+                )
 
             elif "PCPVR" in rams_xarray:
-                rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
-                                    configure_variables=["PCPVR", "PCPVP", "PCPVS", "PCPVA", "PCPVG", "PCPVH", "PCPVD", "CONPRR", "PCPVIP", "PCPVIC", "PCPVID"])
-                rams_xarray["PR"] = rams_calculate_precip_rate(rams_xarray, calculation_type = "volumetric surface instantaneous precipitation rate")
-
+                rams_xarray = configure_rams(
+                    rams_xarray,
+                    path_to_header,
+                    CONFIG=CONFIG,
+                    configure_variables=[
+                        "PCPVR",
+                        "PCPVP",
+                        "PCPVS",
+                        "PCPVA",
+                        "PCPVG",
+                        "PCPVH",
+                        "PCPVD",
+                        "CONPRR",
+                        "PCPVIP",
+                        "PCPVIC",
+                        "PCPVID",
+                    ],
+                )
+                rams_xarray["PR"] = rams_calculate_precip_rate(
+                    rams_xarray,
+                    calculation_type="volumetric surface instantaneous precipitation rate",
+                )
 
         rams_xarray["PR"].attrs["units"] = "mm/hr"
 
@@ -208,51 +332,73 @@ def rams_load_netcdf_iris(
         if len(rams_xarray["PR"].values.shape) == 4:
             cube.coord("altitude").points = rams_xarray["altitudes"].values
 
-
     elif tracking_var.lower() == "dbz":
 
         # Configure rams xarray for reflectivity
-        rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
-                                        configure_variables=["RRP", "RPP", "RSP", "RAP", "RGP", "RHP", 
-                                                            "CRP", "CPP", "CSP", "CAP", "CGP", "CHP"])
+        rams_xarray = configure_rams(
+            rams_xarray,
+            path_to_header,
+            CONFIG=CONFIG,
+            configure_variables=[
+                "RRP",
+                "RPP",
+                "RSP",
+                "RAP",
+                "RGP",
+                "RHP",
+                "CRP",
+                "CPP",
+                "CSP",
+                "CAP",
+                "CGP",
+                "CHP",
+            ],
+        )
 
         rams_xarray["DBZ"] = rams_calculate_reflectivity(rams_xarray)
 
         cube = load(rams_xarray, "DBZ")
-        cube.coord("altitude").points = rams_xarray["altitudes"].values # there is already an altitude coordinate in the xarray
+        cube.coord("altitude").points = rams_xarray[
+            "altitudes"
+        ].values  # there is already an altitude coordinate in the xarray
 
         # Add altitude field for easier processing later
         rams_xarray["DBZ"] = rams_xarray["DBZ"].assign_coords(
             altitude=(["bottom_top"], rams_xarray["altitudes"].values)
         )
 
-
     elif tracking_var.lower() == "wa":
 
         # Configure rams xarray for brightness temperature
-        rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
-                                        configure_variables=[])
-        
+        rams_xarray = configure_rams(
+            rams_xarray, path_to_header, CONFIG=CONFIG, configure_variables=[]
+        )
+
         # Get updraft velocity at mass points
         rams_wa = rams_calculate_wa(rams_xarray)
 
         rams_xarray["WA"] = rams_wa
 
         cube = load(rams_xarray, "WA")
-        cube.coord("altitude").points = rams_xarray["altitudes"].values # there is already an altitude coordinate in the xarray
+        cube.coord("altitude").points = rams_xarray[
+            "altitudes"
+        ].values  # there is already an altitude coordinate in the xarray
 
         # Add altitude field for easier processing later
         rams_xarray["WA"] = rams_xarray["WA"].assign_coords(
             altitude=("bottom_top", rams_xarray["altitudes"].values)
         )
 
-
     else:
         # If not any of the above, try using user inputed value
         try:
             # Configure rams xarray for brightness temperature
-            rams_xarray = configure_rams(rams_xarray, path_to_header, CONFIG=CONFIG, 
-                                            configure_variables=[tracking_var.upper()])
+            rams_xarray = configure_rams(
+                rams_xarray,
+                path_to_header,
+                CONFIG=CONFIG,
+                configure_variables=[tracking_var.upper()],
+            )
 
             var_values = rams_xarray[tracking_var.upper()]
             cube = load(rams_xarray, tracking_var.upper())
@@ -260,12 +406,16 @@ def rams_load_netcdf_iris(
             if len(var_values.shape) == 4:
                 # Add correct altitude based off of average height at each height index
 
-                cube.coord("altitude").points = rams_xarray["altitudes"].values # there is already an altitude coordinate in the xarray
+                cube.coord("altitude").points = rams_xarray[
+                    "altitudes"
+                ].values  # there is already an altitude coordinate in the xarray
 
                 # Add altitude field for easier processing later
                 rams_xarray[tracking_var.upper()] = rams_xarray[
                     tracking_var.upper()
-                ].assign_coords(altitude=("bottom_top", rams_xarray["altitudes"].values))
+                ].assign_coords(
+                    altitude=("bottom_top", rams_xarray["altitudes"].values)
+                )
 
         except:
             raise Exception(

@@ -180,11 +180,15 @@ def _merge_split_2d(
         footprint_data = analysis_object["US_segmentation_2d"].Feature_Segmentation
 
         # if there is a 3D variable field, but only 2D segmentation, reduce the variable field dimensionality
-        if len(variable_field.shape) == 4 and variable_field.shape[1] != 1: # radar observations are 2D, but still have a z axis         
+        if (
+            len(variable_field.shape) == 4 and variable_field.shape[1] != 1
+        ):  # radar observations are 2D, but still have a z axis
             if height is None:
-                raise Exception('2D merging and splitting on a 3D variable requires a "height" parameter. Either do 3D merging and splitting or set height')
-            
-            try: # TODO: reconcile this later, the models have attribute altitudes, but the observations have attribute altitude
+                raise Exception(
+                    '2D merging and splitting on a 3D variable requires a "height" parameter. Either do 3D merging and splitting or set height'
+                )
+
+            try:  # TODO: reconcile this later, the models have attribute altitudes, but the observations have attribute altitude
                 altitudes = analysis_object["segmentation_xarray"]["altitude"]
             except:
                 altitudes = analysis_object["segmentation_xarray"]["altitudes"]
