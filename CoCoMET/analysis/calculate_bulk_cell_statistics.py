@@ -96,69 +96,67 @@ def calculate_var_max_height(
     else:
         raise ValueError("!=====Missing Segmentation Input=====!")
 
-    printout_string = (
-        "Max Heights",
-        "max_height",
-    )  # ?????? what purpose does this serve?
+    # Pull out your tracks DataFrame
+    Tracks = analysis_object["US_tracks"]
 
+    # Build lookup dicts
+    features_by_frame = (Tracks.groupby("frame")["feature_id"].apply(list).to_dict())
+    cell_by_frame_feat = (Tracks.groupby(["frame", "feature_id"])["cell_id"].min().to_dict())
+
+    # Convert DataArrays to NumPy once
+    footprint_np = footprint_data.values      
+    var_np = variable_field.values      
+    altitudes = variable_field.altitude.values  
+
+    # Prepare the output dict
     max_height_info = {
         "frame": [],
         "feature_id": [],
         "cell_id": [],
-        printout_string[1]: [],
+        "max_height": [],
     }  # in km
 
     frame_groups = analysis_object["US_tracks"].groupby("frame")
 
-    # Loop over frames
-    for ii, frame in tqdm(
-        enumerate(frame_groups),
-        desc=f"=====Calculating {printout_string[0]}=====",
-        total=frame_groups.ngroups,
+    # Loop over frames → features
+    for frame in tqdm(
+        features_by_frame.keys(),
+        desc=f"=====Calculating Max Heights=====",
+        total=len(features_by_frame),
     ):
-        # Loop over each feature
-        for feature in frame[1].groupby("feature_id"):
-            # Get the indices of the cell footprint
-            proper_indices = np.argwhere(footprint_data[frame[0]].values == feature[0])
+        for feature_id in features_by_frame[frame]:
+            # get the precomputed cell_id
+            cell_id = cell_by_frame_feat[(frame, feature_id)]
 
-            # Cells which have no segmented output should get a NaN
-            if len(proper_indices) == 0:
-                max_height_info["frame"].append(frame[0])
-                max_height_info["feature_id"].append(feature[0])
-                max_height_info["cell_id"].append(feature[1]["cell_id"].min())
-                max_height_info[printout_string[1]].append(np.nan)
-                continue
-
-            max_height_set = []
-
-            # Calculate ETH for each location
-            for iy, ix in proper_indices:
-                max_alt_index = np.argwhere(
-                    variable_field[frame[0], :, iy, ix].values > threshold
-                )
-
-                # If there are no indices greater than threshold, skip
-                if len(max_alt_index) != 0:
-                    max_alt_index = max_alt_index.max()
-                else:
-                    max_height_set.append(np.nan)
-                    continue
-
-                max_alt = variable_field.altitude.values[max_alt_index]
-                max_height_set.append(max_alt)
-
-            max_height_info["frame"].append(frame[0])
-            max_height_info["feature_id"].append(feature[0])
-            max_height_info["cell_id"].append(feature[1]["cell_id"].min())
-
-            # If all NaN slice, append just np.nan
-            if np.isnan(max_height_set).all():
-                max_height_info[printout_string[1]].append(np.nan)
+            # find all (y,x) pixels in this footprint
+            idxs = np.argwhere(footprint_np[frame] == feature_id)
+            if idxs.size == 0:
+                max_height = np.nan
             else:
-                max_height_info[printout_string[1]].append(
-                    np.nanquantile(max_height_set, quantile) / 1000
-                )
+                # for each footprint pixel, find the highest altitude index > threshold
+                heights = []
+                for iy, ix in idxs:
+                    col = var_np[frame, :, iy, ix] 
+                    above = np.where(col > threshold)[0]
+                    if above.size:
+                        max_idx = above.max()
+                        heights.append(altitudes[max_idx])
+                    else:
+                        heights.append(np.nan)
 
+                # reduce by quantile (and convert to km)
+                if np.all(np.isnan(heights)):
+                    max_height = np.nan
+                else:
+                    max_height = np.nanquantile(heights, quantile) / 1000
+
+            # append results
+            max_height_info["frame"].append(frame)
+            max_height_info["feature_id"].append(feature_id)
+            max_height_info["cell_id"].append(cell_id)
+            max_height_info["max_height"].append(max_height)
+
+    # Return a DataFrame
     return pd.DataFrame(max_height_info)
 
 
@@ -235,33 +233,37 @@ def calculate_max_intensity(
     }
     Tracks = analysis_object["US_tracks"]
 
-    # Loop over each frame, then apply a mask for the cell/feature, then within that find the highest val
-    for feature_id, feat_group in tqdm(
-        Tracks.groupby("feature_id"),
-        desc="=====Calculating Max Intensity=====",
-        total=len(Tracks.groupby("feature_id")),
-    ):
-        frame = feat_group["frame"].values[0]
-        if len(feat_group["frame"].values) > 1:
-            raise ValueError("More than one frame found per feature")
+    # Lookup dict to avoid groupby
+    frames_by_feat = dict(zip(Tracks["feature_id"], Tracks["frame"]))
+    cells_by_feat  = dict(zip(Tracks["feature_id"], Tracks["cell_id"]))
 
-        # TODO: this code is really slow, make this more efficient
+    # Convert DataArrays to plain NumPy arrays once
+    seg_np = segmentation.values         # shape (n_frames, H, W)
+    var_np = variable_field.values       # same shape
+
+    # Loop over each frame, then apply a mask for the cell/feature, then within that find the highest val
+    for feature_id, frame in tqdm(
+        frames_by_feat.items(),
+        desc="=====Calculating Max Intensity=====",
+        total=len(frames_by_feat),
+    ):
+        # If feature covers your footprint set, compute its max; else NaN
         if feature_id in features_across_footprint:
-            one_feat_array = np.where(
-                segmentation[frame].values == feature_id,
-                variable_field[frame].values,
+            # mask & reduce in pure NumPy
+            one_feat = np.where(
+                seg_np[frame] == feature_id,
+                var_np[frame],
                 0,
             )
-            max_intensity = np.nanmax(one_feat_array)
+            max_val = np.nanmax(one_feat)
         else:
-            max_intensity = np.nan
+            max_val = np.nan
 
+        # Append straight from our dicts no more groupby inside
         max_intensity_info["frame"].append(frame)
         max_intensity_info["feature_id"].append(feature_id)
-        max_intensity_info["cell_id"].append(feat_group["cell_id"].values[0])
-
-        # TODO: add in quantile to reduce outlier skewing
-        max_intensity_info["max_intensity"].append(max_intensity)
+        max_intensity_info["cell_id"].append(cells_by_feat[feature_id])
+        max_intensity_info["max_intensity"].append(max_val)
 
     return pd.DataFrame(max_intensity_info)
 
@@ -729,8 +731,6 @@ def calculate_cell_growth(
 
     """
 
-    print(variable)
-
     if analysis_object["US_tracks"] is None:
         raise ValueError("!=====Tracks Data is Required for Velocity Calculation=====!")
 
@@ -765,19 +765,6 @@ def calculate_cell_growth(
         # If there is a given variable use that
         # TODO: there's definitely a better way to do this. in _variable_lookup maybe if variable is None default to either volume or area
         var = _variable_lookup(analysis_object, var=variable, **args)
-        # if variable is not None:
-        #     if variable in args:
-        #         var = args[variable][variable]
-        #     else:
-        #         var = _variable_lookup(analysis_object, var=variable, **args)
-
-        # # If there is no variable, default to volume
-        # else:
-        #     if "area" in args:
-        #         print(args)
-        #         var = args["area"]["area"]
-        #     else:
-        #         var = _variable_lookup(analysis_object, var="volume", **args)
 
     # If there is no 3D segmentation check if there is 2D
     elif analysis_object["US_segmentation_2d"] is not None:
@@ -828,15 +815,7 @@ def calculate_cell_growth(
         cell_feature_arr = np.array(cell_g["feature_id"]).tolist()
         cell_frame_arr = np.array(cell_g["frame"]).tolist()
         cell_arr = [cell_id] * len(cell_frame_arr)
-
-        if dim == 3 and variable is None:
-            cell_var_arr = np.array(cell_g["volume"])
-
-        elif dim == 2 and variable is None:
-            cell_var_arr = np.array(cell_g["area"])
-
-        else:
-            cell_var_arr = np.array(cell_g[cell_g.columns[-1]])
+        cell_var_arr = np.array(cell_g[cell_g.columns[-1]])
 
         cell_lifetime_arr = np.array(
             cell_g["lifetime"] / np.timedelta64(1, "s")
@@ -856,17 +835,21 @@ def calculate_cell_growth(
 
         # If the cell lasts for more than one frame, calculate delta var and delta t
         dvar = cell_var_arr[1:] - cell_var_arr[:-1]
-        if type(dt_from_tracking) == np.ndarray:
-            dt = dt_from_tracking[cell_frame_arr[0] : cell_frame_arr[-1]]
+        if type(dt_from_tracking) == np.ndarray or type(dt_from_tracking) == list:
 
-        elif type(dt_from_tracking) == list:
-            dt = [
-                dt_from_tracking[cf]
-                for cf in range(cell_frame_arr[0], cell_frame_arr[-1])
-            ]
+            if type(dt_from_tracking) != np.ndarray:
+                dt_from_tracking = np.array(dt_from_tracking)
+            # the line below does not work if cell frames are discontinuous
+            # dt = dt_from_tracking[cell_frame_arr[0] : cell_frame_arr[-1]] 
+
+            # instead use
+            dt = []
+            for find, f in enumerate(cell_frame_arr[:-1]):
+                dt_across_many_frames = np.sum(dt_from_tracking[f : cell_frame_arr[ find + 1 ]])
+                dt.append(dt_across_many_frames)
 
         else:
-            dt = dt_from_tracking
+            dt = np.diff(cell_frame_arr) * dt_from_tracking
 
         # The eth/t slope is the growth rate
         slope = dvar / dt
@@ -1234,14 +1217,14 @@ def calculate_irregularity(
         if "volume" in args:
             volume_df = args["volume"]["volume"]
         else:
-            volume_df = calculate_volume(analysis_object)["volume"]
+            volume_df = calculate_volume(analysis_object, None, None, **args)["volume"]
 
         if "perimeter" in args:
             perimeter_df = args[
                 "perimeter"
             ]  # takes the entire perimeter df, not just perimeter values
         else:
-            perimeter_df = calculate_perimeter(analysis_object)
+            perimeter_df = calculate_perimeter(analysis_object, None, None **args)
 
         list_of_irregularities.append(sphericity.sphericity(perimeter_df, volume_df))
 

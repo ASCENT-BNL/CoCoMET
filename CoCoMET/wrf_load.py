@@ -150,6 +150,14 @@ def wrf_load_netcdf_iris(
     wrf_xarray["PROJY"] = ("south_north", proj_y_values)
     wrf_xarray["PROJX"] = ("west_east", proj_x_values)
 
+    # Add some variables for iris cube generation
+    if "MAPFAC_M" in wrf_xarray:
+        wrf_xarray.attrs["MASS_SCALE_FACTOR"] = wrf_xarray["MAPFAC_M"]
+    else:
+        wrf_xarray.attrs["MASS_SCALE_FACTOR"] = None
+
+    wrf_xarray.attrs["LON_ORIGIN"] = wrf_xarray.XLONG.values[0, 1, 1]
+
     if tracking_var.lower() == "dbz":
         wrf_reflectivity = wrf_calculate_reflectivity(wrf_xarray)
 
