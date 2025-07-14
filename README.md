@@ -67,6 +67,9 @@ Community Cloud Model Evaluation Toolkit.
 
 <img src="./docs/images/cocomet_workflow.png" alt="User workflow"/>
 
+## CoCoMET Usage
+A user guide can be found at: <a href="https://github.com/ASCENT-BNL/CoCoMET/blob/master/docs/user_guide/cocomet_user_guide.pdf">https://github.com/ASCENT-BNL/CoCoMET/blob/master/docs/user_guide/cocomet_user_guide.pdf</a>
+
 ## Acknowledgments
 This project was supported by the U.S. Department of Energy (DOE) Early Career Research Program, Atmospheric System Research (ASR) program, 
 and the Office of Workforce Development for Teachers and Scientists (WDTS) under the Science Undergraduate Laboratory Internships Program (SULI).
