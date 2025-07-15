@@ -82,7 +82,8 @@ from .wrfcube import *
 print(
     "===============Welcome To CoCoMET===============\n\n"
     + "A toolkit of the Advanced Study of Cloud and Environment iNTerations (ASCENT) program.\n\n"
-    + "This project was supported by the U.S. Department of Energy (DOE) Early Career Research Program, Atmospheric System Research (ASR) program, and the Office of Workforce Development for Teachers and Scientists (WDTS) under the Science Undergraduate Laboratory Internships Program (SULI).\n\n"
-    + "If you are using this software for a publication, please cite: ####\n\n"
+    + "This project was supported by the U.S. Department of Energy (DOE) Early Career Research Program, Atmospheric System Research (ASR) program, and the Office of Workforce Development for Teachers and Scientists (WDTS) under the Science Undergraduate Laboratory Internships Program (SULI). This paper has been authored by employees of Brookhaven Science Associates, LLC, under Contract DE-SC0012704 with the U.S. Department of Energy (DOE). SG is supported by Argonne National Laboratory under U.S. DOE contract DE-AC02-06CH11357 and the ARM User Facility, funded by the Office of Biological and Environmental Research in the U.S DOE Office of Science.\n\n"
+    + "If you are using this software for a publication, please cite: \n
+    + "Hahn, T., Weiner, H., Brooks, C., Li, J. X., Gupta, S., and Wang, D.: CoCoMET v1.0: A Unified Open-Source Toolkit for Atmospheric Object Tracking and Analysis, EGUsphere [preprint], https://doi.org/10.5194/egusphere-2025-1328, 2025.\n\n
     "=============================================\n"
 )
