@@ -32,9 +32,9 @@ A simple CONFIG.yml example is given here for tracking on level 2 archival Next 
 
 
 # SETUP VARIABLES: These determine basic CoCoMET functionality
-verbose: True # Whether to use verbose output
-parallel_processing: False # [bool] Whether or not to use parallel processing for certain tasks
-max_cores: 4 # Number of cores to use if parallel_processing==True; Enter None for unlimited
+verbose: True #  [bool] Whether to use verbose output (loading bars, etc.). Required.
+parallel_processing: False #  [bool] Whether or not to use parallel processing for certain tasks. Required.
+max_cores: 4 #  [int] Number of cores to use if parallel_processing==True. Enter None for unlimited. Required if parallel_processing==True.
 
 # Structered in this form:
 # Observation Type:
@@ -47,19 +47,24 @@ max_cores: 4 # Number of cores to use if parallel_processing==True; Enter None f
 #       analysis:
 #           analysis_variables
 
-# WRF
-nexrad:
-    path_to_data: "D:/Research/BNL/gitfinageling/latest_branch/CoCoMET/.cocomet_testing_datasets/NEXRAD/grids/*"
+# We have the possible model and input types here
+nexrad: # can be [wrf, mesonh, rams, nexrad, multi_nexrad, standard_radar, goes]
+    path_to_data: "D:/Research/BNL/gitfinageling/latest_branch/CoCoMET/.cocomet_testing_datasets/NEXRAD/grids/*"  [str] Glob-like path to input data. Required.
 
-    feature_tracking_var: "DBZ"
-    segmentation_var: "DBZ"
+    feature_tracking_var: "DBZ" #  [str] DBZ, TB, WA, or PR. Variable you want to track features on. Depends on input data source. Required.
+    segmentation_var: "DBZ" #  [str] Variable you want to do the segmentation on. Same options as feature_tracking_var. Required.
 
-    gridding: # NEXRAD archival radar gridding using Py-ART
-        gridding_save_path: "./.cocomet_testing_datasets/NEXRAD/grids/"
-        grid_shape: (40, 401, 401)
-        grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.))
+    min_frame_index: 0 # [int] 0-based indexing, inclusive. If you want to select only a subset of the input data. A frame is a single input file. Optional.
+    max_frame_index: 20 # [int] 0-based indexing, inclusive. Optional.
 
-    tobac:
+    gridding: # NEXRAD archival radar gridding using Py-ART. Parameter are found and explained here (https://arm-doe.github.io/pyart/API/generated/pyart.map.grid_from_radars.html)
+        gridding_save_path: "./.cocomet_testing_datasets/NEXRAD/grids/" #  [str] Output path. Required.
+        grid_shape: (40, 401, 401) #  [three tuple of floats] Grid shape determines spatial resolution. Required.
+        grid_limits: ((500, 20000), (-200000., 200000.), (-200000., 200000.)) # [three tuple of two tuples of floats]. Required.
+
+    # Possible trackers go here
+    tobac: # can be [tobac, moaap, tams].
+        # All parameters below are identical to those used by tobac, including naming conventions. https://tobac.readthedocs.io/en/stable/index.html
         feature_id:
             threshold: [20,30,40,50]
             target: "maximum"
@@ -81,7 +86,7 @@ nexrad:
             method: "watershed"
             threshold: 15
     
-        analysis: # Optional
+        analysis: # Section where all desired analysis outputs go. Exahustive list and required inputs can be found in the user guide. This section is optional and can be omitted if no fruther analysis is desired.
             merge_split-2d: { variable: "DBZ", height: 2, segmentation_type: "2d", cell_footprint_height: 2, steps_forward_back: 3}
         
 ```
