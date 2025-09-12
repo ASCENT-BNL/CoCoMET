@@ -64,9 +64,16 @@ from .wrf_load import wrf_load_netcdf_iris
 from .wrf_moaap import wrf_run_moaap
 from .wrf_tobac import wrf_tobac_feature_id, wrf_tobac_linking, wrf_tobac_segmentation
 
+# For the saving data module
+import pickle
+import json
+import pandas as pd
+from copy import deepcopy
+
 __all__ = [
     "CoCoMET_start",
     "CoCoMET_load",
+    "CoCoMET_save_output",
     "run_goes",
     "run_mesonh",
     "run_multi_nexrad",
@@ -819,3 +826,105 @@ def run_goes(
 
     # Return dictionary
     return user_return_dict
+
+def CoCoMET_save_output(
+    output : dict,
+    savepath : str,
+    segmentation_save_type : str = "nc",
+    **args
+    ) -> None:
+
+    # Make a copy of the output
+    outcopy = deepcopy(output)
+
+    # Define an encoder for 
+    class NpEncoder(json.JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, np.integer):
+                return int(obj)
+            if isinstance(obj, np.floating):
+                return float(obj)
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return super(NpEncoder, self).default(obj)
+
+
+    for dataset in outcopy.keys():
+
+        for tracker in outcopy[dataset].keys():
+            print(f"Now saving {dataset} data with {tracker} tracker")
+
+            # Save the tracks and segmentation information
+            tracks_copy = deepcopy(outcopy[dataset][tracker]["US_tracks"]) 
+
+            # the csv cannot hold datetime objects, so transform into seconds
+            tracks_copy["lifetime"] = tracks_copy["lifetime"].dt.total_seconds()
+            tracks_copy.to_csv(f"{savepath}/{dataset.upper()}_Tracks_{tracker}.csv", index = False)
+
+            print("\t Saving tracks information")
+
+            # Save the segmentation if there is any
+            if "US_segmentation_3d" in outcopy[dataset][tracker] and outcopy[dataset][tracker]["US_segmentation_3d"] is not None:
+
+                segmentation_3d = deepcopy(outcopy[dataset][tracker]["US_segmentation_3d"])
+                
+                if segmentation_save_type == "pickle":
+                    with open(f"{savepath}/{dataset.upper()}_segmentation_3d_{tracker}.pickle", "wb") as file:
+                        pickle.dump(segmentation_3d, file)
+                elif segmentation_save_type == "nc":
+                    segmentation_3d.to_netcdf(path = f"{savepath}/{dataset.upper()}_segmentation_3d_{tracker}.nc")
+                else:
+                    raise ValueError("Invalid segmentation_save_type, must be either 'pickle' or 'nc'")
+                
+                print("\t Saving the 3D segmentation information")
+
+
+            if "US_segmentation_2d" in outcopy[dataset][tracker] and outcopy[dataset][tracker]["US_segmentation_2d"] is not None:
+
+                segmentation_2d = deepcopy(outcopy[dataset][tracker]["US_segmentation_2d"])
+                
+                if segmentation_save_type == "pickle":
+                    with open(f"{savepath}/{dataset.upper()}_segmentation_2d_{tracker}.pickle", "wb") as file:
+                        pickle.dump(segmentation_2d, file)
+                elif segmentation_save_type == "nc":
+                    segmentation_2d.to_netcdf(path = f"{savepath}/{dataset.upper()}_segmentation_2d_{tracker}.nc")
+                else:
+                    raise ValueError("Invalid segmentation_save_type, must be either 'pickle' or 'nc'")
+
+                print("\t Saving the 2D segmentation information")
+
+
+            # Make a separate analysis dataframe to unify analysis output and save a single csv
+            analysis_df = pd.DataFrame({})
+
+            # Save the analysis data in a dictionary
+            if "analysis" in outcopy[dataset][tracker] and len(outcopy[dataset][tracker]["analysis"]) != 0:
+
+                print(f"\t Now saving analysis variables:")
+
+                for analysis_variable in outcopy[dataset][tracker]["analysis"].keys():
+                    
+                    if analysis_variable != "merge_split":
+                        if len(analysis_df.keys()) < 3:
+                            analysis_df = outcopy[dataset][tracker]["analysis"][analysis_variable]
+                            cols = analysis_df.keys()
+
+                            for c in cols:
+                                if c not in ["frame", "cell_id", "feature_id"]:
+                                    print(f"\t \t {c}")
+
+                        else:
+                            f = outcopy[dataset][tracker]["analysis"][analysis_variable]
+                            cols = set(f.keys()) - set(['frame', 'feature_id', 'cell_id'])
+                            for c in cols:
+                                analysis_df = analysis_df.join(f[c])
+                                print(f"\t \t {c}")
+                    else:
+                        outcopy[dataset][tracker]["analysis"][analysis_variable][0].to_csv(f"{savepath}/{dataset}_{tracker}_mergers.csv", index=False)
+                        outcopy[dataset][tracker]["analysis"][analysis_variable][1].to_csv(f"{savepath}/{dataset}_{tracker}_splitters.csv", index=False)
+                        print("\t \t merge/split information")
+
+                if not(analysis_df.empty):
+                    analysis_df.to_csv(f"{savepath}/{dataset}_{tracker}_analysis_vars.csv", index=False)
+    
+    return None

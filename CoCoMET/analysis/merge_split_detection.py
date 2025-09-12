@@ -66,7 +66,7 @@ def merge_split(
 
     elif (
         merge_analysis_type.lower() == "2d"
-        and analysis_object["US_segmentation_2d"] is not None
+        and (analysis_object["US_segmentation_2d"] is not None or analysis_object["US_segmentation_3d"] is not None)
     ):
 
         merge_df, split_df = _merge_split_2d(analysis_object, **args)

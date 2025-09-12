@@ -873,8 +873,10 @@ def _return_gridpoints(points, latlon_coord_system):
 def convert_df_to_mask(ce, latlon_coord_system):
     full_mask = np.zeros_like(latlon_coord_system[0].values)
 
-    print("=====Converting TAMS Dataframe to Mask=====")
-    for frame in np.unique(ce.itime):
+    # TODO : this is really slow, find a better way to do this
+    for frame in tqdm(np.unique(ce.itime),
+                    desc="=====Converting TAMS Dataframe to Mask=====",
+                    total = len(np.unique(ce.itime))):
         id_groups = ce[ce.itime == frame].groupby("mcs_id")
 
         for mcs_id, grouped_df in id_groups:

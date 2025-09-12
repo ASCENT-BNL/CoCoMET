@@ -43,7 +43,7 @@ def wrf_run_tams(
             dims=["Time", "south_north", "west_east"],
         )
     else:
-        wrf_for_tams_copy["ctt"] = wrf_xarray["TB"]
+        tb = wrf_xarray["TB"]
 
     wrf_for_tams_copy["ctt"] = tb.assign_attrs(
         {"long_name": "Brightness temperature", "units": "K"}

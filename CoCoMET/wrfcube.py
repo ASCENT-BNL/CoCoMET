@@ -1506,7 +1506,7 @@ def make_coord_system(attributes):
         coord_system = None
 
     # lambert Conformal system (idealized simulations):
-    if MAP_PROJ_CHAR == "Lambert Conformal" and MAP_PROJ == 1:
+    elif MAP_PROJ_CHAR == "Lambert Conformal" and MAP_PROJ == 1:
         CEN_LON = attributes["CEN_LON"]
         TRUELAT1 = attributes["TRUELAT1"]
         TRUELAT2 = attributes["TRUELAT2"]
@@ -1521,6 +1521,26 @@ def make_coord_system(attributes):
             false_northing=0.0,
             secant_latitudes=(TRUELAT1, TRUELAT2),
         )
+
+    elif MAP_PROJ_CHAR == "Mercator" and MAP_PROJ == 3:
+        # https://github.com/wrf-model/WRF/blob/master/share/module_llxy.F says origin is alway at (1, 1) so get the origin lon from that
+
+        STANDARD_PARALLEL = attributes["CEN_LAT"]
+        MASS_SCALE_FACTOR = attributes["MASS_SCALE_FACTOR"]
+        LON_ORIGIN = attributes["LON_ORIGIN"]
+
+        coord_system = coord_systems.Mercator(
+            longitude_of_projection_origin = LON_ORIGIN,
+            # ellipsoid = 
+            standard_parallel = STANDARD_PARALLEL,
+            scale_factor_at_projection_origin = MASS_SCALE_FACTOR,
+            false_easting = 0.0,
+            false_northing = 0.0,
+        )
+    
+    else:
+        coord_system = None
+        
     return coord_system
 
 
